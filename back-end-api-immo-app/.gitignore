@@ -1,0 +1,53 @@
+# ============================================================
+# .gitignore - Standard 41DEVS
+# ============================================================
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build
+dist/
+**/dist/
+build/
+
+# Environment & Config sensible
+.env
+.env.*
+*.env
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Tests
+coverage/
+.nyc_output/
+
+# Temp
+tmp/
+temp/
+*.tmp
+*.temp
+
+# TypeScript
+*.tsbuildinfo
+
+# Optional: Uncomment if you want to include node_modules in repo
+# !node_modules/

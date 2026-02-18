@@ -1,0 +1,81 @@
+// === IDENTITÉ & AUTH ===
+Table users {
+  id uuid [pk]
+  phone_number varchar [unique, note: 'Identifiant principal']
+  preferred_lang varchar [default: 'fr']
+  role enum [note: 'tenant, landlord, agent, admin']
+  is_active boolean [default: true]
+  created_at timestamp
+}
+
+Table profiles {
+  id uuid [pk]
+  user_id uuid [ref: - users.id]
+  full_name_enc text
+  id_card_enc text
+  kyc_status enum [default: 'pending']
+}
+
+// === IMMOBILIER ===
+Table properties {
+  id uuid [pk]
+  owner_id uuid [ref: > users.id]
+  agent_id uuid [ref: > users.id]
+  title varchar
+  // Champs multi-langues (Format JSONB: {"fr": "...", "en": "..."})
+  title_translations jsonb 
+  description_translations jsonb
+
+  description_vector vector // IA: pgvector
+  price_monthly decimal
+  // Localisation
+  city varchar
+  district varchar // Ex: Fidjrossè
+  address_details text
+  geo_location point // GPS (lat, long)
+  status enum [note: 'available, occupied, maintenance, coming_soon']
+  available_date date
+}
+
+Table media {
+  id uuid [pk]
+  property_id uuid [ref: > properties.id]
+  url text
+  type enum [note: 'image, video_360, video_short']
+}
+
+// === FINANCES ===
+Table wallets {
+  id uuid [pk]
+  user_id uuid [ref: - users.id]
+  balance_total decimal [default: 0]
+  balance_savings decimal [default: 0, note: 'Tirelire']
+}
+
+Table transactions {
+  id uuid [pk]
+  wallet_id uuid [ref: > wallets.id]
+  amount decimal
+  type enum [note: 'rent, saving, commission, withdrawal']
+  status enum
+  gateway_ref varchar
+  created_at timestamp
+}
+
+// === SERVICES & NOTIFS ===
+Table notifications {
+  id uuid [pk]
+  user_id uuid [ref: > users.id]
+  channel enum [note: 'whatsapp, sms, push, in_app']
+  content text
+  sent_at timestamp
+}
+
+Table meter_readings {
+  id uuid [pk]
+  property_id uuid [ref: > properties.id]
+  type enum [note: 'sbee, soneb']
+  reading_value float
+  photo_url_enc text
+  created_at timestamp
+}

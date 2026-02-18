@@ -1,0 +1,34 @@
+# Wallet — Tirelire et transactions
+# Toutes les routes nécessitent un JWT (obtenir via auth/verify-otp)
+
+@baseUrl = http://localhost:3000
+@token = YOUR_JWT_TOKEN_HERE
+
+### Mon wallet (créé si absent)
+GET {{baseUrl}}/wallet/me
+Authorization: Bearer {{token}}
+
+### Enregistrer un versement Tirelire (saving)
+POST {{baseUrl}}/wallet/transaction
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "amount": 5000,
+  "type": "saving",
+  "gateway_ref": "feda_xxx"
+}
+
+### Autres types : rent, commission, withdrawal
+POST {{baseUrl}}/wallet/transaction
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "amount": 25000,
+  "type": "rent"
+}
+
+### Liste de mes transactions
+GET {{baseUrl}}/wallet/transactions
+Authorization: Bearer {{token}}

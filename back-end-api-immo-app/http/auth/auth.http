@@ -1,0 +1,31 @@
+# Auth — OTP + JWT
+# REST Client (VS Code) : cliquer sur "Send Request" au-dessus de chaque bloc
+
+@baseUrl = http://localhost:3000
+@token = {{verify_otp.response.body.token}}
+
+### 1. Demander un code OTP
+# En dev le code est loggé dans la console du backend
+# @name request_otp
+POST {{baseUrl}}/auth/request-otp
+Content-Type: application/json
+
+{
+  "phone_number": "+22990123456"
+}
+
+### 2. Vérifier l'OTP et obtenir le JWT (création user si premier passage)
+# Copier le code affiché dans les logs backend après request-otp
+# @name verify_otp
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: application/json
+
+{
+  "phone_number": "+22990123456",
+  "code": "123456",
+  "preferred_lang": "fr"
+}
+
+### 3. Infos de l'utilisateur connecté (Bearer = token renvoyé par verify-otp)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}

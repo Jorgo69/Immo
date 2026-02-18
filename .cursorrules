@@ -1,0 +1,54 @@
+# RULES FOR IMMO-BENIN DEVELOPMENT
+
+## 🏗 ARCHITECTURE & STACK
+- Backend: NestJS (Architecture CQRS), TypeORM, PostgreSQL.
+- Frontend: Vue.js 3 (Vite, Composition API, Pinia).
+- Database: UUID obligatoires, pgvector pour la recherche IA.
+- Style: Clean Code, SOLID, DRY.
+
+## 🛡 SECURITY
+- Chiffrement AES-256 (Service centralisé) pour noms, téléphones et documents.
+- Try-Catch + Finally systématiques sur les services et handlers.
+- Transactions Database obligatoires pour tout mouvement financier.
+- Validation stricte via DTOs (class-validator).
+
+## 🎨 FRONTEND DESIGN (ANTI-IA LOOK)
+- UI: Tailwind CSS, Lucide-Vue-Next pour les icônes.
+- Design: Minimaliste, Bento Grid, pas de dégradés (gradients) complexes.
+- Palette: Fond #F9FAFB, Texte #111827, Accent #059669.
+- Mode: Debug local via variable d'environnement NODE_ENV.
+
+## ✍️ LANGUAGE & COMMITS
+- Code: Anglais (variables, classes, fonctions).
+- Commentaires/Logs/UI: Français.
+- Commits: Conventional Commits (feat:, fix:, docs:).
+
+# REGLES DE DEVELOPPEMENT - PROJET IMMO-BENIN
+
+## ARCHITECTURE
+- Backend: NestJS avec Pattern CQRS (Commands, Queries, Events).
+- ORM: TypeORM + PostgreSQL (Extension pgvector obligatoire).
+- Frontend: Vue.js 3 (Composition API) + Pinia.
+- PWA: Offline-first via Service Workers & IndexedDB.
+
+## LOGIQUE METIER OBLIGATOIRE
+- Recherche IA: Utiliser pgvector pour la recherche sémantique en langage naturel.
+- Finances: Système de "Tirelire Loyer" avec transactions ACID.
+- Notifications: Système multi-canal (WhatsApp API, SMS, Push, In-App).
+
+## SECURITE & QUALITE
+- Chiffrement: AES-256-GCM pour 'phone', 'names', 'id_cards' et 'meter_readings'.
+- Robustesse: Try/Catch/Finally systématiques. Transactions DB pour flux financiers.
+- UI: Design minimaliste, Bento Grid, 0 dégradés/gradients IA. Icônes: Lucide-Vue.
+
+
+## MULTI-LANGUE (i18n)
+- Toute chaîne de caractère dans le Front doit passer par `$t()` (vue-i18n).
+- Les descriptions/titres en Backend doivent être traités comme des objets JSONB.
+- Toujours prévoir un fallback vers 'fr' si une traduction est manquante.
+
+## GÉNÉRATION DE MODULES BACKEND (NestJS CQRS)
+- Pour créer un nouveau module respectant les standards CQRS du projet, utiliser depuis la racine du backend :
+  **`./generate-module.sh <nom_module>`**
+- Exemple : `./generate-module.sh wallet` génère le module `wallet` avec structure commands/queries, handlers, impl, controller et module.
+- Toujours privilégier cette commande pour ajouter des modules (cohérence, maintenabilité, bonnes pratiques).

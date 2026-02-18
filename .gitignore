@@ -1,0 +1,63 @@
+# ============================================================
+# Immo — .gitignore racine (monorepo)
+# Tout ce qui est ignoré ici ne sera pas poussé sur GitHub.
+# ============================================================
+
+# Dependencies (tous les projets)
+node_modules/
+**/node_modules/
+
+# Build / artefacts
+dist/
+**/dist/
+build/
+**/build/
+dist-ssr/
+*.tsbuildinfo
+
+# Environnement et secrets (ne jamais commiter)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE / éditeur
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swo
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Tests / couverture
+coverage/
+.nyc_output/
+**/coverage/
+
+# Fichiers locaux (ex: Vite)
+*.local
+
+# Temp
+tmp/
+temp/
+*.tmp
+*.temp

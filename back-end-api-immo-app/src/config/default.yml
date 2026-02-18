@@ -1,0 +1,37 @@
+# ============================================================
+# Configuration - Standard 41DEVS
+# ============================================================
+# Modifier ces valeurs selon votre environnement
+# Base de donnees: back_end_api_immo_app
+
+database:
+  type: postgres
+  host: localhost
+  port: 5432
+  username: root
+  password: root
+  database: back_end_api_immo_app
+  synchronize: true    # Mettre a false en production!
+  logging: true
+
+ssl:
+  require: false
+  rejectUnauthorized: false
+
+server:
+  port: 3000
+
+jwt:
+  secret: "CHANGE-ME-IN-PRODUCTION-USE-STRONG-SECRET-KEY"
+  expireIn: "7d"
+
+# Clé de chiffrement AES-256 (32 octets en base64, ou 32 caractères). En prod: variable d'environnement.
+encryption:
+  key: "CHANGE-ME-32-BYTES-KEY-FOR-AES256!!"
+
+app:
+  name: "NestJS CQRS API"
+  version: "1.0.0"
+  # URL du microservice Python d'embeddings sémantiques (optionnel).
+  # Exemple en local : http://localhost:8001
+  semanticUrl: ""

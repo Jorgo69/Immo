@@ -1,0 +1,29 @@
+# User — CRUD utilisateurs
+# Utiliser le token obtenu via auth/verify-otp (variable partagée ou coller le JWT)
+
+@baseUrl = http://localhost:3000
+@token = YOUR_JWT_TOKEN_HERE
+
+### Liste de tous les utilisateurs
+GET {{baseUrl}}/user/all
+
+### Utilisateur par ID (remplacer par un UUID réel)
+GET {{baseUrl}}/user/by-id?id=00000000-0000-0000-0000-000000000000
+
+### Mettre à jour l'utilisateur connecté (langue, rôle, is_active)
+POST {{baseUrl}}/user/update
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "preferred_lang": "fr",
+  "role": "tenant",
+  "is_active": true
+}
+
+### Supprimer le compte de l'utilisateur connecté
+DELETE {{baseUrl}}/user/delete
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{}

@@ -1,0 +1,58 @@
+# Property — biens immobiliers et médias
+# Création : utiliser un owner_id (UUID user) valide (ex. après auth/me)
+
+@baseUrl = http://localhost:3000
+@ownerId = YOUR_USER_UUID_HERE
+@propertyId = YOUR_PROPERTY_UUID_HERE
+
+### Liste des biens (filtres optionnels)
+GET {{baseUrl}}/property
+# GET {{baseUrl}}/property?city=Calavi&status=available&min_price=20000&max_price=100000
+
+### Recherche par texte (titre, ville, description) + filtres
+GET {{baseUrl}}/property/search?q=studio+Calavi
+# GET {{baseUrl}}/property/search?q=40k&city=Cotonou&min_price=30000&max_price=50000
+
+### Détail d'un bien (avec médias)
+GET {{baseUrl}}/property/{{propertyId}}
+
+### Médias d'un bien
+GET {{baseUrl}}/property/{{propertyId}}/media
+
+### Créer un bien
+POST {{baseUrl}}/property
+Content-Type: application/json
+
+{
+  "owner_id": "{{ownerId}}",
+  "title": "Studio calme à Calavi",
+  "title_translations": { "fr": "Studio calme à Calavi", "en": "Quiet studio in Calavi" },
+  "description_translations": { "fr": "Proche université, eau et électricité.", "en": "Near university, water and electricity." },
+  "price_monthly": 45000,
+  "city": "Calavi",
+  "district": "Akassato",
+  "address_details": "Quartier résidentiel",
+  "latitude": 6.45,
+  "longitude": 2.35,
+  "status": "available"
+}
+
+### Mettre à jour un bien
+PUT {{baseUrl}}/property/{{propertyId}}
+Content-Type: application/json
+
+{
+  "title": "Studio rénové à Calavi",
+  "price_monthly": 48000,
+  "status": "available"
+}
+
+### Ajouter un média
+POST {{baseUrl}}/property/media
+Content-Type: application/json
+
+{
+  "property_id": "{{propertyId}}",
+  "url": "https://example.com/photo1.jpg",
+  "type": "image"
+}

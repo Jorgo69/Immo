@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Immo Bénin — design minimaliste, 0 gradients. Dark mode via .dark (stratégie class). */
+:root {
+  --color-bg: #F9FAFB;
+  --color-text: #111827;
+  --color-accent: #059669;
+  --color-muted: #6B7280;
+}
+
+.dark {
+  --color-bg: #111827;
+  --color-text: #F9FAFB;
+  --color-accent: #10B981;
+  --color-muted: #9CA3AF;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+#app {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  transition: background-color 0.35s ease, color 0.35s ease;
+}

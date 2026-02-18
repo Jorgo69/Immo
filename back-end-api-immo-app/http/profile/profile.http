@@ -1,0 +1,17 @@
+### Variables (à définir en haut du fichier ou dans .env)
+@baseUrl = http://localhost:3000
+@token = YOUR_JWT_TOKEN
+
+### Mon profil (GET)
+GET {{baseUrl}}/profile/me
+Authorization: Bearer {{token}}
+
+### Mettre à jour mon profil (PUT)
+PUT {{baseUrl}}/profile/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "full_name": "Jean Dupont",
+  "id_card": "1234567890123"
+}
