@@ -7,6 +7,8 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GetAllQuery } from './queries/impl/get-all.query/get-all.query';
 import { FindByIdQuery } from './queries/impl/find-by-id.query/find-by-id.query';
 import { GetUserDetailQuery } from './queries/impl/get-user-detail.query/get-user-detail.query';
+import { CreateUserCommand } from './commands/impl/create-user.command/create-user.command';
+import { UpdateProfileCommand } from './commands/impl/update-profile.command/update-profile.command';
 import { UpdateUserCommand } from './commands/impl/update-user.command/update-user.command';
 import { DeleteUserCommand } from './commands/impl/delete-user.command/delete-user.command';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
@@ -65,6 +67,24 @@ export class UserController {
     query.page = page;
     query.limit = limit;
     return this.queryBus.execute(query);
+  }
+
+  @Post('create')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Créer un utilisateur (admin ou formulaire complet)' })
+  async create(@Body() command: CreateUserCommand) {
+    return this.commandBus.execute(command);
+  }
+
+  @Post('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Compléter le profil (onboarding après première connexion)' })
+  async updateProfile(@Body() command: UpdateProfileCommand, @Request() req) {
+    command.id = req.user.id;
+    return this.commandBus.execute(command);
   }
 
   @Post('update')

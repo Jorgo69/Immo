@@ -14,7 +14,21 @@ export class FindByIdHandler implements IQueryHandler<FindByIdQuery> {
   async execute(query: FindByIdQuery): Promise<any> {
     const user = await this.dataSource.getRepository(UserModel).findOne({
       where: { id: query.id },
-      select: ['id', 'phone_number', 'preferred_lang', 'role', 'is_active', 'created_at', 'updated_at'],
+      select: [
+        'id',
+        'phone_number',
+        'first_name',
+        'last_name',
+        'email',
+        'avatar_url',
+        'is_profile_complete',
+        'is_verified',
+        'preferred_lang',
+        'role',
+        'is_active',
+        'created_at',
+        'updated_at',
+      ],
     });
 
     if (!user) {

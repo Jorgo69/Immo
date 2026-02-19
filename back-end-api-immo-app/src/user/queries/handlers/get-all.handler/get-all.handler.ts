@@ -21,6 +21,12 @@ export class GetAllHandler implements IQueryHandler<GetAllQuery> {
       .select([
         'u.id',
         'u.phone_number',
+        'u.first_name',
+        'u.last_name',
+        'u.email',
+        'u.avatar_url',
+        'u.is_profile_complete',
+        'u.is_verified',
         'u.preferred_lang',
         'u.role',
         'u.is_active',

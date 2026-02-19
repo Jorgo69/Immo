@@ -1,17 +1,20 @@
 /**
  * Commande : vérification de l'OTP et connexion (création utilisateur si premier passage).
+ * Validation mobile-first : téléphone au format E.164.
  */
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, Matches, MaxLength, MinLength } from 'class-validator';
+
+const E164_PHONE_REGEX = /^\+[1-9]\d{6,14}$/;
 
 export class VerifyOtpCommand {
   @ApiProperty({
-    description: 'Numéro de téléphone',
+    description: 'Numéro de téléphone international (E.164)',
     example: '+22990123456',
   })
-  @IsNotEmpty()
-  @Matches(/^\+?[0-9\s-]{8,20}$/, {
-    message: 'Format de numéro invalide',
+  @IsNotEmpty({ message: 'Le numéro de téléphone est requis' })
+  @Matches(E164_PHONE_REGEX, {
+    message: 'Numéro invalide : utilisez le format international (ex: +22990123456)',
   })
   phone_number: string;
 
@@ -33,4 +36,13 @@ export class VerifyOtpCommand {
   @IsOptional()
   @MaxLength(5)
   preferred_lang?: string;
+
+  @ApiProperty({
+    description: 'Email (optionnel ; pour nouvel utilisateur, à fournir si envoi par email)',
+    example: 'user@example.com',
+    required: false,
+  })
+  @IsOptional()
+  @IsEmail({}, { message: 'Email invalide' })
+  email?: string;
 }

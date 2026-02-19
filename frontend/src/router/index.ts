@@ -19,10 +19,22 @@ export const router = createRouter({
           meta: { title: 'Tableau de bord', requiresAuth: true },
         },
         {
+          path: 'onboarding',
+          name: 'onboarding',
+          component: () => import('../views/OnboardingView.vue'),
+          meta: { title: 'Compléter mon profil', requiresAuth: true },
+        },
+        {
           path: 'profile',
           name: 'profile',
           component: () => import('../views/ProfileView.vue'),
           meta: { title: 'Mon profil', requiresAuth: true },
+        },
+        {
+          path: 'profile/edit',
+          name: 'profile-edit',
+          component: () => import('../views/ProfileEditView.vue'),
+          meta: { title: 'Éditer le profil', requiresAuth: true },
         },
         {
           path: 'property',
@@ -113,6 +125,15 @@ router.beforeEach((to) => {
   const appStore = useAppStore()
   if (to.meta.requiresAuth && !appStore.token) {
     return { name: 'auth', query: { redirect: to.fullPath } }
+  }
+  // Profil incomplet : forcer vers onboarding sauf si déjà sur onboarding ou auth
+  if (
+    appStore.token &&
+    appStore.isProfileComplete === false &&
+    to.name !== 'onboarding' &&
+    to.name !== 'auth'
+  ) {
+    return { name: 'onboarding', query: to.name !== 'home' ? { redirect: to.fullPath } : {} }
   }
   const requiredRoles = to.meta.requiresRole as string[] | undefined
   if (requiredRoles && appStore.userRole && !requiredRoles.includes(appStore.userRole)) {

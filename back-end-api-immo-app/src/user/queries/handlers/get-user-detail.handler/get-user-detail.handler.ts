@@ -35,7 +35,21 @@ export class GetUserDetailHandler implements IQueryHandler<GetUserDetailQuery> {
     const userRepo = this.dataSource.getRepository(UserModel);
     const user = await userRepo.findOne({
       where: { id: query.id },
-      select: ['id', 'phone_number', 'preferred_lang', 'role', 'is_active', 'created_at', 'updated_at'],
+      select: [
+        'id',
+        'phone_number',
+        'first_name',
+        'last_name',
+        'email',
+        'avatar_url',
+        'is_profile_complete',
+        'is_verified',
+        'preferred_lang',
+        'role',
+        'is_active',
+        'created_at',
+        'updated_at',
+      ],
     });
     if (!user) {
       throw new NotFoundException('User not found');

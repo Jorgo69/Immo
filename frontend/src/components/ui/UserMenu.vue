@@ -8,7 +8,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { User, LayoutDashboard, LogOut, LogIn, ChevronDown } from 'lucide-vue-next'
 import { useAppStore } from '../../stores/app'
-import AppButton from './AppButton.vue'
+// import AppButton from './AppButton.vue'
 import AppLink from './AppLink.vue'
 
 const { t } = useI18n()
@@ -56,10 +56,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Non connecté : simple bouton Connexion -->
+  <!-- Non connecté : bouton Connexion bien visible en header -->
   <div v-if="!loggedIn" class="flex items-center">
-    <AppLink to="/auth" variant="nav" class="text-sm">
-      <LogIn class="w-5 h-5 shrink-0" />
+    <AppLink
+      to="/auth"
+      class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-[var(--color-accent)] dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-[var(--color-accent)]"
+    >
+      <LogIn class="h-5 w-5 shrink-0" />
       {{ t('nav.auth') }}
     </AppLink>
   </div>
@@ -68,7 +71,7 @@ onUnmounted(() => {
   <div v-else ref="menuRef" class="relative">
     <button
       type="button"
-      class="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800 px-3 py-1.5 text-sm text-[var(--color-text)] shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+      class="inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800 px-3 py-1.5 text-sm text-[var(--color-text)] shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
       @click.stop="toggle"
     >
       <User class="w-5 h-5 shrink-0 text-[var(--color-muted)]" />

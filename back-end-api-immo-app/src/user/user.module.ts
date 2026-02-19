@@ -13,6 +13,8 @@ import { FindByIdHandler } from './queries/handlers/find-by-id.handler/find-by-i
 import { GetUserDetailHandler } from './queries/handlers/get-user-detail.handler/get-user-detail.handler';
 import { UpdateUserCommandHandler } from './commands/handlers/update-user.command.handler/update-user.command.handler';
 import { DeleteUserCommandHandler } from './commands/handlers/delete-user.command.handler/delete-user.command.handler';
+import { CreateUserCommandHandler } from './commands/handlers/create-user.command.handler/create-user.command.handler';
+import { UpdateProfileCommandHandler } from './commands/handlers/update-profile.command.handler/update-profile.command.handler';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { DeleteUserCommandHandler } from './commands/handlers/delete-user.comman
     GetAllHandler,
     FindByIdHandler,
     GetUserDetailHandler,
+    CreateUserCommandHandler,
+    UpdateProfileCommandHandler,
     UpdateUserCommandHandler,
     DeleteUserCommandHandler,
   ],

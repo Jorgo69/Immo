@@ -25,6 +25,28 @@ export class UserModel {
   @Column({ type: 'varchar', unique: true, nullable: false })
   phone_number: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  first_name: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  last_name: string;
+
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  email: string;
+
+  @Column({ type: 'text', nullable: true })
+  avatar_url: string;
+
+  /** Passe à true dès que first_name et last_name sont renseignés (onboarding). */
+  @Column({ type: 'boolean', default: false, name: 'is_profile_complete' })
+  is_profile_complete: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  is_verified: boolean;
+
+  @Column({ type: 'jsonb', nullable: true })
+  metadata: Record<string, unknown>;
+
   @Column({ type: 'varchar', default: 'fr', length: 5 })
   preferred_lang: string;
 

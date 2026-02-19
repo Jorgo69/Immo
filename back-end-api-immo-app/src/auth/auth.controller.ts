@@ -7,6 +7,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequestOtpCommand } from './commands/impl/request-otp.command/request-otp.command';
 import { VerifyOtpCommand } from './commands/impl/verify-otp.command/verify-otp.command';
 import { JwtAuthGuard } from './strategy/jwt-auth.guard';
+import { RequestOtpRateLimitGuard } from './strategy/request-otp-rate-limit.guard';
 import { AuthMeQuery } from './queries/impl/auth-me.query/auth-me.query';
 
 @ApiTags('Auth')
@@ -18,6 +19,7 @@ export class AuthController {
   ) {}
 
   @Post('request-otp')
+  @UseGuards(RequestOtpRateLimitGuard)
   @ApiOperation({ summary: 'Demander un code OTP (envoyé par SMS/WhatsApp)' })
   async requestOtp(@Body() command: RequestOtpCommand) {
     return this.commandBus.execute(command);

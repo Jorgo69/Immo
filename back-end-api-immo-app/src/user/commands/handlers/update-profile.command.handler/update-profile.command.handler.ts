@@ -1,23 +1,24 @@
 /**
- * Met à jour les champs autorisés de l'utilisateur connecté (profil, langue, rôle).
+ * Met à jour le profil (onboarding) : first_name, last_name, email?, avatar_url?.
+ * Passe is_profile_complete à true dès que prénom et nom sont renseignés.
  */
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UpdateUserCommand } from '../../impl/update-user.command/update-user.command';
 import { Logger, NotFoundException } from '@nestjs/common';
+import { UpdateProfileCommand } from '../../impl/update-profile.command/update-profile.command';
 import { UserModel } from '../../../../auth/models/user.model/user.model';
 
-@CommandHandler(UpdateUserCommand)
-export class UpdateUserCommandHandler implements ICommandHandler<UpdateUserCommand> {
-  private readonly logger = new Logger(UpdateUserCommandHandler.name);
+@CommandHandler(UpdateProfileCommand)
+export class UpdateProfileCommandHandler implements ICommandHandler<UpdateProfileCommand> {
+  private readonly logger = new Logger(UpdateProfileCommandHandler.name);
 
   constructor(
     @InjectRepository(UserModel)
     private readonly userRepository: Repository<UserModel>,
   ) {}
 
-  async execute(command: UpdateUserCommand): Promise<Partial<UserModel>> {
+  async execute(command: UpdateProfileCommand): Promise<Partial<UserModel>> {
     try {
       const user = await this.userRepository.findOne({
         where: { id: command.id },
@@ -27,18 +28,15 @@ export class UpdateUserCommandHandler implements ICommandHandler<UpdateUserComma
         throw new NotFoundException('User not found');
       }
 
-      if (command.first_name !== undefined) user.first_name = command.first_name;
-      if (command.last_name !== undefined) user.last_name = command.last_name;
-      if (command.email !== undefined) user.email = command.email;
-      if (command.avatar_url !== undefined) user.avatar_url = command.avatar_url;
-      if (command.preferred_lang !== undefined) user.preferred_lang = command.preferred_lang;
-      if (command.role !== undefined) user.role = command.role;
-      if (command.is_active !== undefined) user.is_active = command.is_active;
+      user.first_name = command.first_name?.trim() ?? user.first_name;
+      user.last_name = command.last_name?.trim() ?? user.last_name;
+      if (command.email !== undefined) user.email = command.email?.trim() || null;
+      if (command.avatar_url !== undefined) user.avatar_url = command.avatar_url || null;
 
       user.is_profile_complete = !!(user.first_name?.trim() && user.last_name?.trim());
 
       const updated = await this.userRepository.save(user);
-      this.logger.log(`User updated: ${updated.id}`);
+      this.logger.log(`Profil complété: ${updated.id}`);
 
       return {
         id: updated.id,
@@ -56,7 +54,7 @@ export class UpdateUserCommandHandler implements ICommandHandler<UpdateUserComma
         updated_at: updated.updated_at,
       };
     } catch (error) {
-      this.logger.error(`Error updating user: ${error instanceof Error ? error.message : error}`);
+      this.logger.error(`Error updating profile: ${error instanceof Error ? error.message : error}`);
       throw error;
     }
   }

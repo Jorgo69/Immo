@@ -25,6 +25,22 @@ jwt:
   secret: "CHANGE-ME-IN-PRODUCTION-USE-STRONG-SECRET-KEY"
   expireIn: "7d"
 
+# Canaux d'envoi OTP : email, whatsapp, sms (sms = Twilio, désactivé par défaut)
+# Override possible via AUTH_CHANNELS=email,whatsapp
+auth:
+  channels: "email,whatsapp"
+  otpTtlMinutes: 10
+
+# SMTP pour envoi du code par email (style Laravel)
+# Override via SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
+smtp:
+  host: localhost
+  port: 587
+  user: ""
+  password: ""
+  from: "Immo Bénin <noreply@immo-benin.local>"
+  secure: false
+
 # Clé de chiffrement AES-256 (32 octets en base64, ou 32 caractères). En prod: variable d'environnement.
 encryption:
   key: "CHANGE-ME-32-BYTES-KEY-FOR-AES256!!"
