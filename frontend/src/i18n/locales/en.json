@@ -213,6 +213,7 @@
     "roleTenantDesc": "Tenant or future tenant",
     "roleLandlordTitle": "I'm an owner or agent",
     "roleLandlordDesc": "List properties, manage rentals",
+    "roleDefaultHint": "“I'm looking for a place” is selected by default.",
     "zoneLabel": "Preferred area",
     "zonePlaceholder": "Choose an area",
     "budgetLabel": "Budget range (FCFA / month)",

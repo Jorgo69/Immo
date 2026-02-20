@@ -193,6 +193,7 @@
     "roleTenantDesc": "Locataire ou futur locataire",
     "roleLandlordTitle": "Je suis propriétaire ou agent",
     "roleLandlordDesc": "Proposer des biens, gérer des locations",
+    "roleDefaultHint": "« Je cherche un logement » est sélectionné par défaut.",
     "zoneLabel": "Zone recherchée",
     "zonePlaceholder": "Choisir une zone",
     "budgetLabel": "Fourchette de budget (FCFA / mois)",

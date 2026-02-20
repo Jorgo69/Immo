@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { User, Home, Briefcase, Upload } from 'lucide-vue-next'
+import { User, Home, Briefcase, Upload, Check } from 'lucide-vue-next'
 import { useAppStore } from '../stores/app'
 import { updateProfile, updateUser, uploadAvatar } from '../services/auth.service'
 import { updateMyProfile } from '../services/profile.service'
@@ -265,50 +265,69 @@ async function onAvatarFileChange(e: Event) {
               <Briefcase class="h-5 w-5 text-[var(--color-accent)]" />
               {{ t('onboarding.stepRole') }}
             </h3>
-            <p class="mb-6 text-sm text-[var(--color-muted)]">
+            <p class="mb-2 text-sm text-[var(--color-muted)]">
               Comment souhaitez-vous utiliser Immo Bénin ?
             </p>
+            <p class="mb-6 text-xs text-[var(--color-muted)]">
+              {{ t('onboarding.roleDefaultHint') }}
+            </p>
             <div class="grid gap-4 sm:grid-cols-2">
-              <AppButton
-                type="button"
-                variant="outline"
-                block
+              <div
+                role="button"
+                tabindex="0"
                 :class="[
-                  'flex flex-col items-center rounded-xl border-2 py-6 text-center transition',
+                  'relative flex flex-col items-center rounded-xl border-2 py-6 text-center transition cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2',
                   selectedRole === 'tenant'
-                    ? 'border-[var(--color-accent)] bg-emerald-50/50 dark:bg-emerald-950/20'
-                    : 'border-gray-200 dark:border-gray-700 dark:bg-gray-800',
+                    ? 'border-[var(--color-accent)] bg-emerald-50 shadow-[0_0_0_2px_var(--color-accent)] dark:bg-emerald-950/40 dark:shadow-[0_0_0_2px_var(--color-accent)]'
+                    : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600',
                 ]"
                 @click="selectedRole = 'tenant'"
+                @keydown.enter.prevent="selectedRole = 'tenant'"
+                @keydown.space.prevent="selectedRole = 'tenant'"
               >
-                <Home class="mb-3 h-10 w-10 text-[var(--color-accent)]" />
+                <Check
+                  v-if="selectedRole === 'tenant'"
+                  class="absolute right-3 top-3 h-6 w-6 text-[var(--color-accent)]"
+                  aria-hidden
+                />
+                <Home
+                  :class="['mb-3 h-10 w-10', selectedRole === 'tenant' ? 'text-[var(--color-accent)]' : 'text-[var(--color-muted)]']"
+                />
                 <span class="font-semibold text-[var(--color-text)]">
                   {{ t('onboarding.roleTenantTitle') }}
                 </span>
                 <span class="mt-1 text-xs text-[var(--color-muted)]">
                   {{ t('onboarding.roleTenantDesc') }}
                 </span>
-              </AppButton>
-              <AppButton
-                type="button"
-                variant="outline"
-                block
+              </div>
+              <div
+                role="button"
+                tabindex="0"
                 :class="[
-                  'flex flex-col items-center rounded-xl border-2 py-6 text-center transition',
+                  'relative flex flex-col items-center rounded-xl border-2 py-6 text-center transition cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2',
                   selectedRole === 'landlord'
-                    ? 'border-[var(--color-accent)] bg-emerald-50/50 dark:bg-emerald-950/20'
-                    : 'border-gray-200 dark:border-gray-700 dark:bg-gray-800',
+                    ? 'border-[var(--color-accent)] bg-emerald-50 shadow-[0_0_0_2px_var(--color-accent)] dark:bg-emerald-950/40 dark:shadow-[0_0_0_2px_var(--color-accent)]'
+                    : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600',
                 ]"
                 @click="selectedRole = 'landlord'"
+                @keydown.enter.prevent="selectedRole = 'landlord'"
+                @keydown.space.prevent="selectedRole = 'landlord'"
               >
-                <Briefcase class="mb-3 h-10 w-10 text-[var(--color-accent)]" />
+                <Check
+                  v-if="selectedRole === 'landlord'"
+                  class="absolute right-3 top-3 h-6 w-6 text-[var(--color-accent)]"
+                  aria-hidden
+                />
+                <Briefcase
+                  :class="['mb-3 h-10 w-10', selectedRole === 'landlord' ? 'text-[var(--color-accent)]' : 'text-[var(--color-muted)]']"
+                />
                 <span class="font-semibold text-[var(--color-text)]">
                   {{ t('onboarding.roleLandlordTitle') }}
                 </span>
                 <span class="mt-1 text-xs text-[var(--color-muted)]">
                   {{ t('onboarding.roleLandlordDesc') }}
                 </span>
-              </AppButton>
+              </div>
             </div>
           </AppCard>
 
