@@ -15,14 +15,13 @@ import { UpdateUserCommandHandler } from './commands/handlers/update-user.comman
 import { DeleteUserCommandHandler } from './commands/handlers/delete-user.command.handler/delete-user.command.handler';
 import { CreateUserCommandHandler } from './commands/handlers/create-user.command.handler/create-user.command.handler';
 import { UpdateProfileCommandHandler } from './commands/handlers/update-profile.command.handler/update-profile.command.handler';
+import { UploadAvatarService } from './upload-avatar.service';
 
 @Module({
-  imports: [
-    CqrsModule,
-    TypeOrmModule.forFeature([UserModel]),
-  ],
+  imports: [CqrsModule, TypeOrmModule.forFeature([UserModel])],
   controllers: [UserController],
   providers: [
+    UploadAvatarService,
     JwtStrategy,
     RolesGuard,
     GetAllHandler,

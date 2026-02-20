@@ -1,5 +1,6 @@
 /**
- * Auth Me Handler - Retourne le profil de l'utilisateur connecté (champs publics).
+ * Auth Me Handler - Retourne l'utilisateur connecté avec son profil (kyc_status, etc.).
+ * Réponse : { id, phone_number, role, profile: { kyc_status, ... }, ... }.
  */
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,6 +8,7 @@ import { Repository } from 'typeorm';
 import { AuthMeQuery } from '../../impl/auth-me.query/auth-me.query';
 import { NotFoundException } from '@nestjs/common';
 import { UserModel } from '../../../models/user.model/user.model';
+import { ProfileEntity } from '../../../../profile/entities/profile.entity';
 
 const ME_SELECT: (keyof UserModel)[] = [
   'id',
@@ -24,14 +26,33 @@ const ME_SELECT: (keyof UserModel)[] = [
   'updated_at',
 ];
 
+export interface AuthMeResult {
+  id: string;
+  phone_number: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  avatar_url?: string;
+  is_profile_complete?: boolean;
+  is_verified?: boolean;
+  preferred_lang: string;
+  role: string;
+  is_active: boolean;
+  created_at: Date;
+  updated_at: Date;
+  profile: { id: string; user_id: string; kyc_status: string } | null;
+}
+
 @QueryHandler(AuthMeQuery)
 export class AuthMeHandler implements IQueryHandler<AuthMeQuery> {
   constructor(
     @InjectRepository(UserModel)
     private readonly userRepository: Repository<UserModel>,
+    @InjectRepository(ProfileEntity)
+    private readonly profileRepository: Repository<ProfileEntity>,
   ) {}
 
-  async execute(query: AuthMeQuery): Promise<Partial<UserModel>> {
+  async execute(query: AuthMeQuery): Promise<AuthMeResult> {
     const user = await this.userRepository.findOne({
       where: { id: query.userId },
       select: ME_SELECT,
@@ -41,6 +62,14 @@ export class AuthMeHandler implements IQueryHandler<AuthMeQuery> {
       throw new NotFoundException('User not found');
     }
 
-    return user;
+    const profile = await this.profileRepository.findOne({
+      where: { user_id: query.userId },
+      select: ['id', 'user_id', 'kyc_status'],
+    });
+
+    return {
+      ...user,
+      profile: profile ? { id: profile.id, user_id: profile.user_id, kyc_status: profile.kyc_status } : null,
+    };
   }
 }

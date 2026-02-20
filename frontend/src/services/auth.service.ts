@@ -14,6 +14,7 @@ export interface AuthUserDto {
   is_active: boolean
   created_at: string
   updated_at: string
+  profile?: { id: string; user_id: string; kyc_status: string } | null
 }
 
 export interface VerifyOtpResponse {
@@ -64,6 +65,29 @@ export async function updateProfile(payload: {
   avatar_url?: string
 }): Promise<AuthUserDto> {
   const { data } = await http.post<AuthUserDto>('/user/profile', payload)
+  return data
+}
+
+/** Met à jour les infos du compte (prénom, nom, email, rôle). */
+export async function updateUser(payload: {
+  first_name?: string
+  last_name?: string
+  email?: string
+  avatar_url?: string
+  role?: 'tenant' | 'landlord' | 'agent' | 'admin'
+}): Promise<AuthUserDto> {
+  const { data } = await http.post<AuthUserDto>('/user/update', payload)
+  return data
+}
+
+/** Upload photo de profil (avatar). Retourne l’URL publique de l’image. */
+export async function uploadAvatar(file: File): Promise<{ url: string }> {
+  const form = new FormData()
+  form.append('avatar', file)
+  const { data } = await http.post<{ url: string }>('/user/avatar', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 15000,
+  })
   return data
 }
 

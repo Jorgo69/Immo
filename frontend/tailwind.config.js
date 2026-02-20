@@ -11,6 +11,11 @@ export default {
           accent: '#059669',
           muted: '#6B7280',
         },
+        kyc: {
+          pending: '#6B7280',
+          verified: '#059669',
+          rejected: '#DC2626',
+        },
       },
       maxWidth: {
         layout: '1440px',

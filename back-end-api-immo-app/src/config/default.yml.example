@@ -1,0 +1,55 @@
+# ============================================================
+# Configuration - Standard 41DEVS (exemple sans secrets)
+# ============================================================
+# 1. Copier ce fichier en default.yml (dans le même dossier) et renseigner les valeurs.
+# 2. En production : vous pouvez surcharger via variables d'environnement (priorité sur le YAML) :
+#
+#    Base de données : DATABASE_HOST, DATABASE_PORT, DATABASE_USERNAME, DATABASE_PASSWORD,
+#                      DATABASE_NAME, DATABASE_SYNCHRONIZE, DATABASE_LOGGING
+#    JWT             : JWT_SECRET, JWT_EXPIRE_IN
+#    Chiffrement     : ENCRYPTION_KEY
+#    SMTP            : SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_PASSWORD, SMTP_FROM, SMTP_SECURE
+#    Auth OTP        : (canaux dans auth.channels ci-dessous ; override possible selon implé)
+#
+# ============================================================
+
+database:
+  type: postgres
+  host: localhost
+  port: 5432
+  username: CHANGE_ME
+  password: CHANGE_ME
+  database: back_end_api_immo_app
+  synchronize: true
+  logging: true
+
+ssl:
+  require: false
+  rejectUnauthorized: false
+
+server:
+  port: 3000
+
+jwt:
+  secret: CHANGE_ME
+  expireIn: "7d"
+
+auth:
+  channels: "email,whatsapp"
+  otpTtlMinutes: 10
+
+smtp:
+  host: localhost
+  port: 587
+  user: CHANGE_ME
+  password: CHANGE_ME
+  from: "Immo Bénin <noreply@immo-benin.local>"
+  secure: false
+
+encryption:
+  key: CHANGE_ME
+
+app:
+  name: "NestJS CQRS API"
+  version: "1.0.0"
+  semanticUrl: ""

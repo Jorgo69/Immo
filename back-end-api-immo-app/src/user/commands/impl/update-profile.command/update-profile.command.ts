@@ -3,7 +3,7 @@
  * Utilisé juste après la première connexion quand is_profile_complete est false.
  */
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsEmail, IsUrl, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsEmail, IsString, MaxLength, ValidateIf } from 'class-validator';
 
 export class UpdateProfileCommand {
   /** Renseigné depuis le JWT (côté controller). */
@@ -21,13 +21,15 @@ export class UpdateProfileCommand {
 
   @ApiProperty({ description: 'Email (optionnel)', required: false })
   @IsOptional()
+  @ValidateIf((o) => o.email != null && String(o.email).trim() !== '')
   @IsEmail()
   @MaxLength(255)
   email?: string;
 
   @ApiProperty({ description: 'URL de l’avatar (optionnel)', required: false })
   @IsOptional()
-  @IsUrl()
+  @ValidateIf((o) => o.avatar_url != null && String(o.avatar_url).trim() !== '')
+  @IsString()
   @MaxLength(500)
   avatar_url?: string;
 }

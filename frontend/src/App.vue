@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
+import { Toaster } from 'vue-sonner'
 import { useAppStore } from './stores/app'
 import { i18n } from './i18n'
 
@@ -16,4 +17,5 @@ onMounted(() => {
 
 <template>
   <RouterView />
+  <Toaster position="top-center" rich-colors />
 </template>

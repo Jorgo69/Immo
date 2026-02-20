@@ -34,5 +34,39 @@ export default () => {
 
   console.log(`📁 Loading configuration from: ${configPath}`);
 
-  return yaml.load(readFileSync(configPath, 'utf8')) as Record<string, any>;
+  const yamlConfig = yaml.load(readFileSync(configPath, 'utf8')) as Record<string, any>;
+  if (!yamlConfig) return {};
+
+  // Fusion avec les variables d'environnement (priorité absolue aux variables système)
+  return {
+    ...yamlConfig,
+    database: {
+      ...yamlConfig.database,
+      host: process.env.DATABASE_HOST ?? yamlConfig.database?.host,
+      port: process.env.DATABASE_PORT ? parseInt(process.env.DATABASE_PORT, 10) : yamlConfig.database?.port,
+      username: process.env.DATABASE_USERNAME ?? yamlConfig.database?.username,
+      password: process.env.DATABASE_PASSWORD ?? yamlConfig.database?.password,
+      database: process.env.DATABASE_NAME ?? process.env.DATABASE_DATABASE ?? yamlConfig.database?.database,
+      synchronize: process.env.DATABASE_SYNCHRONIZE !== undefined ? process.env.DATABASE_SYNCHRONIZE === 'true' : yamlConfig.database?.synchronize,
+      logging: process.env.DATABASE_LOGGING !== undefined ? process.env.DATABASE_LOGGING === 'true' : yamlConfig.database?.logging,
+    },
+    jwt: {
+      ...yamlConfig.jwt,
+      secret: process.env.JWT_SECRET ?? yamlConfig.jwt?.secret,
+      expireIn: process.env.JWT_EXPIRE_IN ?? yamlConfig.jwt?.expireIn,
+    },
+    encryption: {
+      ...yamlConfig.encryption,
+      key: process.env.ENCRYPTION_KEY ?? yamlConfig.encryption?.key,
+    },
+    smtp: {
+      ...yamlConfig.smtp,
+      host: process.env.SMTP_HOST ?? yamlConfig.smtp?.host,
+      port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : yamlConfig.smtp?.port,
+      user: process.env.SMTP_USER ?? yamlConfig.smtp?.user,
+      password: process.env.SMTP_PASS ?? process.env.SMTP_PASSWORD ?? yamlConfig.smtp?.password,
+      from: process.env.SMTP_FROM ?? yamlConfig.smtp?.from,
+      secure: process.env.SMTP_SECURE !== undefined ? process.env.SMTP_SECURE === 'true' : yamlConfig.smtp?.secure,
+    },
+  };
 };

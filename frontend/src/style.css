@@ -33,3 +33,26 @@ body {
   color: var(--color-text);
   transition: background-color 0.35s ease, color 0.35s ease;
 }
+
+/* Toasts vue-sonner : fond opaque pour lisibilité (sécurité si thème non appliqué) */
+[data-sonner-toast][data-styled='true'] {
+  background: #fff !important;
+  border: 1px solid hsl(0, 0%, 93%) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+.dark [data-sonner-toast][data-styled='true'] {
+  background: #1f2937 !important;
+  border-color: hsl(0, 0%, 20%) !important;
+}
+[data-rich-colors='true'][data-sonner-toast][data-type='error'] {
+  background: hsl(359, 100%, 97%) !important;
+}
+.dark [data-rich-colors='true'][data-sonner-toast][data-type='error'] {
+  background: hsl(358, 76%, 10%) !important;
+}
+[data-rich-colors='true'][data-sonner-toast][data-type='success'] {
+  background: hsl(143, 85%, 96%) !important;
+}
+.dark [data-rich-colors='true'][data-sonner-toast][data-type='success'] {
+  background: hsl(150, 100%, 6%) !important;
+}

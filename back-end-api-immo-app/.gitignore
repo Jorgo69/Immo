@@ -16,6 +16,7 @@ build/
 .env.*
 *.env
 !.env.example
+src/config/default.yml
 
 # IDE
 .idea/
@@ -39,6 +40,9 @@ yarn-error.log*
 # Tests
 coverage/
 .nyc_output/
+
+# Uploads (avatars, etc.)
+uploads/
 
 # Temp
 tmp/

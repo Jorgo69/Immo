@@ -47,6 +47,10 @@ export class UserModel {
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, unknown>;
 
+  /** Salt unique par utilisateur pour dérivation de la clé de chiffrement (données sensibles du profil). */
+  @Column({ type: 'varchar', length: 64, nullable: true, name: 'encryption_salt' })
+  encryption_salt: string | null;
+
   @Column({ type: 'varchar', default: 'fr', length: 5 })
   preferred_lang: string;
 

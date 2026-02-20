@@ -1,16 +1,17 @@
 /**
- * Vérifie l'OTP, crée l'utilisateur si inexistant, puis retourne le JWT et les infos user.
- * Retourne is_new_user et is_profile_complete pour que le front redirige vers la complétion de profil si besoin.
+ * Vérifie l'OTP, crée l'utilisateur si inexistant (avec profil vide en transaction), puis retourne le JWT et les infos user.
  */
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { VerifyOtpCommand } from '../../impl/verify-otp.command/verify-otp.command';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException, Logger } from '@nestjs/common';
 import { UserModel, UserRole } from '../../../models/user.model/user.model';
 import { OtpStoreService } from '../../../services/otp-store.service';
+import { ProfileEntity } from '../../../../profile/entities/profile.entity';
+import * as crypto from 'crypto';
 
 export interface VerifyOtpResult {
   token: string;
@@ -26,6 +27,7 @@ export class VerifyOtpCommandHandler implements ICommandHandler<VerifyOtpCommand
   constructor(
     @InjectRepository(UserModel)
     private readonly userRepository: Repository<UserModel>,
+    private readonly dataSource: DataSource,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly otpStore: OtpStoreService,
@@ -44,16 +46,27 @@ export class VerifyOtpCommandHandler implements ICommandHandler<VerifyOtpCommand
 
       let is_new_user = false;
       if (!user) {
-        user = this.userRepository.create({
-          phone_number: command.phone_number,
-          email: command.email ?? undefined,
-          preferred_lang: command.preferred_lang ?? 'fr',
-          role: UserRole.TENANT,
-          is_active: true,
+        user = await this.dataSource.manager.transaction(async (manager) => {
+          const userRepo = manager.getRepository(UserModel);
+          const profileRepo = manager.getRepository(ProfileEntity);
+          const encryption_salt = crypto.randomBytes(24).toString('hex');
+          const newUser = userRepo.create({
+            phone_number: command.phone_number,
+            email: command.email ?? undefined,
+            preferred_lang: command.preferred_lang ?? 'fr',
+            role: UserRole.TENANT,
+            is_active: true,
+            encryption_salt,
+          });
+          const savedUser = await userRepo.save(newUser);
+          const profile = profileRepo.create({
+            user_id: savedUser.id,
+          });
+          await profileRepo.save(profile);
+          return savedUser;
         });
-        user = await this.userRepository.save(user);
         is_new_user = true;
-        this.logger.log(`Utilisateur créé: ${user.phone_number}`);
+        this.logger.log(`Utilisateur et profil créés: ${user.phone_number}`);
       }
 
       const is_profile_complete = user.is_profile_complete === true;

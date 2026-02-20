@@ -2,22 +2,27 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { DataSource } from 'typeorm';
 import { GetProfileByUserQuery } from '../../impl/get-profile-by-user.query/get-profile-by-user.query';
 import { ProfileEntity } from '../../../entities/profile.entity';
-import { EncryptionService } from '../../../../common/encryption/encryption.service';
+
+/** Réponse sans données sensibles en clair : champs masqués pour affichage (********). */
+export interface GetProfileByUserResult {
+  id: string;
+  user_id: string;
+  full_name_masked: string | null;
+  id_card_masked: string | null;
+  profession_masked: string | null;
+  company_masked: string | null;
+  emergency_contact_masked: string | null;
+  preferred_zone: string | null;
+  kyc_status: string;
+}
+
+const MASKED_PLACEHOLDER = '********';
 
 @QueryHandler(GetProfileByUserQuery)
 export class GetProfileByUserHandler implements IQueryHandler<GetProfileByUserQuery> {
-  constructor(
-    private readonly dataSource: DataSource,
-    private readonly encryption: EncryptionService,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
-  async execute(query: GetProfileByUserQuery): Promise<{
-    id: string;
-    user_id: string;
-    full_name: string | null;
-    id_card: string | null;
-    kyc_status: string;
-  } | null> {
+  async execute(query: GetProfileByUserQuery): Promise<GetProfileByUserResult | null> {
     const profile = await this.dataSource.getRepository(ProfileEntity).findOne({
       where: { user_id: query.userId },
     });
@@ -25,10 +30,12 @@ export class GetProfileByUserHandler implements IQueryHandler<GetProfileByUserQu
     return {
       id: profile.id,
       user_id: profile.user_id,
-      full_name: profile.full_name_enc && this.encryption.isConfigured()
-        ? this.encryption.decrypt(profile.full_name_enc) : null,
-      id_card: profile.id_card_enc && this.encryption.isConfigured()
-        ? this.encryption.decrypt(profile.id_card_enc) : null,
+      full_name_masked: profile.full_name_enc ? MASKED_PLACEHOLDER : null,
+      id_card_masked: profile.id_card_enc ? MASKED_PLACEHOLDER : null,
+      profession_masked: profile.profession_enc ? MASKED_PLACEHOLDER : null,
+      company_masked: profile.company_enc ? MASKED_PLACEHOLDER : null,
+      emergency_contact_masked: profile.emergency_contact_enc ? MASKED_PLACEHOLDER : null,
+      preferred_zone: profile.preferred_zone,
       kyc_status: profile.kyc_status,
     };
   }

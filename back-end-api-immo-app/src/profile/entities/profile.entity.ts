@@ -35,6 +35,24 @@ export class ProfileEntity {
   @Column({ type: 'text', nullable: true, name: 'id_card_enc' })
   id_card_enc: string | null;
 
+  @Column({ type: 'text', nullable: true, name: 'profession_enc' })
+  profession_enc: string | null;
+
+  @Column({ type: 'text', nullable: true, name: 'company_enc' })
+  company_enc: string | null;
+
+  @Column({ type: 'text', nullable: true, name: 'emergency_contact_enc' })
+  emergency_contact_enc: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true, name: 'preferred_zone' })
+  preferred_zone: string | null;
+
+  @Column({ type: 'text', nullable: true, name: 'budget_min_enc' })
+  budget_min_enc: string | null;
+
+  @Column({ type: 'text', nullable: true, name: 'budget_max_enc' })
+  budget_max_enc: string | null;
+
   @Column({ type: 'enum', enum: KycStatus, default: KycStatus.PENDING, name: 'kyc_status' })
   kyc_status: KycStatus;
 

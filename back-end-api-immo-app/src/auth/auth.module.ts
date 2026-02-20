@@ -7,6 +7,7 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { UserModel } from './models/user.model/user.model';
+import { ProfileEntity } from '../profile/entities/profile.entity';
 import { JwtStrategy } from './strategy/jwt.strategy';
 import { OtpStoreService } from './services/otp-store.service';
 import { AuthNotificationsModule } from './notifications/notifications.module';
@@ -18,7 +19,7 @@ import { RequestOtpRateLimitGuard } from './strategy/request-otp-rate-limit.guar
 @Module({
   imports: [
     CqrsModule,
-    TypeOrmModule.forFeature([UserModel]),
+    TypeOrmModule.forFeature([UserModel, ProfileEntity]),
     AuthNotificationsModule,
   ],
   controllers: [AuthController],

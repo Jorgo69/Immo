@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import { i18n } from './i18n'
 import { router } from './router'
 import App from './App.vue'
+import 'vue-sonner/style.css'
 import './style.css'
 
 // Appliquer le thème (dark mode) dès le chargement pour éviter le flash.

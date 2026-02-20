@@ -28,23 +28,33 @@ http.interceptors.request.use((config) => {
   return config
 })
 
-/** Extraire un message lisible depuis une réponse d'erreur API (ex. 400 validation NestJS). */
+/** Extraire un message lisible depuis une réponse d'erreur API (ex. 400 validation NestJS). Toujours retourne une chaîne non vide. */
 export function getApiErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'response' in error) {
-    const res = (error as { response?: { data?: unknown } }).response
+    const res = (error as { response?: { data?: unknown; status?: number } }).response
     const data = res?.data
+    const status = res?.status
     if (data && typeof data === 'object') {
       if (Array.isArray((data as { message?: unknown }).message)) {
-        return ((data as { message: string[] }).message).join(', ')
+        const msg = ((data as { message: string[] }).message).join(', ')
+        if (msg) return msg
       }
       if (typeof (data as { message?: string }).message === 'string') {
-        return (data as { message: string }).message
+        const msg = (data as { message: string }).message
+        if (msg) return msg
       }
       if (typeof (data as { error?: string }).error === 'string') {
-        return (data as { error: string }).error
+        const msg = (data as { error: string }).error
+        if (msg) return msg
       }
     }
+    if (status === 400) return 'Requête invalide. Vérifiez les champs.'
+    if (status === 401) return 'Session expirée. Reconnectez-vous.'
+    if (status === 403) return 'Accès refusé.'
+    if (status && status >= 500) return 'Erreur serveur. Réessayez plus tard.'
+    if (status) return `Erreur (${status})`
   }
-  return error instanceof Error ? error.message : 'Erreur'
+  if (error instanceof Error && error.message) return error.message
+  return 'Une erreur est survenue'
 }
 

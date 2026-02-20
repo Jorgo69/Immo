@@ -1,9 +1,22 @@
 /**
  * User Controller - Standard 41DEVS
  */
-import { Body, Controller, Delete, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Post,
+  Query,
+  Request,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GetAllQuery } from './queries/impl/get-all.query/get-all.query';
 import { FindByIdQuery } from './queries/impl/find-by-id.query/find-by-id.query';
 import { GetUserDetailQuery } from './queries/impl/get-user-detail.query/get-user-detail.query';
@@ -16,6 +29,14 @@ import { RolesGuard } from '../auth/strategy/roles.guard';
 import { Roles } from '../auth/strategy/roles.decorator';
 import { UserRole } from '../auth/models/user.model/user.model';
 import { GetTransactionsQuery } from '../wallet/queries/impl/get-transactions.query/get-transactions.query';
+import { UploadAvatarService } from './upload-avatar.service';
+
+interface MulterFile {
+  buffer: Buffer;
+  size: number;
+  mimetype: string;
+  originalname: string;
+}
 
 @ApiTags('Users')
 @Controller('user')
@@ -23,6 +44,7 @@ export class UserController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly uploadAvatarService: UploadAvatarService,
   ) {}
 
   @Get('all')
@@ -94,6 +116,29 @@ export class UserController {
   async update(@Body() command: UpdateUserCommand, @Request() req) {
     command.id = req.user.id;
     return this.commandBus.execute(command);
+  }
+
+  @Post('avatar')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      limits: { fileSize: 3 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (!file?.mimetype?.startsWith('image/')) {
+          return cb(new BadRequestException('Seules les images sont acceptées'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: { avatar: { type: 'string', format: 'binary' } } } })
+  @ApiOperation({ summary: 'Upload photo de profil (avatar)' })
+  async uploadAvatar(@Request() req: { user: { id: string }; protocol: string; get: (n: string) => string }, @UploadedFile() file: MulterFile) {
+    if (!file) throw new BadRequestException('Aucun fichier envoyé');
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    return this.uploadAvatarService.saveAvatar(req.user.id, file, baseUrl);
   }
 
   @Delete('delete')

@@ -25,6 +25,7 @@ import { PropertyEntity } from './property/entities/property.entity';
 import { MediaEntity } from './property/entities/media.entity';
 import { RoomEntity } from './property/entities/room.entity';
 import { ProfileEntity } from './profile/entities/profile.entity';
+import { PaymentMethodEntity } from './profile/entities/payment-method.entity';
 
 @Module({
   imports: [
@@ -44,7 +45,7 @@ import { ProfileEntity } from './profile/entities/profile.entity';
         username: configService.get('database.username'),
         password: configService.get('database.password'),
         database: configService.get('database.database'),
-        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, RoomEntity, ProfileEntity],
+        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, RoomEntity, ProfileEntity, PaymentMethodEntity],
         synchronize: configService.get('database.synchronize'),
         logging: configService.get('database.logging'),
       }),
