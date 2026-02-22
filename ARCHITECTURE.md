@@ -128,3 +128,20 @@ RÈGLE : Interdiction d'utiliser le terme 'Owner'. Dans le code (URLs, variables
 ### Configuration du Backend
 - **Static Files :** Les fichiers uploadés (images) doivent être servis via un préfixe distinct (ex: `/uploads`) géré par le middleware de fichiers statiques de NestJS.
 - **Base URL :** Le backend doit utiliser une variable d'environnement `BACKEND_URL` pour générer les liens absolus des images (utilisée dans les services d'upload).
+
+
+## 🧱 11. DESIGN SYSTEM & COMPOSANTS ATOMIQUES
+
+- **Principe :** Aucun élément HTML de base (`<button>`, `<input>`, `<select>`) ne doit être utilisé directement dans les vues métiers.
+- **Composants Requis :**
+  - `AppButton` : Gère nativement les états `:loading`, `:disabled`, les variantes (primary, danger) et prévient les doubles clics.
+  - `AppInput` / `AppSelect` : Gère les labels, les messages d'erreur de validation et le style consistant.
+  - `AppCard` : Structure standard pour les annonces (maison/chambre) avec ombre et arrondis uniformes.
+  - `AppUpload` : Composant unique pour le drop de fichiers (images/docs) avec prévisualisation immédiate.
+- **Typographie :** Utilisation systématique de `AppTitle` et `AppText` pour contrôler les tailles et couleurs de police partout.
+
+## 📌 Unités indépendantes (sans bien)
+
+- Les unités avec `property_id = null` (unités autonomes) sont créées via l’API (POST /property/units avec `property_id` null).
+- **Listes actuelles :** Les endpoints de liste (GET /property, GET /property/owner/me, search) ne retournent que des **biens** (PropertyEntity). Les unités indépendantes n’apparaissent donc pas dans la liste globale ni dans « Mes biens ».
+- **Évolution possible :** Pour les afficher comme annonces à part entière, étendre le handler « propriétés par owner » (ou un endpoint dédié) pour inclure les unités dont `property_id IS NULL` et `owner_id = owner`, en les mappant en entrées de type « bien virtuel » (même forme que PropertyListItemDto) côté backend, et adapter le front (lien détail unité vs bien).

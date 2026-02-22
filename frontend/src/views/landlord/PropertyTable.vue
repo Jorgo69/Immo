@@ -78,7 +78,7 @@ function unitCount(p: PropertyListItemDto): number {
 
 function occupiedCount(p: PropertyListItemDto): number {
   if (!p.units?.length) return 0
-  return p.units.filter((u: UnitDto) => !u.is_available).length
+  return p.units.filter((u: UnitDto) => u.unit_status !== 'available' && u.is_available !== true).length
 }
 
 function estimatedRevenue(p: PropertyListItemDto): string {

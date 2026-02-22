@@ -9,9 +9,9 @@ import 'leaflet/dist/leaflet.css'
 
 // Corriger l’icône marker (chemin cassé en bundler)
 const iconUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png'
-const iconRetina = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png'
+const iconRetinaUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png'
 const shadowUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
-const defaultIcon = L.icon({ iconUrl, iconRetina, shadowUrl, iconSize: [25, 41], iconAnchor: [12, 41] })
+const defaultIcon = L.icon({ iconUrl, iconRetinaUrl, shadowUrl, iconSize: [25, 41], iconAnchor: [12, 41] })
 L.Marker.prototype.options.icon = defaultIcon
 
 const props = withDefaults(

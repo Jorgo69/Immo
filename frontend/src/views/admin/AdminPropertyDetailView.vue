@@ -41,9 +41,18 @@ function formatDate(iso: string | undefined) {
   })
 }
 
-function roomTypeLabel(type: string | null): string {
+function roomTypeLabel(type: string | null | undefined): string {
   if (!type) return '—'
   return t(`admin.roomType.${type}` as 'admin.roomType.chambre')
+}
+
+function unitTypeLabel(r: UnitDto): string {
+  if (r.ref_type) return r.ref_type.label_fr ?? r.ref_type.label_en ?? '—'
+  return roomTypeLabel((r as { type?: string }).type ?? null)
+}
+
+function unitIsAvailable(r: UnitDto): boolean {
+  return r.unit_status === 'available' || r.is_available === true
 }
 
 async function fetchDetail() {
@@ -215,13 +224,13 @@ watch(id, () => fetchDetail())
             <tbody class="divide-y divide-gray-100">
               <tr v-for="r in rooms" :key="r.id" class="text-[var(--color-text)]">
                 <td class="px-3 py-2 font-medium">{{ r.name }}</td>
-                <td class="px-3 py-2">{{ roomTypeLabel(r.type) }}</td>
+                <td class="px-3 py-2">{{ unitTypeLabel(r) }}</td>
                 <td class="px-3 py-2">{{ (r.price ?? r.price_monthly) ? formatPrice(r.price ?? r.price_monthly ?? '0') : '—' }}</td>
                 <td class="px-3 py-2">{{ r.surface_m2 != null ? r.surface_m2 + ' m²' : '—' }}</td>
                 <td class="px-3 py-2">{{ r.floor != null ? r.floor : '—' }}</td>
                 <td class="px-3 py-2">
-                  <span :class="r.is_available ? 'text-green-600' : 'text-gray-500'">
-                    {{ r.is_available ? 'Oui' : 'Non' }}
+                  <span :class="unitIsAvailable(r) ? 'text-green-600' : 'text-gray-500'">
+                    {{ unitIsAvailable(r) ? 'Oui' : 'Non' }}
                   </span>
                 </td>
               </tr>

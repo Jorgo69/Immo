@@ -14,7 +14,6 @@ import {
   type CreatePropertyPayload,
   type CreateUnitPayload,
 } from '../services/property.service'
-import type { PaginatedResultDto } from '../services/property.service'
 
 export interface UsePropertyOptions {
   /** Charger la liste au montage (défaut: true) */
@@ -26,7 +25,8 @@ export interface UsePropertyOptions {
  * @returns État (properties, loading, error) et actions (fetchList, create, createUnit, getDetail)
  */
 export function useProperty(options: UsePropertyOptions = {}) {
-  const { fetchOnMount = true } = options
+  const { fetchOnMount: _fetchOnMount = true } = options
+  void _fetchOnMount
 
   const properties = ref<PropertyListItemDto[]>([])
   const total = ref(0)

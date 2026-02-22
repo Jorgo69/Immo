@@ -54,7 +54,7 @@ const revenue = computed(() => {
 })
 
 const occupiedCount = computed(() =>
-  units.value.filter((u) => !u.is_available).length
+  units.value.filter((u) => !unitIsAvailable(u)).length
 )
 const occupancyRate = computed(() => {
   const total = units.value.length
@@ -65,6 +65,15 @@ const occupancyRate = computed(() => {
 const typeOptions = computed(() =>
   refTypes.value.map((r) => ({ value: r.id, label: locale.value === 'fr' ? r.label_fr : r.label_en || r.label_fr }))
 )
+
+function unitTypeLabel(u: UnitDto): string {
+  if (u.ref_type) return locale.value === 'fr' ? u.ref_type.label_fr : (u.ref_type.label_en || u.ref_type.label_fr)
+  return (u as { type?: string }).type ?? '—'
+}
+
+function unitIsAvailable(u: UnitDto): boolean {
+  return u.unit_status === 'available' || u.is_available === true
+}
 
 function setPriceFromInput() {
   const n = Number(priceInput.value)
@@ -319,13 +328,13 @@ onMounted(() => {
               >
                 <div class="min-w-0">
                   <p class="font-medium text-[var(--color-text)] truncate">{{ u.name }}</p>
-                  <p class="text-xs text-[var(--color-muted)]">{{ u.type }} · {{ formatPrice(u.price) }}</p>
+                  <p class="text-xs text-[var(--color-muted)]">{{ unitTypeLabel(u) }} · {{ formatPrice(u.price) }}</p>
                 </div>
                 <span
                   class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
-                  :class="u.is_available ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-200'"
+                  :class="unitIsAvailable(u) ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-200'"
                 >
-                  {{ u.is_available ? t('landlord.statusAvailable') : t('landlord.statusOccupied') }}
+                  {{ unitIsAvailable(u) ? t('landlord.statusAvailable') : t('landlord.statusOccupied') }}
                 </span>
               </li>
             </ul>

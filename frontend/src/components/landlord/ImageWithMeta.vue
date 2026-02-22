@@ -6,7 +6,7 @@
  * @emits remove - demande de suppression de l'image
  */
 import { useI18n } from 'vue-i18n'
-import { Star, Hash, AlignLeft, X } from 'lucide-vue-next'
+import { Star, Hash, X } from 'lucide-vue-next'
 import { AppInput } from '../ui'
 
 const props = defineProps<{
@@ -76,13 +76,13 @@ function setRank(v: string) {
             :model-value="item.description?.fr ?? ''"
             :label="t('landlord.langFr')"
             class="text-sm"
-            @update:model-value="(v: string) => emit('update:item', { description: { ...item.description, fr: v } })"
+            @update:model-value="(v: string | number) => emit('update:item', { description: { ...item.description, fr: String(v) } })"
           />
           <AppInput
             :model-value="item.description?.en ?? ''"
             :label="t('landlord.langEn')"
             class="text-sm"
-            @update:model-value="(v: string) => emit('update:item', { description: { ...item.description, en: v } })"
+            @update:model-value="(v: string | number) => emit('update:item', { description: { ...item.description, en: String(v) } })"
           />
         </div>
       </div>

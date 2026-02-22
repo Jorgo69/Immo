@@ -8,7 +8,6 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { X, Pencil, Plus, Trash2, MapPin } from 'lucide-vue-next'
 import { deleteUnit, type UnitDto, type PropertyDetailDto } from '../../services/property.service'
-import { useReferenceStore } from '../../stores/references'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
 import PropertyCardImage from '../../components/landlord/PropertyCardImage.vue'
@@ -33,12 +32,21 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
-const referenceStore = useReferenceStore()
 const unitToDelete = ref<UnitDto | null>(null)
 const deletingUnit = ref(false)
 const activeTab = ref<'units' | 'conditions'>('units')
 
 const units = computed(() => props.property?.units ?? [])
+
+/** Libellé du type d'unité (ref_type ou legacy type). */
+function unitTypeLabel(u: UnitDto): string {
+  if (u.ref_type) return locale.value === 'fr' ? u.ref_type.label_fr : (u.ref_type.label_en || u.ref_type.label_fr)
+  return (u as { type?: string }).type ?? '—'
+}
+
+function unitIsAvailable(u: UnitDto): boolean {
+  return u.unit_status === 'available' || u.is_available === true
+}
 
 /** Calcule le total à l'entrée pour une unité : Loyer + Caution + Avance + Frais dossier. */
 function getMoveInTotal(u: UnitDto): { rent: number; caution: number; avance: number; fees: number; total: number } {
@@ -200,14 +208,14 @@ watch(
             >
               <div class="min-w-0">
                 <p class="font-medium text-[var(--color-text)] truncate">{{ u.name }}</p>
-                <p class="text-xs text-[var(--color-muted)]">{{ u.type }} · {{ formatPrice(u.price) }}</p>
+                <p class="text-xs text-[var(--color-muted)]">{{ unitTypeLabel(u) }} · {{ formatPrice(u.price) }}</p>
               </div>
               <div class="flex items-center gap-2 shrink-0">
                 <span
                   class="rounded-full px-2 py-0.5 text-xs font-medium"
-                  :class="u.is_available ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-200'"
+                  :class="unitIsAvailable(u) ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-200'"
                 >
-                  {{ u.is_available ? t('landlord.statusAvailable') : t('landlord.statusOccupied') }}
+                  {{ unitIsAvailable(u) ? t('landlord.statusAvailable') : t('landlord.statusOccupied') }}
                 </span>
                 <button
                   type="button"

@@ -7,7 +7,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Building2, Plus, MapPin, Layers, Settings2, X, MoreVertical } from 'lucide-vue-next'
+import { Building2, Plus, MapPin, Settings2, MoreVertical } from 'lucide-vue-next'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
 import { useProperty } from '../../composables/useProperty'
@@ -30,7 +30,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { viewMode, setViewMode } = useViewMode(ASSET_VIEW_KEY, 'grid')
-const { properties, total, loading, error, fetchList, getDetail, getPrimaryImageUrl } = useProperty({ fetchOnMount: false })
+const { properties, loading, error, fetchList, getDetail, getPrimaryImageUrl } = useProperty({ fetchOnMount: false })
 
 const showAddPropertyModal = ref(false)
 const showAddUnitModal = ref(false)
@@ -108,7 +108,7 @@ const filteredProperties = computed(() => {
   if (filterVacanciesOnly.value) {
     list = list.filter((p) => {
       const units = p.units ?? []
-      return units.some((u: UnitDto) => u.is_available)
+      return units.some((u: UnitDto) => u.unit_status === 'available' || u.is_available === true)
     })
   }
   return list
@@ -153,7 +153,7 @@ function openAddUnitForProperty(p: PropertyListItemDto) {
 }
 
 function onDrawerAddUnit() {
-  const p = filteredProperties.find((x) => x.id === drawerPropertyId.value)
+  const p = filteredProperties.value.find((x: PropertyListItemDto) => x.id === drawerPropertyId.value)
   if (p) openAddUnitForProperty(p)
 }
 
@@ -236,10 +236,6 @@ function displayName(p: PropertyListItemDto): string {
 
 function cityDisplay(p: PropertyListItemDto): string {
   return p.city?.name ?? '—'
-}
-
-function goToPropertyDetail(p: PropertyListItemDto) {
-  router.push({ name: 'admin-property-detail', params: { id: p.id } })
 }
 
 function drawerDisplayName(): string {
@@ -327,7 +323,7 @@ watch(
       <section class="col-span-12 flex flex-wrap items-center gap-2">
         <AppInput
           v-model="searchQuery"
-          type="search"
+          type="text"
           :placeholder="t('landlord.searchPlaceholder')"
           class="min-w-[180px] max-w-xs text-sm"
         />

@@ -22,7 +22,7 @@ import { getPropertyById, type PropertyDetailDto, type UnitDto } from '../servic
 import { getApiErrorMessage } from '../services/http'
 import { toast } from 'vue-sonner'
 import PropertyMap, { type PropertyForMap } from '../components/PropertyMap.vue'
-import { AppButton, AppCard, AppParagraph } from '../components/ui'
+import { AppButton, AppCard } from '../components/ui'
 import { gsap } from '../composables/useAnimations'
 
 type PropertyDetailWithCoords = PropertyDetailDto & {
@@ -145,6 +145,16 @@ function hasUnitConditions(room: UnitDto): boolean {
   const hasAvance = (room.avance_months ?? 0) > 0
   const hasFees = room.frais_dossier != null && Number(room.frais_dossier) > 0
   return rent > 0 || hasCaution || hasAvance || hasFees
+}
+
+/** Libellé du type d'unité (ref_type ou legacy type). */
+function unitTypeLabel(room: UnitDto): string {
+  if (room.ref_type) return locale.value === 'fr' ? room.ref_type.label_fr : (room.ref_type.label_en || room.ref_type.label_fr)
+  return (room as { type?: string }).type ?? '—'
+}
+
+function unitIsAvailable(room: UnitDto): boolean {
+  return room.unit_status === 'available' || room.is_available === true
 }
 
 /** Images d'une unité (unit.images ou fallback property.media). */
@@ -328,12 +338,12 @@ onUnmounted(() => {
                   </h2>
                   <span
                     class="rounded-full px-3 py-1 text-xs font-medium"
-                    :class="room.is_available ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'"
+                    :class="unitIsAvailable(room) ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'"
                   >
-                    {{ room.is_available ? t('property.roomAvailable') : t('property.roomUnavailable') }}
+                    {{ unitIsAvailable(room) ? t('property.roomAvailable') : t('property.roomUnavailable') }}
                   </span>
                 </div>
-                <p v-if="room.type" class="text-sm text-[var(--color-muted)] mt-0.5">{{ room.type }}</p>
+                <p v-if="unitTypeLabel(room)" class="text-sm text-[var(--color-muted)] mt-0.5">{{ unitTypeLabel(room) }}</p>
               </div>
 
               <!-- Photos unité (ou bien) -->
@@ -421,7 +431,7 @@ onUnmounted(() => {
                 </div>
 
                 <!-- CTA unité : WhatsApp (un bouton par chambre) -->
-                <div v-if="room.is_available" class="pt-2">
+                <div v-if="unitIsAvailable(room)" class="pt-2">
                   <a
                     :href="getWhatsAppUrl(room)"
                     target="_blank"
@@ -483,7 +493,7 @@ onUnmounted(() => {
               {{ t('property.bookingHint') }}
             </p>
             <a
-              v-if="activeUnit.is_available"
+              v-if="unitIsAvailable(activeUnit)"
               :href="getWhatsAppUrl(activeUnit)"
               target="_blank"
               rel="noopener noreferrer"
