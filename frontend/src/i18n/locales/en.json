@@ -3,6 +3,8 @@
     "prev": "Previous",
     "next": "Next",
     "cancel": "Cancel",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
     "remove": "Remove",
     "viewGrid": "Grid view",
     "viewTable": "Table view",
@@ -128,6 +130,14 @@
       "save": "Save",
       "statusUpdated": "Status updated.",
       "noResults": "No properties match the filters."
+    },
+    "kpi": {
+      "monthlyRevenue": "Monthly revenue",
+      "occupancyRate": "Occupancy rate",
+      "vacantUnits": "Vacant units",
+      "pendingPayments": "Pending payments",
+      "households": "households",
+      "vehicleAccess": "Vehicle access"
     },
     "conditions": {
       "tab": "Conditions",

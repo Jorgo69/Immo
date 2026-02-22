@@ -5,6 +5,21 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Design system Landlord (Frijo / MallOS) — noms sémantiques uniquement
+        'brand-dark': '#0f1419',
+        'ui-surface': '#ffffff',
+        'ui-background': '#F9FAFB',
+        'dashboard-accent': '#059669',
+        'primary-emerald': '#059669',
+        'primary-emerald-light': '#d1fae5',
+        'warning-orange': '#ea580c',
+        'warning-orange-light': '#ffedd5',
+        'status-open-green': '#16a34a',
+        'danger-red': '#dc2626',
+        'ui-muted': '#6B7280',
+        'ui-border': '#e5e7eb',
+        'ui-border-dark': '#374151',
+        // Compatibilité existante
         immo: {
           bg: '#F9FAFB',
           text: '#111827',
@@ -17,11 +32,26 @@ export default {
           rejected: '#DC2626',
         },
       },
+      backgroundColor: {
+        'ui-surface-dark': '#1f2937',
+        'sidebar-dark': '#0f1419',
+      },
+      boxShadow: {
+        'soft': '0 2px 8px rgba(0, 0, 0, 0.06)',
+        'soft-sm': '0 1px 3px rgba(0, 0, 0, 0.05)',
+        'soft-lg': '0 4px 16px rgba(0, 0, 0, 0.08)',
+        'ui-soft': '0 2px 8px rgba(0, 0, 0, 0.06)',
+      },
       maxWidth: {
         layout: '1440px',
+        modal: '32rem',
+        'modal-lg': '42rem',
+        'card-cell': '8rem',
       },
       width: {
         card: '350px',
+        'sidebar-expanded': '15rem',
+        'sidebar-collapsed': '4rem',
       },
       fontSize: {
         xs: ['0.9rem', { lineHeight: '1.25rem' }],
@@ -38,8 +68,18 @@ export default {
         card: '2.5rem',
       },
       minHeight: {
-        'card-body': '8.75rem', // ~140px
+        'card-body': '8.75rem',
         'card-title': '3rem',
+      },
+      maxHeight: {
+        'screen-90': '90vh',
+      },
+      borderRadius: {
+        'card': '1rem',
+        'card-lg': '1.25rem',
+      },
+      backdropBlur: {
+        'modal': '4px',
       },
     },
   },

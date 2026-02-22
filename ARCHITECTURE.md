@@ -27,11 +27,22 @@ Chaque module doit suivre cette hiérarchie :
 
 ## 🎨 2. FRONT-END (Vue 3, Tailwind & Design System)
 
+### Règle d'or Tailwind (Strict)
+- **Aucune valeur arbitraire** dans les classes : interdiction d'écrire `text-[#345678]`, `p-[13px]`, `w-[237px]`, etc.
+- **Couleurs, ombres, rayons :** Si une valeur des maquettes n'existe pas dans `tailwind.config.js`, l'ajouter sous un **nom sémantique** (ex: `brand-dark`, `ui-surface`, `primary-emerald`, `warning-orange`, `shadow-soft`, `rounded-card`).
+- **Cohérence :** Utiliser exclusivement les variables du thème pour garantir une charte unifiée.
+
 ### Atomic Design & Réutilisabilité
 - **Composants UI :** Interdiction de coder des styles complexes en dur. Utiliser ou créer des composants dans `@/components/ui`.
-- **Tokens Tailwind :** Utiliser EXCLUSIVEMENT les classes définies dans `tailwind.config.js` (ex: `text-primary`, `bg-secondary`). Pas de valeurs HEX arbitraires.
+- **Tokens Tailwind :** Utiliser EXCLUSIVEMENT les classes définies dans `tailwind.config.js` (ex: `text-primary-emerald`, `bg-ui-surface`). Pas de valeurs HEX arbitraires.
 - **Composables :** La logique d'API, le state management et les calculs complexes doivent résider dans `@/composables`.
 - **Responsive "Desktop-First Optimization" :** Bien que Mobile-First, chaque page doit exploiter l'espace horizontal sur Desktop via des Grids (`grid-cols-12`) et des Sidebars.
+
+### Design Landlord (Espace pro — Frijo / MallOS)
+- **Sidebar :** Fine, icônes minimalistes, état **collapse** persisté en `localStorage` ; sous-menus **flottants** au survol en mode réduit, **accordéon** en mode étendu pour Biens et Finances.
+- **Dashboard / Properties :** En-tête **KPI** (Revenu mensuel, Taux d'occupation avec barre de progression, Unités vacantes avec alerte si > 0, Paiements en attente). Cartes biens **data-dense**, `rounded-2xl`, bordures fines, `shadow-soft` ; sur chaque carte : nombre de ménages, badge « Accès véhicule » si pertinent, barre de progression de remplissage.
+- **Modals :** Largeur généreuse (`max-w-modal-lg`), centrées, **backdrop blur** ; transitions douces.
+- **Toasts (vue-sonner) :** Stylés selon la charte (couleurs sémantiques, ombres du thème).
 
 ---
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
- * Carte conteneur — bordure, fond blanc, coins arrondis.
+ * Carte conteneur — structure standard (annonces, contenu, listes).
+ * ARCHITECTURE §2 & §11 : tokens thème uniquement, mode dark, rounded-2xl, shadow-soft.
  * Usage: <AppCard><template #title>Titre</template>Contenu</AppCard>
  */
 withDefaults(
@@ -14,7 +15,7 @@ withDefaults(
 <template>
   <div
     :class="[
-      'rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800',
+      'rounded-2xl border border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-gray-800 shadow-soft',
       padding === 'none' && 'p-0',
       padding === 'sm' && 'p-3',
       padding === 'md' && 'p-4',

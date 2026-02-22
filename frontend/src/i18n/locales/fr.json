@@ -3,6 +3,8 @@
   "nav": { "home": "Accueil", "homePro": "Accueil", "auth": "Connexion", "search": "Recherche", "reels": "Découvrir", "dashboard": "Tableau de bord", "admin": "Espace pro", "profile": "Mon profil", "logout": "Déconnexion", "themeLight": "Passer en mode clair", "themeDark": "Passer en mode sombre", "explorer": "Explorer", "favorites": "Favoris", "map": "Carte", "ai": "IA" },
   "common": {
     "cancel": "Annuler",
+    "collapse": "Réduire la barre latérale",
+    "expand": "Agrandir la barre latérale",
     "remove": "Retirer",
     "viewGrid": "Vue grille",
     "viewTable": "Vue tableau",
@@ -130,6 +132,14 @@
       "save": "Enregistrer",
       "statusUpdated": "Statut mis à jour.",
       "noResults": "Aucun bien ne correspond aux filtres."
+    },
+    "kpi": {
+      "monthlyRevenue": "Revenu mensuel",
+      "occupancyRate": "Taux d'occupation",
+      "vacantUnits": "Unités vacantes",
+      "pendingPayments": "Paiements en attente",
+      "households": "ménages",
+      "vehicleAccess": "Accès véhicule"
     },
     "conditions": {
       "tab": "Conditions",

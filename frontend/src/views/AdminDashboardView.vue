@@ -3,12 +3,13 @@
  * Accueil unifié (ex-Espace Pro) — Dashboard type SaaS Premium.
  * Locataire : uniquement "Mes demandes".
  * Bailleur / Agent / Admin : KPIs (Revenu, Biens, Unités occupées, Alertes), Activité récente, Biens performants.
+ * ARCHITECTURE §2 : tokens Tailwind uniquement, mode dark, StatCard + AppCard.
  */
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '../stores/app'
-import { Home, Building2, FileText } from 'lucide-vue-next'
+import { Home, Building2, FileText, TrendingUp, AlertCircle } from 'lucide-vue-next'
 import { AppCard, AppTitle, AppParagraph, AppButton, StatCard } from '../components/ui'
 import { getMyProperties } from '../services/property.service'
 import type { PropertyListItemDto } from '../services/property.service'
@@ -103,13 +104,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="max-w-layout mx-auto px-6 md:px-8 py-8">
+  <main class="max-w-layout mx-auto px-6 md:px-8 py-8 bg-ui-background dark:bg-gray-900 min-h-full">
     <header class="mb-8">
       <div class="flex items-center gap-2">
-        <Home class="w-7 h-7 text-[var(--color-accent)]" />
+        <Home class="w-7 h-7 text-primary-emerald" />
         <div>
-          <AppTitle :level="2">{{ isTenant ? t('admin.title') : t('admin.navHome') }}</AppTitle>
-          <AppParagraph muted small>
+          <AppTitle :level="2" class="text-gray-900 dark:text-gray-100">
+            {{ isTenant ? t('admin.title') : t('admin.navHome') }}
+          </AppTitle>
+          <AppParagraph muted small class="text-ui-muted dark:text-gray-400">
             {{ isTenant ? t('rental.myRequestsSubtitle') : t('admin.hint') }}
           </AppParagraph>
         </div>
@@ -119,18 +122,18 @@ onMounted(() => {
     <!-- Locataire : uniquement Mes demandes -->
     <section v-if="isTenant" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-2xl">
       <AppCard
-        class="p-5 cursor-pointer transition border border-gray-200 hover:border-[var(--color-accent)] hover:shadow-md"
+        class="p-5 cursor-pointer transition border border-ui-border dark:border-gray-600 hover:border-primary-emerald hover:shadow-soft-lg"
         @click="router.push('/my-requests')"
       >
         <div class="flex items-start gap-3">
-          <div class="p-2 rounded-lg bg-[var(--color-accent)]/10">
-            <FileText class="w-6 h-6 text-[var(--color-accent)]" />
+          <div class="p-2 rounded-lg bg-primary-emerald/10">
+            <FileText class="w-6 h-6 text-primary-emerald" />
           </div>
           <div class="min-w-0 flex-1">
-            <h2 class="text-base font-semibold text-[var(--color-text)]">
+            <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
               {{ t('admin.proMyRequests') }}
             </h2>
-            <p class="text-sm text-[var(--color-muted)] mt-1">
+            <p class="text-sm text-ui-muted dark:text-gray-400 mt-1">
               {{ t('admin.proMyRequestsSubtitle') }}
             </p>
             <AppButton variant="primary" size="sm" class="mt-3">
@@ -143,40 +146,41 @@ onMounted(() => {
 
     <!-- Bailleur / Pro : KPIs + Activité + Biens performants -->
     <template v-if="isLandlordOrPro">
-      <!-- 4 cartes KPI -->
-      <section v-if="loading" class="mb-8 text-[var(--color-muted)]">
+      <section v-if="loading" class="mb-8 text-ui-muted dark:text-gray-400">
         {{ t('admin.loading') }}
       </section>
       <template v-else>
+        <!-- 4 cartes KPI (StatCard avec icônes, alerte si Alertes > 0) -->
         <section class="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             :label="t('admin.dashboardKpiRevenue')"
             :value="formatPrice(walletBalance)"
-            class="border border-gray-200 dark:border-gray-700"
+            :icon="TrendingUp"
           />
           <StatCard
             :label="t('admin.dashboardKpiProperties')"
             :value="String(totalProperties)"
-            class="border border-gray-200 dark:border-gray-700"
+            :icon="Building2"
           />
           <StatCard
             :label="t('admin.dashboardKpiOccupied')"
             :value="String(occupiedUnits)"
-            class="border border-gray-200 dark:border-gray-700"
+            :icon="Building2"
           />
           <StatCard
             :label="t('admin.dashboardKpiAlerts')"
             :value="String(alertsCount)"
-            class="border border-gray-200 dark:border-gray-700"
+            :icon="AlertCircle"
+            :alert="alertsCount > 0"
           />
         </section>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <!-- Activité récente -->
+          <!-- Activité récente (AppCard) -->
           <AppCard class="p-5">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-base font-semibold text-[var(--color-text)] flex items-center gap-2">
-                <FileText class="w-5 h-5 text-[var(--color-accent)]" />
+              <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <FileText class="w-5 h-5 text-primary-emerald" />
                 {{ t('admin.dashboardRecentActivity') }}
               </h3>
               <AppButton
@@ -188,30 +192,30 @@ onMounted(() => {
                 {{ t('rental.requestsTitle') }}
               </AppButton>
             </div>
-            <p v-if="recentActivity.length === 0" class="text-sm text-[var(--color-muted)]">
+            <p v-if="recentActivity.length === 0" class="text-sm text-ui-muted dark:text-gray-400">
               {{ t('admin.dashboardNoActivity') }}
             </p>
             <ul v-else class="space-y-2">
               <li
                 v-for="r in recentActivity"
                 :key="r.id"
-                class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0 text-sm"
+                class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0 text-sm"
               >
-                <span class="text-[var(--color-text)] truncate">
+                <span class="text-gray-900 dark:text-gray-100 truncate">
                   {{ r.unit?.name ?? r.unit_id?.slice(0, 8) }} — {{ r.status }}
                 </span>
-                <span class="text-[var(--color-muted)] text-xs shrink-0 ml-2">
+                <span class="text-ui-muted dark:text-gray-400 text-xs shrink-0 ml-2">
                   {{ formatDate(r.created_at) }}
                 </span>
               </li>
             </ul>
           </AppCard>
 
-          <!-- Biens les plus performants -->
+          <!-- Biens les plus performants (AppCard) -->
           <AppCard class="p-5">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-base font-semibold text-[var(--color-text)] flex items-center gap-2">
-                <Building2 class="w-5 h-5 text-[var(--color-accent)]" />
+              <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <Building2 class="w-5 h-5 text-primary-emerald" />
                 {{ t('admin.dashboardTopProperties') }}
               </h3>
               <AppButton
@@ -223,25 +227,25 @@ onMounted(() => {
                 {{ t('landlord.myProperties') }}
               </AppButton>
             </div>
-            <p v-if="topProperties.length === 0" class="text-sm text-[var(--color-muted)]">
+            <p v-if="topProperties.length === 0" class="text-sm text-ui-muted dark:text-gray-400">
               {{ t('admin.dashboardNoProperties') }}
             </p>
             <ul v-else class="space-y-2">
               <li
                 v-for="p in topProperties"
                 :key="p.id"
-                class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg -mx-2 px-2"
-                @click="router.push(`/admin/landlord/properties`)"
+                class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg -mx-2 px-2"
+                @click="router.push('/admin/landlord/properties')"
               >
                 <div class="flex items-center gap-2 min-w-0">
-                  <span class="font-medium text-[var(--color-text)] truncate">
+                  <span class="font-medium text-gray-900 dark:text-gray-100 truncate">
                     {{ typeof p.name === 'string' ? p.name : (p as PropertyListItemDto).title ?? p.id }}
                   </span>
-                  <span class="text-xs text-[var(--color-muted)] shrink-0">
+                  <span class="text-xs text-ui-muted dark:text-gray-400 shrink-0">
                     {{ p.units?.length ?? 0 }} {{ t('landlord.unitCount') }}
                   </span>
                 </div>
-                <span class="text-xs text-[var(--color-muted)] truncate max-w-[120px]">
+                <span class="text-xs text-ui-muted dark:text-gray-400 truncate min-w-0 max-w-card-cell">
                   {{ typeof p.city === 'object' && p.city?.name ? p.city.name : '' }}
                 </span>
               </li>

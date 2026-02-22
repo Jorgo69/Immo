@@ -3,11 +3,18 @@
 @tailwind utilities;
 
 /* Immo Bénin — design minimaliste, 0 gradients. Dark mode via .dark (stratégie class). */
+/* Règle : préférer les classes Tailwind du thème (brand-dark, ui-surface, primary-emerald, etc.). */
 :root {
   --color-bg: #F9FAFB;
   --color-text: #111827;
   --color-accent: #059669;
   --color-muted: #6B7280;
+  --color-brand-dark: #0f1419;
+  --color-primary-emerald: #059669;
+  --color-warning-orange: #ea580c;
+  --color-ui-surface: #ffffff;
+  --color-ui-border: #e5e7eb;
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .dark {
@@ -15,6 +22,13 @@
   --color-text: #F9FAFB;
   --color-accent: #10B981;
   --color-muted: #9CA3AF;
+  --color-brand-dark: #0f1419;
+  --color-primary-emerald: #10B981;
+  --color-warning-orange: #f97316;
+  --color-ui-surface: #1f2937;
+  --color-ui-border: #374151;
+  --ui-border-dark: #374151;
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 body {
@@ -34,25 +48,20 @@ body {
   transition: background-color 0.35s ease, color 0.35s ease;
 }
 
-/* Toasts vue-sonner : fond opaque pour lisibilité (sécurité si thème non appliqué) */
+/* Toasts vue-sonner : charte (primary-emerald, ombre douce) */
 [data-sonner-toast][data-styled='true'] {
-  background: #fff !important;
-  border: 1px solid hsl(0, 0%, 93%) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  background: var(--color-ui-surface) !important;
+  border: 1px solid var(--color-ui-border, #e5e7eb) !important;
+  box-shadow: var(--shadow-soft) !important;
+  border-radius: 1rem !important;
 }
 .dark [data-sonner-toast][data-styled='true'] {
-  background: #1f2937 !important;
-  border-color: hsl(0, 0%, 20%) !important;
+  background: var(--color-ui-surface) !important;
+  border-color: var(--ui-border-dark, #374151) !important;
 }
 [data-rich-colors='true'][data-sonner-toast][data-type='error'] {
-  background: hsl(359, 100%, 97%) !important;
-}
-.dark [data-rich-colors='true'][data-sonner-toast][data-type='error'] {
-  background: hsl(358, 76%, 10%) !important;
+  border-left: 4px solid var(--danger-red, #dc2626) !important;
 }
 [data-rich-colors='true'][data-sonner-toast][data-type='success'] {
-  background: hsl(143, 85%, 96%) !important;
-}
-.dark [data-rich-colors='true'][data-sonner-toast][data-type='success'] {
-  background: hsl(150, 100%, 6%) !important;
+  border-left: 4px solid var(--color-primary-emerald) !important;
 }

@@ -7,7 +7,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Building2, Plus, MapPin, Settings2, MoreVertical } from 'lucide-vue-next'
+import { Building2, Plus, MapPin, Settings2, MoreVertical, TrendingUp, PieChart, Home, AlertCircle, Clock } from 'lucide-vue-next'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
 import { useProperty } from '../../composables/useProperty'
@@ -113,6 +113,45 @@ const filteredProperties = computed(() => {
   }
   return list
 })
+
+/** KPI agrégés (toutes les propriétés, pas seulement filtrées). */
+const kpiMonthlyRevenue = computed(() => {
+  let sum = 0
+  for (const p of properties.value) {
+    const units = p.units ?? []
+    for (const u of units) {
+      const isOccupied = u.unit_status !== 'available' && u.is_available !== true
+      if (isOccupied) sum += Number(u.price || 0)
+    }
+  }
+  return sum
+})
+
+const kpiTotalUnits = computed(() => {
+  return properties.value.reduce((acc, p) => acc + (p.units?.length ?? 0), 0)
+})
+
+const kpiOccupiedUnits = computed(() => {
+  let n = 0
+  for (const p of properties.value) {
+    const units = p.units ?? []
+    for (const u of units) {
+      if (u.unit_status !== 'available' && u.is_available !== true) n += 1
+    }
+  }
+  return n
+})
+
+const kpiOccupancyRate = computed(() => {
+  const total = kpiTotalUnits.value
+  if (total === 0) return 0
+  return Math.round((kpiOccupiedUnits.value / total) * 100)
+})
+
+const kpiVacantUnits = computed(() => kpiTotalUnits.value - kpiOccupiedUnits.value)
+
+/** Paiements en attente : placeholder (0) tant qu'aucun endpoint dédié. */
+const kpiPendingPayments = computed(() => 0)
 
 async function loadDetailForDrawer(propertyId: string) {
   if (drawerPropertyId.value !== propertyId) return
@@ -287,6 +326,35 @@ function unitCount(p: PropertyListItemDto): number {
   return p.units?.length ?? 0
 }
 
+function occupiedCount(p: PropertyListItemDto): number {
+  const units = drawerPropertyId.value === p.id && detailForDrawer.value?.units
+    ? detailForDrawer.value.units
+    : p.units ?? []
+  return units.filter((u: UnitDto) => u.unit_status !== 'available' && u.is_available !== true).length
+}
+
+/** Taux de remplissage du bien (0–100) pour la barre de progression. */
+function occupancyPercent(p: PropertyListItemDto): number {
+  const total = unitCount(p)
+  if (total === 0) return 0
+  return Math.round((occupiedCount(p) / total) * 100)
+}
+
+/** True si au moins une unité a un équipement type parking / accès véhicule. */
+function hasVehicleAccess(p: PropertyListItemDto): boolean {
+  const units = p.units ?? []
+  const re = /parking|vehicle|véhicule|voiture|accès/i
+  for (const u of units) {
+    const f = u.features
+    if (Array.isArray(f) && f.some((x: string) => re.test(String(x)))) return true
+    if (f && typeof f === 'object' && !Array.isArray(f)) {
+      const arr = (f as Record<string, string[]>).fr ?? (f as Record<string, string[]>).en ?? []
+      if (arr.some((x: string) => re.test(x))) return true
+    }
+  }
+  return false
+}
+
 watch(
   () => route.query.openAdd,
   (v) => {
@@ -299,13 +367,13 @@ watch(
 </script>
 
 <template>
-  <main class="w-full max-w-[100%] px-3 py-4 md:px-4 lg:px-6">
+  <main class="w-full max-w-full px-3 py-4 md:px-4 lg:px-6">
     <div class="grid grid-cols-12 gap-4">
       <!-- Header + actions -->
       <header class="col-span-12 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <AppTitle :level="2" class="flex items-center gap-2 text-xl">
-            <Building2 class="w-6 h-6 text-[var(--color-accent)]" />
+          <AppTitle :level="2" class="flex items-center gap-2 text-xl text-gray-900 dark:text-gray-100">
+            <Building2 class="w-6 h-6 text-primary-emerald" />
             {{ t('landlord.myProperties') }}
           </AppTitle>
           <AppParagraph muted class="mt-0.5 text-sm">{{ t('landlord.myPropertiesSubtitle') }}</AppParagraph>
@@ -319,6 +387,68 @@ watch(
         </div>
       </header>
 
+      <!-- KPI Header (Frijo style) -->
+      <section v-if="properties.length" class="col-span-12 grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="rounded-2xl border border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-ui-surface-dark shadow-soft p-4 flex items-center gap-3">
+          <div class="shrink-0 w-10 h-10 rounded-xl bg-primary-emerald/10 flex items-center justify-center text-primary-emerald">
+            <TrendingUp class="w-5 h-5" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs text-ui-muted dark:text-gray-400">{{ t('landlord.kpi.monthlyRevenue') }}</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+              {{ new Intl.NumberFormat('fr-FR').format(kpiMonthlyRevenue) }} FCFA
+            </p>
+          </div>
+        </div>
+        <div class="rounded-2xl border border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-ui-surface-dark shadow-soft p-4 flex items-center gap-3">
+          <div class="shrink-0 w-10 h-10 rounded-xl bg-primary-emerald/10 flex items-center justify-center text-primary-emerald">
+            <PieChart class="w-5 h-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs text-ui-muted dark:text-gray-400">{{ t('landlord.kpi.occupancyRate') }}</p>
+            <div class="flex items-center gap-2">
+              <div class="flex-1 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                <div
+                  class="h-full rounded-full bg-primary-emerald transition-all duration-300"
+                  :style="{ width: String(kpiOccupancyRate) + '%' }"
+                />
+              </div>
+              <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 shrink-0">{{ kpiOccupancyRate }}%</span>
+            </div>
+          </div>
+        </div>
+        <div
+          class="rounded-2xl border shadow-soft p-4 flex items-center gap-3 transition-colors"
+          :class="kpiVacantUnits > 0
+            ? 'border-warning-orange/50 dark:border-warning-orange/50 bg-warning-orange-light/30 dark:bg-warning-orange/10'
+            : 'border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-ui-surface-dark'"
+        >
+          <div
+            class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+            :class="kpiVacantUnits > 0 ? 'bg-warning-orange/20 text-warning-orange' : 'bg-primary-emerald/10 text-primary-emerald'"
+          >
+            <Home class="w-5 h-5" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs text-ui-muted dark:text-gray-400">{{ t('landlord.kpi.vacantUnits') }}</p>
+            <p class="text-lg font-semibold" :class="kpiVacantUnits > 0 ? 'text-warning-orange' : 'text-gray-900 dark:text-gray-100'">
+              {{ kpiVacantUnits }}
+            </p>
+          </div>
+        </div>
+        <div class="rounded-2xl border border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-ui-surface-dark shadow-soft p-4 flex items-center gap-3">
+          <div class="shrink-0 w-10 h-10 rounded-xl bg-primary-emerald/10 flex items-center justify-center text-primary-emerald">
+            <Clock class="w-5 h-5" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs text-ui-muted dark:text-gray-400">{{ t('landlord.kpi.pendingPayments') }}</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {{ kpiPendingPayments }}
+            </p>
+          </div>
+        </div>
+      </section>
+
       <!-- Filtres -->
       <section class="col-span-12 flex flex-wrap items-center gap-2">
         <AppInput
@@ -329,26 +459,26 @@ watch(
         />
         <select
           v-model="filterCityId"
-          class="rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-[var(--color-text)] min-w-[140px]"
+          class="rounded-lg border border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 min-w-[140px]"
         >
           <option v-for="c in cityOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
-        <label class="inline-flex items-center gap-2 cursor-pointer text-sm text-[var(--color-text)]">
-          <input v-model="filterVacanciesOnly" type="checkbox" class="rounded border-gray-300 text-[var(--color-accent)]" />
+        <label class="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-900 dark:text-gray-100">
+          <input v-model="filterVacanciesOnly" type="checkbox" class="rounded border-gray-300 text-primary-emerald" />
           {{ t('landlord.filterVacancies') }}
         </label>
       </section>
 
       <section class="col-span-12">
-        <div v-if="loading" class="flex items-center justify-center py-12 text-sm text-[var(--color-muted)]">
+        <div v-if="loading" class="flex items-center justify-center py-12 text-sm text-ui-muted">
           {{ t('admin.properties.loading') }}
         </div>
 
         <div
           v-else-if="!properties.length"
-          class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 py-12 px-4 text-center"
+          class="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-ui-border dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 py-12 px-4 text-center"
         >
-          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)] mb-4">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary-emerald/10 text-primary-emerald mb-4">
             <Building2 class="w-8 h-8" />
           </div>
           <AppTitle :level="3" class="mb-1 text-lg">{{ t('landlord.emptyTitle') }}</AppTitle>
@@ -378,46 +508,55 @@ watch(
             />
           </div>
 
-          <!-- Vue Grille (grid-cols-12, xl: 6 colonnes, ARCHITECTURE §6) -->
+          <!-- Vue Grille (MallOS style : data-dense, rounded-2xl, barre de remplissage) -->
           <div v-show="viewMode === 'grid'" class="grid grid-cols-12 gap-3">
             <div
               v-for="p in filteredProperties"
               :key="p.id"
               class="col-span-12 sm:col-span-6 lg:col-span-4 xl:col-span-2 flex flex-col relative"
             >
-              <AppCard padding="none" class="overflow-hidden flex flex-col h-full">
+              <div class="rounded-2xl border border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-gray-800 shadow-soft overflow-hidden flex flex-col h-full">
                 <div class="aspect-video bg-gray-100 dark:bg-gray-700 relative shrink-0">
                   <PropertyCardImage
                     :src="getPrimaryImageUrl(p)"
                     :alt="displayName(p)"
-                    class="absolute inset-0 w-full h-full"
+                    class="absolute inset-0 w-full h-full object-cover"
                   />
                   <span
-                    class="absolute top-1.5 right-1.5 rounded px-1.5 py-0.5 text-[10px] font-medium"
+                    class="absolute top-1.5 right-1.5 rounded-lg px-1.5 py-0.5 text-xs font-medium"
                     :class="{
-                      'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': p.status === 'available',
+                      'bg-primary-emerald-light text-primary-emerald dark:bg-primary-emerald/20 dark:text-primary-emerald': p.status === 'available',
                       'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300': p.status === 'coming_soon',
                       'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-200': p.status === 'occupied',
-                      'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300': p.status === 'maintenance',
+                      'bg-warning-orange-light text-warning-orange dark:bg-warning-orange/20 dark:text-warning-orange': p.status === 'maintenance',
                     }"
                   >
                     {{ statusLabel(p.status) }}
                   </span>
-                  <span class="absolute bottom-1.5 left-1.5 inline-flex items-center gap-0.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                    🏠 {{ unitCount(p) }}
+                  <span class="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-lg bg-brand-dark/80 px-1.5 py-0.5 text-xs font-medium text-white">
+                    🏠 {{ unitCount(p) }} {{ t('landlord.kpi.households') }}
+                  </span>
+                  <span v-if="hasVehicleAccess(p)" class="absolute bottom-1.5 right-1.5 rounded-lg bg-brand-dark/80 px-1.5 py-0.5 text-xs font-medium text-white">
+                    🚗 {{ t('landlord.kpi.vehicleAccess') }}
                   </span>
                 </div>
-                <div class="p-2 flex flex-col flex-1 min-w-0">
-                  <p class="font-medium text-sm truncate text-[var(--color-text)]" :title="displayName(p)">{{ displayName(p) }}</p>
-                  <p class="text-xs text-[var(--color-muted)] flex items-center gap-1 truncate">
+                <div class="p-2.5 flex flex-col flex-1 min-w-0">
+                  <p class="font-medium text-sm truncate text-gray-900 dark:text-gray-100" :title="displayName(p)">{{ displayName(p) }}</p>
+                  <p class="text-xs text-ui-muted flex items-center gap-1 truncate mt-0.5">
                     <MapPin class="w-3 h-3 shrink-0" />
                     {{ cityDisplay(p) }}
                   </p>
+                  <div class="mt-2 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden" role="progressbar" :aria-valuenow="occupancyPercent(p)" aria-valuemin="0" aria-valuemax="100">
+                    <div
+                      class="h-full rounded-full bg-primary-emerald transition-all duration-300"
+                      :style="{ width: String(occupancyPercent(p)) + '%' }"
+                    />
+                  </div>
                   <div class="mt-auto pt-1.5 relative" data-grid-actions>
                     <AppButton
                       variant="ghost"
                       size="sm"
-                      class="min-w-0 p-1.5 h-8 rounded-lg text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                      class="min-w-0 p-1.5 h-8 rounded-lg text-ui-muted hover:text-gray-900 dark:hover:text-gray-100"
                       :aria-label="t('landlord.assets.quickActions')"
                       @click="gridActionsOpenId = gridActionsOpenId === p.id ? null : p.id"
                     >
@@ -425,27 +564,27 @@ watch(
                     </AppButton>
                     <div
                       v-show="gridActionsOpenId === p.id"
-                      class="absolute left-0 bottom-full mb-0.5 z-10 min-w-[160px] rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg py-1"
+                      class="absolute left-0 bottom-full mb-0.5 z-10 min-w-[160px] rounded-xl border border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-gray-800 shadow-soft-lg py-1"
                       role="menu"
                     >
-                      <button type="button" class="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2" @click="openEditProperty(p); gridActionsOpenId = null">
+                      <button type="button" class="w-full px-3 py-2 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2" @click="openEditProperty(p); gridActionsOpenId = null">
                         {{ t('landlord.editProperty') }}
                       </button>
-                      <button type="button" class="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2" @click="openQuickEdit(p); gridActionsOpenId = null">
+                      <button type="button" class="w-full px-3 py-2 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2" @click="openQuickEdit(p); gridActionsOpenId = null">
                         {{ t('landlord.assets.quickEdit') }}
                       </button>
-                      <button type="button" class="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 border-t border-gray-100 dark:border-gray-700" @click="openDrawer(p); gridActionsOpenId = null">
+                      <button type="button" class="w-full px-3 py-2 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 border-t border-gray-100 dark:border-gray-700" @click="openDrawer(p); gridActionsOpenId = null">
                         <Settings2 class="w-3.5 h-3.5" />
                         {{ t('landlord.manageUnits') }}
                       </button>
                     </div>
                   </div>
                 </div>
-              </AppCard>
+              </div>
             </div>
           </div>
 
-          <!-- Vue Compacte (liste serrée, ARCHITECTURE §6) -->
+          <!-- Vue Compacte (data-dense, barre de remplissage) -->
           <div
             v-show="viewMode === 'compact'"
             class="grid grid-cols-12 gap-2 sm:grid-cols-6 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6"
@@ -455,32 +594,35 @@ watch(
               :key="p.id"
               class="col-span-6 md:col-span-3 xl:col-span-2 flex flex-col"
             >
-              <AppCard padding="none" class="overflow-hidden flex flex-col h-full">
+              <div class="rounded-2xl border border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-gray-800 shadow-soft overflow-hidden flex flex-col h-full">
                 <div class="aspect-video bg-gray-100 dark:bg-gray-700 relative shrink-0">
                   <PropertyCardImage
                     :src="getPrimaryImageUrl(p)"
                     :alt="displayName(p)"
-                    class="absolute inset-0 w-full h-full"
+                    class="absolute inset-0 w-full h-full object-cover"
                   />
-                  <span class="absolute bottom-0 left-0 right-0 bg-black/70 px-1.5 py-0.5 text-[10px] text-white truncate">
-                    🏠 {{ unitCount(p) }}
+                  <span class="absolute bottom-0 left-0 right-0 bg-brand-dark/80 px-1.5 py-0.5 text-xs text-white truncate">
+                    🏠 {{ unitCount(p) }} {{ t('landlord.kpi.households') }}<span v-if="hasVehicleAccess(p)"> · 🚗</span>
                   </span>
                 </div>
                 <div class="p-1.5">
-                  <p class="text-xs font-medium truncate text-[var(--color-text)]" :title="displayName(p)">{{ displayName(p) }}</p>
-                  <div class="flex gap-1 mt-1">
-                    <button type="button" class="text-[10px] text-[var(--color-accent)] hover:underline" @click="openEditProperty(p)">{{ t('landlord.editProperty') }}</button>
-                    <button type="button" class="text-[10px] text-[var(--color-muted)] hover:underline" @click="openQuickEdit(p)">{{ t('landlord.assets.quickEdit') }}</button>
-                    <button type="button" class="text-[10px] text-[var(--color-muted)] hover:underline" @click="openDrawer(p)">{{ t('landlord.manageUnits') }}</button>
+                  <div class="h-1 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden mb-1">
+                    <div class="h-full rounded-full bg-primary-emerald" :style="{ width: String(occupancyPercent(p)) + '%' }" />
+                  </div>
+                  <p class="text-xs font-medium truncate text-gray-900 dark:text-gray-100" :title="displayName(p)">{{ displayName(p) }}</p>
+                  <div class="flex gap-1 mt-1 flex-wrap">
+                    <button type="button" class="text-xs text-primary-emerald hover:underline" @click="openEditProperty(p)">{{ t('landlord.editProperty') }}</button>
+                    <button type="button" class="text-xs text-ui-muted hover:underline" @click="openQuickEdit(p)">{{ t('landlord.assets.quickEdit') }}</button>
+                    <button type="button" class="text-xs text-ui-muted hover:underline" @click="openDrawer(p)">{{ t('landlord.manageUnits') }}</button>
                   </div>
                 </div>
-              </AppCard>
+              </div>
             </div>
           </div>
 
         </template>
 
-        <div v-else class="py-8 text-center text-sm text-[var(--color-muted)]">
+        <div v-else class="py-8 text-center text-sm text-ui-muted">
           {{ t('landlord.assets.noResults') }}
         </div>
       </section>
