@@ -20,6 +20,9 @@ export class RentalRequestResponseDto {
   @ApiProperty({ nullable: true })
   message: string | null;
 
+  @ApiProperty({ nullable: true, description: "Date d'entrée souhaitée" })
+  desired_move_in_at: string | null;
+
   @ApiProperty()
   created_at: Date;
 

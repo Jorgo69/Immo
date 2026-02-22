@@ -49,6 +49,10 @@ export class RentalRequestEntity {
   @Column({ type: 'text', nullable: true })
   message: string | null;
 
+  /** Date d'entrée souhaitée par le locataire. */
+  @Column({ type: 'date', nullable: true, name: 'desired_move_in_at' })
+  desired_move_in_at: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 

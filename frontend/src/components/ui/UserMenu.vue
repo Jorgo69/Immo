@@ -6,7 +6,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { User, LayoutDashboard, LogOut, LogIn, ChevronDown } from 'lucide-vue-next'
+import { User, LayoutDashboard, LogOut, LogIn, ChevronDown, FileText } from 'lucide-vue-next'
 import { useAppStore } from '../../stores/app'
 // import AppButton from './AppButton.vue'
 import AppLink from './AppLink.vue'
@@ -98,6 +98,14 @@ onUnmounted(() => {
       >
         <User class="w-4 h-4 shrink-0 text-[var(--color-muted)]" />
         <span>{{ t('nav.profile') }}</span>
+      </AppLink>
+      <AppLink
+        to="/my-requests"
+        class="flex w-full items-center gap-2 px-3 py-2 text-[var(--color-text)] hover:bg-gray-100 dark:hover:bg-gray-800"
+        @click="close"
+      >
+        <FileText class="w-4 h-4 shrink-0 text-[var(--color-muted)]" />
+        <span>{{ t('rental.myRequestsTitle') }}</span>
       </AppLink>
       <AppLink
         v-if="isPro"

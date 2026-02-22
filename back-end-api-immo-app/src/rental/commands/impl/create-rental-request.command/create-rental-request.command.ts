@@ -1,17 +1,21 @@
 /**
- * DTO de création d'une demande de location.
- * Le locataire clique sur "Je suis intéressé" → une RentalRequest est créée en base.
+ * Commande : créer une demande de location (locataire → « Je suis intéressé »).
  */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
-export class CreateRentalRequestDto {
+export class CreateRentalRequestCommand {
   @ApiProperty({ description: 'Unité concernée' })
   @IsNotEmpty()
   @IsUUID()
   unit_id: string;
 
-  @ApiPropertyOptional({ description: 'Message optionnel du locataire' })
+  @ApiProperty({ description: 'Locataire (utilisateur connecté)' })
+  @IsNotEmpty()
+  @IsUUID()
+  tenant_id: string;
+
+  @ApiPropertyOptional({ description: 'Message au propriétaire' })
   @IsOptional()
   @IsString()
   @MaxLength(2000)

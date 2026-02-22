@@ -54,6 +54,12 @@ export const router = createRouter({
           component: () => import('../views/PropertyDetailView.vue'),
           meta: { title: 'Détail du bien' },
         },
+        {
+          path: 'my-requests',
+          name: 'my-requests',
+          component: () => import('../views/tenant/MyRequestsView.vue'),
+          meta: { title: 'Mes demandes', requiresAuth: true },
+        },
       ],
     },
     {
@@ -78,6 +84,12 @@ export const router = createRouter({
           name: 'landlord-properties',
           component: () => import('../views/landlord/Properties.vue'),
           meta: { title: 'Mes biens', requiresRole: ['landlord', 'agent', 'admin'] },
+        },
+        {
+          path: 'landlord/requests',
+          name: 'landlord-requests',
+          component: () => import('../views/landlord/RequestsView.vue'),
+          meta: { title: 'Demandes reçues', requiresRole: ['landlord', 'agent', 'admin'] },
         },
         {
           path: 'properties/:id',

@@ -50,7 +50,10 @@ const navItems = computed(() => [
     label: t('admin.navProperties'),
     icon: Building2,
     children: [
-      ...(isLandlord.value ? [{ path: '/admin/landlord/properties', label: t('landlord.myProperties') }] : []),
+      ...(isLandlord.value ? [
+        { path: '/admin/landlord/properties', label: t('landlord.myProperties') },
+        { path: '/admin/landlord/requests', label: t('rental.requestsTitle') },
+      ] : []),
       { path: '/admin/landlord/properties?openAdd=property', label: t('landlord.addProperty') },
       { path: '/admin/properties', label: t('admin.navPropertiesList') },
     ],

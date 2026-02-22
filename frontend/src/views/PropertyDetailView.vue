@@ -19,10 +19,13 @@ import {
 } from 'lucide-vue-next'
 import { getUploadUrl } from '../config/api'
 import { getPropertyById, type PropertyDetailDto, type UnitDto } from '../services/property.service'
+import { createRentalRequest } from '../services/rental.service'
 import { getApiErrorMessage } from '../services/http'
 import { toast } from 'vue-sonner'
+import { useAppStore } from '../stores/app'
 import PropertyMap, { type PropertyForMap } from '../components/PropertyMap.vue'
-import { AppButton, AppCard } from '../components/ui'
+import { AppButton, AppCard, AppModal } from '../components/ui'
+import RentalRequestForm from '../components/rental/RentalRequestForm.vue'
 import { gsap } from '../composables/useAnimations'
 
 type PropertyDetailWithCoords = PropertyDetailDto & {
@@ -49,6 +52,41 @@ const lightboxImages = ref<Array<{ url: string }>>([])
 /** Unité actuellement en vue (pour le bloc flottant). */
 const activeUnitId = ref<string | null>(null)
 const unitSectionRefs = ref<Map<string, HTMLElement>>(new Map())
+
+/** Modal fiche de candidature (Je suis intéressé). */
+const showRequestModal = ref(false)
+const requestModalUnit = ref<UnitDto | null>(null)
+const submittingRequest = ref(false)
+const appStore = useAppStore()
+
+function openRequestModal(unit: UnitDto) {
+  if (!appStore.token) {
+    toast.info(t('rental.loginRequired'))
+    router.push({ name: 'auth', query: { redirect: route.fullPath } })
+    return
+  }
+  requestModalUnit.value = unit
+  showRequestModal.value = true
+}
+
+function closeRequestModal() {
+  showRequestModal.value = false
+  requestModalUnit.value = null
+}
+
+async function onRequestSubmit(payload: { unit_id: string; message: string; desired_move_in_at?: string }) {
+  submittingRequest.value = true
+  try {
+    await createRentalRequest(payload)
+    toast.success(t('rental.requestSent'))
+    closeRequestModal()
+  } catch (e) {
+    const msg = getApiErrorMessage(e)
+    toast.error(t('rental.requestError', { message: msg }))
+  } finally {
+    submittingRequest.value = false
+  }
+}
 
 async function fetchDetail() {
   if (!id.value) return
@@ -430,8 +468,16 @@ onUnmounted(() => {
                   </p>
                 </div>
 
-                <!-- CTA unité : WhatsApp (un bouton par chambre) -->
-                <div v-if="unitIsAvailable(room)" class="pt-2">
+                <!-- CTA unité : Je suis intéressé + WhatsApp -->
+                <div v-if="unitIsAvailable(room)" class="pt-2 space-y-2">
+                  <AppButton
+                    variant="primary"
+                    block
+                    class="w-full"
+                    @click="openRequestModal(room)"
+                  >
+                    {{ t('property.bookingCta') }}
+                  </AppButton>
                   <a
                     :href="getWhatsAppUrl(room)"
                     target="_blank"
@@ -492,21 +538,42 @@ onUnmounted(() => {
             <p class="text-xs text-[var(--color-muted)]">
               {{ t('property.bookingHint') }}
             </p>
-            <a
-              v-if="unitIsAvailable(activeUnit)"
-              :href="getWhatsAppUrl(activeUnit)"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex items-center justify-center gap-2 w-full rounded-xl bg-[#25D366] px-4 py-3 text-white font-semibold hover:opacity-90 transition"
-            >
-              <MessageCircle class="h-5 w-5" />
-              {{ t('property.whatsappCta') }}
-            </a>
+            <template v-if="unitIsAvailable(activeUnit)">
+              <AppButton variant="primary" block class="w-full" @click="openRequestModal(activeUnit)">
+                {{ t('property.bookingCta') }}
+              </AppButton>
+              <a
+                :href="getWhatsAppUrl(activeUnit)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center justify-center gap-2 w-full rounded-xl bg-[#25D366] px-4 py-3 text-white font-semibold hover:opacity-90 transition"
+              >
+                <MessageCircle class="h-5 w-5" />
+                {{ t('property.whatsappCta') }}
+              </a>
+            </template>
           </AppCard>
         </aside>
       </section>
     </template>
   </main>
+
+  <!-- Modal fiche de candidature -->
+  <AppModal
+    :show="showRequestModal"
+    :title="t('property.bookingCta')"
+    @close="closeRequestModal"
+  >
+    <RentalRequestForm
+      v-if="requestModalUnit"
+      :unit-id="requestModalUnit.id"
+      :unit-name="requestModalUnit.name"
+      :show="showRequestModal"
+      :loading="submittingRequest"
+      @submit="onRequestSubmit"
+      @close="closeRequestModal"
+    />
+  </AppModal>
 
   <!-- Lightbox -->
   <teleport to="body">
