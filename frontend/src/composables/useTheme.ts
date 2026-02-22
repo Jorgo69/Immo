@@ -1,6 +1,7 @@
 /**
  * Gestion du thème clair/sombre (Dark Mode). Stratégie 'class' Tailwind.
  * Persiste le choix dans localStorage (immo_theme).
+ * La classe .dark doit être sur <html> pour que tous les dark: Tailwind s'appliquent (sidebar, header, contenu, cartes).
  */
 import { ref, computed, watch, onMounted } from 'vue'
 
@@ -13,6 +14,7 @@ function getStoredTheme(): Theme {
   return stored === 'dark' ? 'dark' : 'light'
 }
 
+/** Applique le thème sur documentElement (html). Light = tout l'UI clair, Dark = tout l'UI sombre. */
 function applyTheme(theme: Theme) {
   if (typeof document === 'undefined') return
   const root = document.documentElement

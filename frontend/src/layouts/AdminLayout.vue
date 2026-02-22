@@ -154,16 +154,16 @@ function logout() {
       @click="sidebarOpen = false"
     />
 
-    <!-- Sidebar : collapse = w-sidebar-collapsed, expanded = w-sidebar-expanded -->
+    <!-- Sidebar : thème global — light = claire, dark = sombre (ARCHITECTURE §2) -->
     <aside
-      class="fixed md:static inset-y-0 left-0 z-50 shrink-0 flex flex-col bg-brand-dark border-r border-gray-800 transition-[width] duration-200 ease-out md:translate-x-0"
+      class="fixed md:static inset-y-0 left-0 z-50 shrink-0 flex flex-col border-r transition-[width] duration-200 ease-out md:translate-x-0 bg-ui-surface dark:bg-brand-dark border-ui-border dark:border-gray-800"
       :class="[
         sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         sidebarCollapsed ? 'w-sidebar-collapsed md:w-sidebar-collapsed' : 'w-sidebar-expanded md:w-60',
       ]"
     >
       <!-- Header sidebar -->
-      <div class="flex items-center justify-between h-14 px-3 border-b border-gray-800 shrink-0 min-w-0">
+      <div class="flex items-center justify-between h-14 px-3 border-b border-ui-border dark:border-gray-800 shrink-0 min-w-0">
         <AppLink
           to="/"
           class="flex items-center gap-2 min-w-0 overflow-hidden text-primary-emerald font-semibold"
@@ -182,7 +182,7 @@ function logout() {
           <button
             v-if="!sidebarCollapsed"
             type="button"
-            class="hidden md:flex p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+            class="hidden md:flex p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
             :aria-label="sidebarCollapsed ? t('common.expand') : t('common.collapse')"
             @click="toggleSidebarCollapsed"
           >
@@ -191,7 +191,7 @@ function logout() {
           <button
             v-else
             type="button"
-            class="hidden md:flex p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+            class="hidden md:flex p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
             :aria-label="t('common.expand')"
             @click="toggleSidebarCollapsed"
           >
@@ -199,7 +199,7 @@ function logout() {
           </button>
           <button
             type="button"
-            class="md:hidden p-2 rounded-lg text-gray-400 hover:bg-white/10"
+            class="md:hidden p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
             :aria-label="t('common.cancel')"
             @click="sidebarOpen = false"
           >
@@ -216,8 +216,8 @@ function logout() {
             :to="item.path"
             class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors min-w-0"
             :class="isActive(item.path)
-              ? 'bg-primary-emerald/20 text-primary-emerald font-medium'
-              : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'"
+              ? 'bg-primary-emerald/10 dark:bg-primary-emerald/20 text-primary-emerald font-medium'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-gray-200'"
             @click="closeSidebarOnMobile"
           >
             <component :is="item.icon" class="w-5 h-5 shrink-0" />
@@ -234,8 +234,8 @@ function logout() {
                 type="button"
                 class="flex w-full items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors min-w-0"
                 :class="hasActiveChild(item.children)
-                  ? 'bg-primary-emerald/20 text-primary-emerald'
-                  : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'"
+                  ? 'bg-primary-emerald/10 dark:bg-primary-emerald/20 text-primary-emerald'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-gray-200'"
                 @click="toggleAccordion((item as { key: string }).key ?? String(idx))"
               >
                 <component :is="item.icon" class="w-5 h-5 shrink-0" />
@@ -255,8 +255,8 @@ function logout() {
                   :to="child.path"
                   class="flex items-center gap-2 py-2 px-2 rounded-lg text-sm transition-colors"
                   :class="isActive(child.path)
-                    ? 'bg-primary-emerald/20 text-primary-emerald font-medium'
-                    : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'"
+                    ? 'bg-primary-emerald/10 dark:bg-primary-emerald/20 text-primary-emerald font-medium'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-gray-200'"
                   @click="closeSidebarOnMobile"
                 >
                   <Plus v-if="child.path && child.path.includes('openAdd')" class="w-4 h-4 shrink-0" />
@@ -275,8 +275,8 @@ function logout() {
               <div
                 class="flex items-center justify-center w-full py-2.5 rounded-xl text-sm transition-colors"
                 :class="hasActiveChild(item.children)
-                  ? 'bg-primary-emerald/20 text-primary-emerald'
-                  : 'text-gray-400 hover:bg-white/10 hover:text-gray-200'"
+                  ? 'bg-primary-emerald/10 dark:bg-primary-emerald/20 text-primary-emerald'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-gray-200'"
               >
                 <component :is="item.icon" class="w-5 h-5 shrink-0" />
               </div>
@@ -290,7 +290,7 @@ function logout() {
               >
                 <div
                   v-show="floatingSubmenu === ((item as { key: string }).key ?? String(idx))"
-                  class="absolute left-full top-0 ml-1 py-1 min-w-[180px] rounded-xl border border-gray-700 bg-brand-dark shadow-soft-lg z-[60]"
+                  class="absolute left-full top-0 ml-1 py-1 min-w-[180px] rounded-xl border border-ui-border dark:border-gray-700 bg-ui-surface dark:bg-brand-dark shadow-soft-lg z-[60]"
                   role="menu"
                 >
                   <AppLink
@@ -299,8 +299,8 @@ function logout() {
                     :to="child.path"
                     class="flex items-center gap-2 px-3 py-2 mx-1 rounded-lg text-sm transition-colors"
                     :class="isActive(child.path)
-                      ? 'bg-primary-emerald/20 text-primary-emerald'
-                      : 'text-gray-300 hover:bg-white/10'"
+                      ? 'bg-primary-emerald/10 dark:bg-primary-emerald/20 text-primary-emerald'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'"
                     @click="closeSidebarOnMobile"
                   >
                     <Plus v-if="child.path && child.path.includes('openAdd')" class="w-4 h-4 shrink-0" />

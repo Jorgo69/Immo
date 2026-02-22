@@ -38,8 +38,12 @@ Chaque module doit suivre cette hiérarchie :
 - **Composables :** La logique d'API, le state management et les calculs complexes doivent résider dans `@/composables`.
 - **Responsive "Desktop-First Optimization" :** Bien que Mobile-First, chaque page doit exploiter l'espace horizontal sur Desktop via des Grids (`grid-cols-12`) et des Sidebars.
 
+### Thème global (Light / Dark)
+- **Un seul état à la fois :** Si le mode **light** est actif, toute l’interface est en thème clair (sidebar, header, contenu, cartes). Si le mode **dark** est actif, toute l’interface est en thème sombre. Aucune zone ne doit rester fixée en clair ou en sombre indépendamment du choix utilisateur.
+- **Stratégie technique :** La classe `.dark` est appliquée sur `<html>` (voir `useTheme`). Tous les composants doivent fournir des variantes `dark:` pour fond, texte et bordures (ex: `bg-ui-surface dark:bg-gray-800`, `text-gray-900 dark:text-gray-100`).
+
 ### Design Landlord (Espace pro — Frijo / MallOS)
-- **Sidebar :** Fine, icônes minimalistes, état **collapse** persisté en `localStorage` ; sous-menus **flottants** au survol en mode réduit, **accordéon** en mode étendu pour Biens et Finances.
+- **Sidebar :** Fine, icônes minimalistes, **thème-aware** (claire en light, sombre en dark) ; état **collapse** persisté en `localStorage` ; sous-menus **flottants** au survol en mode réduit, **accordéon** en mode étendu pour Biens et Finances.
 - **Dashboard / Properties :** En-tête **KPI** (Revenu mensuel, Taux d'occupation avec barre de progression, Unités vacantes avec alerte si > 0, Paiements en attente). Cartes biens **data-dense**, `rounded-2xl`, bordures fines, `shadow-soft` ; sur chaque carte : nombre de ménages, badge « Accès véhicule » si pertinent, barre de progression de remplissage.
 - **Modals :** Largeur généreuse (`max-w-modal-lg`), centrées, **backdrop blur** ; transitions douces.
 - **Toasts (vue-sonner) :** Stylés selon la charte (couleurs sémantiques, ombres du thème).
