@@ -10,6 +10,9 @@ import { PropertyTypeEntity } from './entities/property-type.entity';
 import { PropertyStatusEntity } from './entities/property-status.entity';
 import { UnitTypeEntity } from './entities/unit-type.entity';
 import { UnitFeatureEntity } from './entities/unit-feature.entity';
+import { RefCategoryEntity } from './entities/ref-category.entity';
+import { RefTypeEntity } from './entities/ref-type.entity';
+import { RefFeatureEntity } from './entities/ref-feature.entity';
 
 export interface RefDto {
   id: string;
@@ -38,10 +41,17 @@ export class ReferencesService implements OnModuleInit {
     private readonly unitTypeRepo: Repository<UnitTypeEntity>,
     @InjectRepository(UnitFeatureEntity)
     private readonly unitFeatureRepo: Repository<UnitFeatureEntity>,
+    @InjectRepository(RefCategoryEntity)
+    private readonly refCategoryRepo: Repository<RefCategoryEntity>,
+    @InjectRepository(RefTypeEntity)
+    private readonly refTypeRepo: Repository<RefTypeEntity>,
+    @InjectRepository(RefFeatureEntity)
+    private readonly refFeatureRepo: Repository<RefFeatureEntity>,
   ) {}
 
   async onModuleInit(): Promise<void> {
     await this.seedIfEmpty();
+    await this.seedRefTables();
   }
 
   /** Seed initial si les tables sont vides. */
@@ -77,6 +87,103 @@ export class ReferencesService implements OnModuleInit {
       { code: 'Balcon', label_fr: 'Balcon', label_en: 'Balcony', sort_order: 2 },
       { code: 'Compteur personnel', label_fr: 'Compteur personnel', label_en: 'Private meter', sort_order: 3 },
     ]);
+  }
+
+  /** Seed ref_categories, ref_types, ref_features (moteur référentiel). Permet le backfill des units.ref_type_id. */
+  private async seedRefTables(): Promise<void> {
+    const catCount = await this.refCategoryRepo.count();
+    if (catCount > 0) return;
+
+    const loc = await this.refCategoryRepo.save({ code: 'location', label_fr: 'Location', label_en: 'Rental', sort_order: 1 });
+    await this.refCategoryRepo.save({ code: 'vente', label_fr: 'Vente', label_en: 'Sale', sort_order: 2 });
+
+    const types = await this.refTypeRepo.save([
+      { ref_category_id: loc.id, code: 'studio', label_fr: 'Studio', label_en: 'Studio', sort_order: 1 },
+      { ref_category_id: loc.id, code: 'chambre_salon', label_fr: 'Chambre-Salon', label_en: 'Bedroom-Living', sort_order: 2 },
+      { ref_category_id: loc.id, code: '2_chambres_salon', label_fr: '2 Chambres-Salon', label_en: '2 Bedrooms-Living', sort_order: 3 },
+      { ref_category_id: loc.id, code: '3_chambres_salon', label_fr: '3 Chambres-Salon', label_en: '3 Bedrooms-Living', sort_order: 4 },
+      { ref_category_id: loc.id, code: '4_chambres_salon', label_fr: '4 Chambres-Salon', label_en: '4 Bedrooms-Living', sort_order: 5 },
+      { ref_category_id: loc.id, code: 'maison', label_fr: 'Maison', label_en: 'House', sort_order: 6 },
+    ]);
+    const chambreSalon = types.find((t) => t.code === 'chambre_salon');
+    if (chambreSalon) {
+      await this.refFeatureRepo.save([
+        { ref_type_id: chambreSalon.id, code: 'Clim', label_fr: 'Climatisation', label_en: 'Air conditioning', sort_order: 1 },
+        { ref_type_id: chambreSalon.id, code: 'Balcon', label_fr: 'Balcon', label_en: 'Balcony', sort_order: 2 },
+        { ref_type_id: chambreSalon.id, code: 'Compteur personnel', label_fr: 'Compteur personnel', label_en: 'Private meter', sort_order: 3 },
+      ]);
+    }
+  }
+
+  /** Catégories (Location, Vente, …) pour le moteur référentiel. */
+  async getCategories(): Promise<RefDto[]> {
+    const list = await this.refCategoryRepo.find({ order: { sort_order: 'ASC' } });
+    return list.map((r) => this.toRefDto(r));
+  }
+
+  /** Types par catégorie (ou tous si categoryId absent). */
+  async getTypes(categoryId?: string): Promise<(RefDto & { ref_category_id: string })[]> {
+    const where = categoryId ? { ref_category_id: categoryId } : {};
+    const list = await this.refTypeRepo.find({
+      where,
+      order: { sort_order: 'ASC' },
+      relations: ['category'],
+    });
+    return list.map((r) => ({ ...this.toRefDto(r), ref_category_id: r.ref_category_id }));
+  }
+
+  /** Features (équipements) pour un type donné. */
+  async getFeaturesByTypeId(refTypeId: string): Promise<(RefDto & { ref_type_id: string })[]> {
+    const list = await this.refFeatureRepo.find({
+      where: { ref_type_id: refTypeId },
+      order: { sort_order: 'ASC' },
+    });
+    return list.map((r) => ({ ...this.toRefDto(r), ref_type_id: r.ref_type_id }));
+  }
+
+  async createCategory(dto: { code: string; label_fr: string; label_en?: string; sort_order?: number }): Promise<RefCategoryEntity> {
+    return this.refCategoryRepo.save(dto);
+  }
+
+  async updateCategory(id: string, dto: Partial<{ code: string; label_fr: string; label_en: string; sort_order: number }>): Promise<RefCategoryEntity> {
+    await this.refCategoryRepo.update(id, dto as Record<string, unknown>);
+    const one = await this.refCategoryRepo.findOne({ where: { id } });
+    if (!one) throw new Error('Category not found');
+    return one;
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+    await this.refCategoryRepo.delete(id);
+  }
+
+  async createType(dto: { ref_category_id: string; code: string; label_fr: string; label_en?: string; sort_order?: number }): Promise<RefTypeEntity> {
+    return this.refTypeRepo.save(dto);
+  }
+
+  async updateType(id: string, dto: Partial<{ code: string; label_fr: string; label_en: string; sort_order: number }>): Promise<RefTypeEntity> {
+    await this.refTypeRepo.update(id, dto as Record<string, unknown>);
+    const one = await this.refTypeRepo.findOne({ where: { id } });
+    if (!one) throw new Error('Type not found');
+    return one;
+  }
+
+  async deleteType(id: string): Promise<void> {
+    await this.refTypeRepo.delete(id);
+  }
+
+  async createFeature(dto: { ref_type_id: string; code: string; label_fr: string; label_en?: string; sort_order?: number }): Promise<RefFeatureEntity> {
+    return this.refFeatureRepo.save(dto);
+  }
+
+  async updateFeature(id: string, dto: Partial<{ code: string; label_fr: string; label_en: string; sort_order: number }>): Promise<RefFeatureEntity> {
+    await this.refFeatureRepo.update(id, dto as Record<string, unknown>);
+    const one = await this.refFeatureRepo.findOne({ where: { id } });
+    if (!one) throw new Error('Feature not found');
+    return one;
+  }
+
+  async deleteFeature(id: string): Promise<void> {
+    await this.refFeatureRepo.delete(id);
   }
 
   /**

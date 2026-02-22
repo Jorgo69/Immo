@@ -66,7 +66,7 @@ lines.push('-- Généré par: node database/scripts/generate-seed-100.js');
 lines.push('-- =====================================================================');
 lines.push('');
 
-const owners = ['00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000003'];
+const landlord = ['00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000003'];
 const agents = ['00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000005'];
 
 const propValues = [];
@@ -85,14 +85,14 @@ for (let i = 11; i <= 100; i++) {
   const lng = (cityData.lng + (i % 100) / 10000).toFixed(7);
   const status = i % 10 === 0 ? 'coming_soon' : 'available';
   const availableDate = status === 'coming_soon' ? "NOW() + INTERVAL '15 days'" : 'NULL';
-  const owner = owners[i % 2];
+  const landlord = landlord[i % 2];
   const agent = agents[i % 2];
   const titleJson = JSON.stringify({ fr: title });
   const descJson = JSON.stringify({ fr: desc });
   const daysAgo = 5 + (i % 60);
 
   propValues.push(
-    `('${propId}', '${owner}', '${agent}', '${esc(title)}', '${esc(titleJson)}', '${esc(descJson)}', '${price}.00', '${esc(cityData.city)}', '${esc(district)}', 'Adresse type ${i}.', ${lat}, ${lng}, '${status}', ${availableDate}, NOW() - INTERVAL '${daysAgo} days', NOW() - INTERVAL '1 day')`
+    `('${propId}', '${landlord}', '${agent}', '${esc(title)}', '${esc(titleJson)}', '${esc(descJson)}', '${price}.00', '${esc(cityData.city)}', '${esc(district)}', 'Adresse type ${i}.', ${lat}, ${lng}, '${status}', ${availableDate}, NOW() - INTERVAL '${daysAgo} days', NOW() - INTERVAL '1 day')`
   );
 
   mediaValues.push(
@@ -113,7 +113,7 @@ for (let i = 11; i <= 100; i++) {
   }
 }
 
-lines.push('INSERT INTO properties (id, owner_id, agent_id, title, title_translations, description_translations, price_monthly, city, district, address_details, latitude, longitude, status, available_date, created_at, updated_at)');
+lines.push('INSERT INTO properties (id, landlord_id, agent_id, title, title_translations, description_translations, price_monthly, city, district, address_details, latitude, longitude, status, available_date, created_at, updated_at)');
 lines.push('VALUES');
 lines.push(propValues.join(',\n'));
 lines.push('ON CONFLICT (id) DO NOTHING;');

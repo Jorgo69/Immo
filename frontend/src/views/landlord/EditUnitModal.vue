@@ -1,16 +1,14 @@
 <script setup lang="ts">
 /**
- * Modal d'édition d'une unité (chambre/appart) — ARCHITECTURE §2, §7.
- * Modifier : nom, type, prix, description i18n, équipements, images.
- * @props show, propertyId, unit (UnitDto à éditer)
- * @emits close, saved
+ * Modal d'édition d'une unité — type et équipements dynamiques (ref_types, ref_features).
+ * Statut : Disponible / Occupé / Bientôt disponible (+ date).
  */
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { X } from 'lucide-vue-next'
 import { getUploadUrl } from '../../config/api'
 import { updateUnit, uploadPropertyImage, type UpdateUnitPayload, type UnitDto, type PropertyImageItemDto } from '../../services/property.service'
-import { useReferenceStore } from '../../stores/references'
+import { getRefTypes, getRefFeaturesByTypeId, type RefTypeDto, type RefFeatureDto } from '../../services/references.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
 import { AppButton, AppInput, AppTitle, AppDropzone } from '../../components/ui'
@@ -25,14 +23,17 @@ const props = defineProps<{
 const emit = defineEmits<{ (e: 'close'): void; (e: 'saved'): void }>()
 
 const { t, locale } = useI18n()
-const referenceStore = useReferenceStore()
 const submitting = ref(false)
 const errorMessage = ref('')
+const refTypes = ref<RefTypeDto[]>([])
+const refFeatures = ref<RefFeatureDto[]>([])
 
 const form = ref({
   name: '',
-  type: '',
+  ref_type_id: '' as string,
   price: 0,
+  unit_status: 'available' as 'available' | 'occupied' | 'notice_given',
+  available_from: '' as string,
   caution_months: null as number | null,
   avance_months: null as number | null,
   frais_dossier: null as number | null,
@@ -70,23 +71,46 @@ function setPriceFromInput() {
 }
 
 const typeOptions = computed(() =>
-  referenceStore.unitTypes.map((r) => ({
-    value: r.code,
+  refTypes.value.map((r) => ({
+    value: r.id,
     label: locale.value === 'fr' ? r.label_fr : r.label_en || r.label_fr,
+  }))
+)
+
+const featureOptions = computed(() =>
+  refFeatures.value.map((f) => ({
+    value: f.code,
+    label: locale.value === 'fr' ? f.label_fr : f.label_en || f.label_fr,
   }))
 )
 
 const isValid = computed(() => {
   const f = form.value
+  const noticeOk = f.unit_status !== 'notice_given' || (f.available_from && f.available_from.trim().length > 0)
   return (
     typeof f.name === 'string' &&
     f.name.trim().length > 0 &&
     f.name.length <= 150 &&
-    referenceStore.unitTypes.some((r) => r.code === f.type) &&
+    !!f.ref_type_id &&
     typeof f.price === 'number' &&
-    f.price >= 0
+    f.price >= 0 &&
+    noticeOk
   )
 })
+
+async function loadRefTypes() {
+  refTypes.value = await getRefTypes()
+}
+
+async function loadRefFeatures() {
+  if (!form.value.ref_type_id) {
+    refFeatures.value = []
+    return
+  }
+  refFeatures.value = await getRefFeaturesByTypeId(form.value.ref_type_id)
+}
+
+watch(() => form.value.ref_type_id, loadRefFeatures)
 
 function toggleFeature(value: string) {
   const i = form.value.features.indexOf(value)
@@ -99,16 +123,18 @@ function toggleFeature(value: string) {
 
 function fillFromUnit(u: UnitDto) {
   form.value.name = u.name ?? ''
-  form.value.type = (u.type as string) ?? 'studio'
+  form.value.ref_type_id = u.ref_type_id ?? (refTypes.value.find((t) => t.code === (u.type as string))?.id ?? '')
   form.value.price = Number(u.price) || 0
   priceInput.value = String(form.value.price)
+  form.value.unit_status = (u.unit_status as 'available' | 'occupied' | 'notice_given') ?? (u.is_available ? 'available' : 'occupied')
+  form.value.available_from = u.available_from ?? ''
   form.value.caution_months = u.caution_months ?? null
   form.value.avance_months = u.avance_months ?? null
   form.value.frais_dossier = u.frais_dossier != null ? Number(u.frais_dossier) : null
   form.value.prepaid_electricity = u.prepaid_electricity ?? false
   form.value.water_included = u.water_included ?? false
   const feat = u.features
-  form.value.features = Array.isArray(feat) ? feat : (feat?.fr ? feat.fr : []) ?? []
+  form.value.features = Array.isArray(feat) ? feat : (feat && typeof feat === 'object' && 'fr' in feat ? (feat as { fr: string[] }).fr : []) ?? []
   const desc = u.description
   form.value.description = {
     fr: typeof desc === 'object' && desc?.fr ? desc.fr : typeof desc === 'string' ? desc : '',
@@ -136,9 +162,15 @@ function fillFromUnit(u: UnitDto) {
 
 watch(
   () => [props.show, props.unit] as const,
-  ([show, unit]) => {
-    if (show && unit) fillFromUnit(unit)
-    if (!show) errorMessage.value = ''
+  async ([show, unit]) => {
+    if (show) {
+      await loadRefTypes()
+      if (unit) {
+        fillFromUnit(unit)
+        await loadRefFeatures()
+      }
+      if (!show) errorMessage.value = ''
+    }
   },
   { immediate: true }
 )
@@ -222,14 +254,16 @@ async function submit() {
 
     const payload: UpdateUnitPayload = {
       name: form.value.name.trim(),
-      type: form.value.type,
+      ref_type_id: form.value.ref_type_id,
       price: form.value.price,
+      unit_status: form.value.unit_status,
+      available_from: form.value.unit_status === 'notice_given' && form.value.available_from?.trim() ? form.value.available_from.trim() : undefined,
       caution_months: form.value.caution_months ?? undefined,
       avance_months: form.value.avance_months ?? undefined,
       frais_dossier: form.value.frais_dossier ?? undefined,
       prepaid_electricity: form.value.prepaid_electricity,
       water_included: form.value.water_included,
-      features: form.value.features.length ? { fr: form.value.features, en: form.value.features } : undefined,
+      features: form.value.features.length ? form.value.features : undefined,
       description:
         form.value.description?.fr?.trim() || form.value.description?.en?.trim()
           ? {
@@ -282,11 +316,31 @@ async function submit() {
           <div>
             <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.unitType') }}</label>
             <select
-              v-model="form.type"
+              v-model="form.ref_type_id"
               class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
             >
+              <option value="">—</option>
               <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
             </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.unitStatus') }}</label>
+            <select
+              v-model="form.unit_status"
+              class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
+            >
+              <option value="available">{{ t('landlord.unitStatusAvailable') }}</option>
+              <option value="occupied">{{ t('landlord.unitStatusOccupied') }}</option>
+              <option value="notice_given">{{ t('landlord.unitStatusNoticeGiven') }}</option>
+            </select>
+            <div v-if="form.unit_status === 'notice_given'" class="mt-2">
+              <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.availableFrom') }} *</label>
+              <input
+                v-model="form.available_from"
+                type="date"
+                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
+              />
+            </div>
           </div>
           <AppInput
             :model-value="priceInput"
@@ -297,25 +351,28 @@ async function submit() {
           />
           <div class="grid grid-cols-2 gap-4">
             <AppInput
-              v-model.number="form.caution_months"
+              :model-value="form.caution_months != null ? form.caution_months : undefined"
               type="number"
               :label="t('landlord.cautionMonths')"
               :min="0"
               :max="24"
+              @update:model-value="(v) => { form.caution_months = v === '' || v == null ? null : Number(v) }"
             />
             <AppInput
-              v-model.number="form.avance_months"
+              :model-value="form.avance_months != null ? form.avance_months : undefined"
               type="number"
               :label="t('landlord.avanceMonths')"
               :min="0"
               :max="24"
+              @update:model-value="(v) => { form.avance_months = v === '' || v == null ? null : Number(v) }"
             />
           </div>
           <AppInput
-            v-model.number="form.frais_dossier"
+            :model-value="form.frais_dossier != null ? form.frais_dossier : undefined"
             type="number"
             :label="t('landlord.fraisDossier')"
             :min="0"
+            @update:model-value="(v) => { form.frais_dossier = v === '' || v == null ? null : Number(v) }"
           />
           <div class="flex flex-wrap gap-4">
             <label class="inline-flex items-center gap-2 cursor-pointer">
@@ -372,17 +429,17 @@ async function submit() {
             <label class="block text-sm font-medium text-[var(--color-text)] mb-2">{{ t('landlord.unitFeatures') }}</label>
             <div class="flex flex-wrap gap-3">
               <label
-                v-for="f in referenceStore.unitFeatures"
-                :key="f.code"
+                v-for="f in featureOptions"
+                :key="f.value"
                 class="inline-flex items-center gap-2 cursor-pointer"
               >
                 <input
                   type="checkbox"
-                  :checked="form.features.includes(f.code)"
+                  :checked="form.features.includes(f.value)"
                   class="rounded border-gray-300 text-[var(--color-accent)]"
-                  @change="toggleFeature(f.code)"
+                  @change="toggleFeature(f.value)"
                 />
-                <span class="text-sm text-[var(--color-text)]">{{ locale === 'fr' ? f.label_fr : f.label_en || f.label_fr }}</span>
+                <span class="text-sm text-[var(--color-text)]">{{ f.label }}</span>
               </label>
             </div>
           </div>

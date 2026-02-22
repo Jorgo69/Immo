@@ -1,20 +1,18 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { DataSource } from 'typeorm';
-import { Logger, NotFoundException } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { Logger, NotFoundException } from '@nestjs/common';
 import { UpdateUnitCommand } from '../../impl/update-unit.command/update-unit.command';
 import { UnitEntity } from '../../../entities/unit.entity';
 import { PropertyEntity } from '../../../entities/property.entity';
 import { UserModel } from '../../../../auth/models/user.model/user.model';
 import { EncryptionService } from '../../../../common/encryption/encryption.service';
 import { normalizeI18n } from '../../../dto/i18n.dto';
-import { normalizeFeaturesI18n } from '../../../dto/features-i18n.dto';
 import { normalizeUnitImages } from '../../../dto/unit-image.dto';
 
 /**
- * Met à jour une unité (chambre/appart).
- * Champs optionnels ; description/features en i18n, images normalisées (rank, is_primary).
- * management_docs (sensible) chiffré via EncryptionService + owner.encryption_salt.
+ * Met à jour une unité. Gère property_id/owner_id nullable et chiffrement management_docs
+ * (owner déduit de property ou de unit.owner_id).
  */
 @CommandHandler(UpdateUnitCommand)
 export class UpdateUnitHandler implements ICommandHandler<UpdateUnitCommand> {
@@ -31,49 +29,54 @@ export class UpdateUnitHandler implements ICommandHandler<UpdateUnitCommand> {
       const existing = await repo.findOne({ where: { id: command.id }, relations: ['property'] });
       if (!existing) throw new NotFoundException('Unit not found');
 
-      if (command.property_id !== undefined) existing.property_id = command.property_id;
+      if (command.property_id !== undefined) existing.property_id = command.property_id ?? null;
+      if (command.ref_type_id !== undefined) existing.ref_type_id = command.ref_type_id;
+      if (command.owner_id !== undefined) existing.owner_id = command.owner_id ?? null;
       if (command.name !== undefined) existing.name = command.name;
-      if (command.type !== undefined) existing.type = command.type;
       if (command.price !== undefined) existing.price = String(command.price);
       if (command.description !== undefined) {
-        existing.description = command.description && Object.keys(command.description).length
-          ? normalizeI18n(command.description as Record<string, string>)
-          : null;
+        existing.description =
+          command.description && Object.keys(command.description).length
+            ? normalizeI18n(command.description as Record<string, string>)
+            : null;
       }
-      if (command.features !== undefined) {
-        existing.features = normalizeFeaturesI18n(command.features);
-      }
-      if (command.images !== undefined) {
-        existing.images = normalizeUnitImages(command.images);
-      }
-      if (command.is_available !== undefined) existing.is_available = command.is_available;
+      if (command.features !== undefined) existing.features = command.features;
+      if (command.images !== undefined) existing.images = normalizeUnitImages(command.images);
+      if (command.unit_status !== undefined) existing.unit_status = command.unit_status;
+      if (command.available_from !== undefined) existing.available_from = command.available_from ?? null;
+      if (command.address !== undefined) existing.address = command.address ?? null;
+      if (command.city_id !== undefined) existing.city_id = command.city_id ?? null;
+      if (command.gps_latitude !== undefined) existing.gps_latitude = command.gps_latitude ?? null;
+      if (command.gps_longitude !== undefined) existing.gps_longitude = command.gps_longitude ?? null;
       if (command.surface_m2 !== undefined) existing.surface_m2 = command.surface_m2;
       if (command.floor !== undefined) existing.floor = command.floor;
       if (command.caution_months !== undefined) existing.caution_months = command.caution_months;
       if (command.avance_months !== undefined) existing.avance_months = command.avance_months;
-      if (command.frais_dossier !== undefined) existing.frais_dossier = command.frais_dossier != null ? String(command.frais_dossier) : null;
+      if (command.frais_dossier !== undefined)
+        existing.frais_dossier = command.frais_dossier != null ? String(command.frais_dossier) : null;
       if (command.prepaid_electricity !== undefined) existing.prepaid_electricity = command.prepaid_electricity;
       if (command.water_included !== undefined) existing.water_included = command.water_included;
 
-      if (command.management_docs !== undefined) {
-        const prop = await this.dataSource.getRepository(PropertyEntity).findOne({
-          where: { id: existing.property_id },
-          select: { owner_id: true },
+      const ownerId = existing.property_id
+        ? (await this.dataSource.getRepository(PropertyEntity).findOne({
+            where: { id: existing.property_id },
+            select: { owner_id: true },
+          }))?.owner_id
+        : existing.owner_id;
+
+      if (command.management_docs !== undefined && ownerId) {
+        const userRepo = this.dataSource.getRepository(UserModel);
+        let user = await userRepo.findOne({
+          where: { id: ownerId },
+          select: ['encryption_salt'],
         });
-        if (prop?.owner_id) {
-          const userRepo = this.dataSource.getRepository(UserModel);
-          let user = await userRepo.findOne({
-            where: { id: prop.owner_id },
-            select: ['encryption_salt'],
-          });
-          if (!user?.encryption_salt) {
-            user = { encryption_salt: crypto.randomBytes(24).toString('hex') } as UserModel;
-            await userRepo.update({ id: prop.owner_id }, { encryption_salt: user.encryption_salt });
-          }
-          existing.management_docs_enc = command.management_docs.trim()
-            ? this.encryption.encrypt(command.management_docs.trim(), user.encryption_salt)
-            : null;
+        if (!user?.encryption_salt) {
+          user = { encryption_salt: crypto.randomBytes(24).toString('hex') } as UserModel;
+          await userRepo.update({ id: ownerId }, { encryption_salt: user.encryption_salt });
         }
+        existing.management_docs_enc = command.management_docs.trim()
+          ? this.encryption.encrypt(command.management_docs.trim(), user.encryption_salt)
+          : null;
       }
 
       const saved = await repo.save(existing);

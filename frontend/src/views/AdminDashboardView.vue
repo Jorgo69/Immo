@@ -12,6 +12,7 @@ import {
   type PropertyDetailDto,
   type PropertyListItemDto,
 } from '../services/property.service'
+import { getRefTypes } from '../services/references.service'
 import { getCountries, getCities } from '../services/location.service'
 import { getApiErrorMessage } from '../services/http'
 import { toast } from 'vue-sonner'
@@ -194,14 +195,18 @@ async function submitCreate() {
       ...(typeof lng === 'number' && !Number.isNaN(lng) && { gps_longitude: lng }),
       status: form.value.status,
     })
+    const refTypesList = await getRefTypes()
     for (const r of rooms.value) {
       if (!r.name?.trim()) continue
       const priceVal = r.price_monthly !== '' ? Number(r.price_monthly) : 0
       const surfaceVal = r.surface_m2 !== '' ? Number(r.surface_m2) : undefined
       const floorVal = r.floor !== '' ? Number(r.floor) : undefined
+      const code = r.type === 'chambre' ? 'chambre_salon' : r.type === 'appartement' ? '2_chambres_salon' : r.type || 'studio'
+      const refType = refTypesList.find((t) => t.code === code) ?? refTypesList[0]
+      if (!refType) continue
       await createUnit(created.id, {
         name: r.name.trim(),
-        type: r.type || 'studio',
+        ref_type_id: refType.id,
         price: typeof priceVal === 'number' && !Number.isNaN(priceVal) ? priceVal : 0,
         ...(typeof surfaceVal === 'number' && surfaceVal >= 0 && { surface_m2: surfaceVal }),
         ...(typeof floorVal === 'number' && floorVal >= 0 && { floor: floorVal }),

@@ -133,9 +133,24 @@ export class PropertyController {
     return this.queryBus.execute(query);
   }
 
+  @Post('units')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Créer une unité (rattachée ou indépendante). Body : property_id? (null = unité autonome), owner_id si autonome, ref_type_id, …' })
+  async createUnitStandalone(
+    @Request() req: { user?: { id: string } },
+    @Body() body: CreateUnitCommand,
+  ) {
+    const command = new CreateUnitCommand();
+    Object.assign(command, body);
+    if (body.property_id == null && body.owner_id == null && req.user?.id) {
+      command.owner_id = req.user.id;
+    }
+    return this.commandBus.execute(command);
+  }
+
   @Post(':propertyId/units')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Ajouter une unité (chambre/appart) à un bien' })
+  @ApiOperation({ summary: 'Ajouter une unité à un bien existant (property_id injecté depuis l’URL)' })
   async createUnit(
     @Param('propertyId') propertyId: string,
     @Body() body: Omit<CreateUnitCommand, 'property_id'>,

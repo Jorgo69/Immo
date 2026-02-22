@@ -3,23 +3,15 @@
  * Panneau latéral Master-Detail (ARCHITECTURE §6).
  * 40 % de la largeur, onglets Aperçu / Unités / Docs. Système de pile : clic sur une unité ouvre l’édition dans le panneau.
  */
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { X, Pencil, Plus, ArrowLeft, FileText, LayoutGrid, TrendingUp, Trash2 } from 'lucide-vue-next'
 import { updateUnit, type UpdateUnitPayload, type UnitDto, type PropertyDetailDto } from '../../services/property.service'
+import { getRefTypes, type RefTypeDto } from '../../services/references.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
 import PropertyCardImage from '../../components/landlord/PropertyCardImage.vue'
 import { AppButton, AppInput } from '../../components/ui'
-
-const UNIT_TYPES = [
-  { value: 'studio', labelKey: 'landlord.unitTypeStudio' },
-  { value: 'chambre_salon', labelKey: 'landlord.unitTypeChambreSalon' },
-  { value: '2_chambres_salon', labelKey: 'landlord.unitType2Chambres' },
-  { value: '3_chambres_salon', labelKey: 'landlord.unitType3Chambres' },
-  { value: '4_chambres_salon', labelKey: 'landlord.unitType4Chambres' },
-  { value: 'maison', labelKey: 'landlord.unitTypeMaison' },
-] as const
 
 const props = withDefaults(
   defineProps<{
@@ -43,10 +35,11 @@ const emit = defineEmits<{
   (e: 'delete'): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const refTypes = ref<RefTypeDto[]>([])
 const activeTab = ref<'overview' | 'units' | 'docs'>('overview')
 const editingUnit = ref<UnitDto | null>(null)
-const unitForm = ref({ name: '', type: 'studio', price: 0 })
+const unitForm = ref({ name: '', ref_type_id: '', price: 0 })
 const priceInput = ref('0')
 const savingUnit = ref(false)
 const unitError = ref('')
@@ -70,7 +63,7 @@ const occupancyRate = computed(() => {
 })
 
 const typeOptions = computed(() =>
-  UNIT_TYPES.map((u) => ({ value: u.value, label: t(u.labelKey) }))
+  refTypes.value.map((r) => ({ value: r.id, label: locale.value === 'fr' ? r.label_fr : r.label_en || r.label_fr }))
 )
 
 function setPriceFromInput() {
@@ -80,9 +73,10 @@ function setPriceFromInput() {
 
 function openUnitEdit(unit: UnitDto) {
   editingUnit.value = unit
+  const refId = unit.ref_type_id ?? refTypes.value.find((t) => t.code === (unit.type as string))?.id ?? ''
   unitForm.value = {
     name: unit.name ?? '',
-    type: (unit.type as string) ?? 'studio',
+    ref_type_id: refId,
     price: Number(unit.price) || 0,
   }
   priceInput.value = String(unitForm.value.price)
@@ -108,7 +102,7 @@ async function saveUnitEdit() {
   try {
     const payload: UpdateUnitPayload = {
       name,
-      type: unitForm.value.type,
+      ref_type_id: unitForm.value.ref_type_id || undefined,
       price: unitForm.value.price,
     }
     await updateUnit(props.property.id, u.id, payload)
@@ -138,6 +132,10 @@ watch(
   () => props.property?.id,
   () => { closeUnitEdit() }
 )
+
+onMounted(() => {
+  getRefTypes().then((list) => { refTypes.value = list })
+})
 </script>
 
 <template>
@@ -225,7 +223,7 @@ watch(
           <div>
             <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.unitType') }}</label>
             <select
-              v-model="unitForm.type"
+              v-model="unitForm.ref_type_id"
               class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
             >
               <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>

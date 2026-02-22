@@ -8,15 +8,15 @@
   - Types : Villa, Immeuble, Bureau, Boutique, Magasin, Terrain, Maison de ville.
   - Une Property a une **adresse**, un **city_id** (référentiel villes, Admin uniquement), des **coordonnées GPS** (optionnelles), une **image principale**, une **galerie**, un **titre de propriété** (chiffré).
 
-- **Unit (La Chambre / L’appartement)** : l’unité locative à l’intérieur d’une Property.
-  - Types : Studio, Chambre-Salon, 2 Chambres-Salon, 3 Chambres-Salon, 4 Chambres-Salon, Maison.
-  - Chaque Unit a son **prix**, **description**, **équipements** (features : compteur personnel, clim, balcon), **images** (plusieurs par chambre), et des **documents de gestion** (chiffrés).
+- **Unit (ressource transactionnelle)** : Chambre, Studio, Parcelle, Bureau, etc. — entité **principale**.
+  - Peut exister **sans Property** (ex: vente de parcelle) : `property_id` null, `owner_id` + adresse/ville/GPS renseignés.
+  - Si rattachée à une **Property** : hérite de la localisation du bien, garde son **prix**, **description**, **équipements** (codes ref_feature), **images**, **documents de gestion** (chiffrés).
+  - **Type** : référentiel `ref_types` (ref_type_id). **Statut** : `unit_status` (available, occupied, notice_given) ; si `notice_given`, **available_from** (date) obligatoire.
 
 ### Cardinalité
 
-- Une **Property** peut avoir **plusieurs Units** (immeuble avec plusieurs appartements).
-- Une **Villa unique** est modélisée par **une Property avec une seule Unit**.
-- La relation est **1-N** : `Property 1 ——→ N Unit` (clé étrangère `unit.property_id`).
+- Une **Property** peut avoir **plusieurs Units** (optionnel) : `Property 0..1 ——→ N Unit` (clé étrangère `unit.property_id` **nullable**).
+- Une **Unit** peut être **autonome** (property_id null) : alors `owner_id`, `address`, `city_id`, `gps_*` sont utilisés.
 
 ### Chiffrement (ARCHITECTURE.md)
 
@@ -26,12 +26,12 @@
 ### Flux de création
 
 1. Le propriétaire crée la **Maison** (CreatePropertyCommand) : name, type, address, city_id, gps, main_image, gallery, title_deed (optionnel, chiffré).
-2. Immédiatement après (ou plus tard), il peut ajouter des **Unités** (CreateUnitCommand) : property_id, name, type, price, description, features, images, management_docs (optionnel, chiffré).
+2. **Unités** (CreateUnitCommand) : soit `property_id` (rattachée au bien), soit unité autonome avec `owner_id`, `address`, `city_id`, `gps_*`. Toujours : `ref_type_id`, name, price, description, features (codes ref_feature), images, unit_status, available_from (si notice_given), management_docs (optionnel, chiffré).
 
 ### Tables
 
 - `properties` : id, owner_id, agent_id, name, building_type, address, city_id, gps_latitude, gps_longitude, main_image, gallery (jsonb), title_deed_enc, status, created_at, updated_at, deleted_at.
-- `units` : id, property_id (FK), name, type, price, description, features (jsonb), images (jsonb), management_docs_enc, is_available, surface_m2, floor, created_at, updated_at, deleted_at.
+- `units` : id, **property_id (FK nullable)**, **ref_type_id (FK ref_types)**, **owner_id (FK nullable, si unité autonome)**, name, price, description, **features (jsonb string[] — codes ref_feature)**, images (jsonb), management_docs_enc, **unit_status** (available | occupied | notice_given), **available_from** (date, obligatoire si notice_given), **address, city_id, gps_latitude, gps_longitude** (pour unité autonome), surface_m2, floor, caution_months, avance_months, frais_dossier, prepaid_electricity, water_included, created_at, updated_at, deleted_at.
 
 ### Référentiel villes
 
@@ -43,7 +43,7 @@
 ## i18n (Internationalisation)
 
 - **description** (Property et Unit) : JSONB `{ "fr": "...", "en": "..." }`. **fr** par défaut (`normalizeI18n`).
-- **features** (Unit) : JSONB `{ "fr": ["Clim", "Balcon"], "en": ["AC", "Balcony"] }` (`normalizeFeaturesI18n`).
+- **features** (Unit) : tableau de **codes** ref_feature (JSONB string[]), ex. `["Clim", "Balcon"]`. Les libellés i18n viennent du référentiel ref_features.
 - Description d'image (media ou unit.images[].description) : même structure i18n.
 
 ## Images avancées

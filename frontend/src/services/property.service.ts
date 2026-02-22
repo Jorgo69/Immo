@@ -67,26 +67,36 @@ export type RoomDto = UnitDto
 /** Image unité : url, rank, is_primary, description i18n. */
 export type UnitImageItemDto = PropertyImageItemDto
 
+/** Statut de disponibilité (backend UnitStatus). */
+export type UnitStatusDto = 'available' | 'occupied' | 'notice_given'
+
 export interface UnitDto {
   id: string
-  property_id: string
+  property_id: string | null
   name: string
-  type: string
+  /** @deprecated Utiliser ref_type_id / ref_type */
+  type?: string
+  ref_type_id?: string | null
+  ref_type?: { id: string; code: string; label_fr: string; label_en: string }
   price: string
   description: string | Record<string, string> | null
   features: string[] | Record<string, string[]>
   images: string[] | Array<{ url: string; rank: number; is_primary: boolean; description?: Record<string, string> }>
-  is_available: boolean
+  is_available?: boolean
+  unit_status?: UnitStatusDto
+  available_from?: string | null
   surface_m2: number | null
   floor: number | null
+  address?: string | null
+  city_id?: string | null
+  gps_latitude?: string | null
+  gps_longitude?: string | null
   caution_months?: number | null
   avance_months?: number | null
   frais_dossier?: string | null
   prepaid_electricity?: boolean
   water_included?: boolean
-  /** @deprecated Utiliser price */
   price_monthly?: string | null
-  /** @deprecated */
   description_translations?: Record<string, string> | null
 }
 
@@ -168,18 +178,21 @@ export interface CreatePropertyPayload {
 /** Payload aligné CreateUnitCommand (backend). */
 export interface CreateUnitPayload {
   name: string
-  type?: string
+  ref_type_id: string
+  /** Unité rattachée à un bien (optionnel) ; si absent, unité indépendante (owner_id, address, city_id, gps). */
+  property_id?: string | null
+  owner_id?: string | null
   price?: number
-  /** @deprecated Utiliser price */
-  price_monthly?: number
-  /** Description i18n : { fr, en } */
   description?: Record<string, string>
-  /** Features i18n : { fr: string[], en: string[] } ou legacy string[] */
-  features?: Record<string, string[]> | string[]
-  /** Images : { url, rank, is_primary, description? } (URLs après upload). */
+  features?: string[]
   images?: PropertyImageItemDto[]
   management_docs?: string
-  is_available?: boolean
+  unit_status?: UnitStatusDto
+  available_from?: string | null
+  address?: string | null
+  city_id?: string | null
+  gps_latitude?: string | null
+  gps_longitude?: string | null
   surface_m2?: number
   floor?: number
   caution_months?: number
@@ -187,6 +200,10 @@ export interface CreateUnitPayload {
   frais_dossier?: number
   prepaid_electricity?: boolean
   water_included?: boolean
+  /** @deprecated Utiliser ref_type_id */
+  type?: string
+  /** @deprecated Utiliser unit_status */
+  is_available?: boolean
 }
 
 /** @deprecated Utiliser createUnit (API units). */
@@ -218,14 +235,25 @@ export async function uploadPropertyImage(file: File): Promise<{ url: string }> 
   return data
 }
 
-export async function createUnit(propertyId: string, payload: CreateUnitPayload) {
+/**
+ * Crée une unité. Si propertyId est fourni, l'unité est rattachée au bien ; sinon POST /property/units (unité indépendante).
+ */
+export async function createUnit(propertyId: string | null, payload: CreateUnitPayload): Promise<UnitDto> {
   const body = {
     ...payload,
     name: payload.name,
-    type: payload.type ?? 'studio',
-    price: payload.price ?? payload.price_monthly ?? 0,
+    ref_type_id: payload.ref_type_id,
+    property_id: propertyId ?? payload.property_id ?? null,
+    price: payload.price ?? 0,
+    unit_status: payload.unit_status ?? 'available',
+    available_from: payload.available_from ?? null,
+    features: payload.features ?? [],
   }
-  const { data } = await http.post<UnitDto>(`/property/${propertyId}/units`, body)
+  if (propertyId) {
+    const { data } = await http.post<UnitDto>(`/property/${propertyId}/units`, body)
+    return data
+  }
+  const { data } = await http.post<UnitDto>('/property/units', body)
   return data
 }
 
@@ -278,11 +306,18 @@ export async function updateProperty(id: string, payload: UpdatePropertyPayload)
 /** Met à jour une unité (PUT /property/:propertyId/units/:unitId). */
 export interface UpdateUnitPayload {
   name?: string
+  ref_type_id?: string
   type?: string
   price?: number
   description?: Record<string, string>
-  features?: Record<string, string[]> | string[]
+  features?: string[]
   images?: PropertyImageItemDto[]
+  unit_status?: UnitStatusDto
+  available_from?: string | null
+  address?: string | null
+  city_id?: string | null
+  gps_latitude?: string | null
+  gps_longitude?: string | null
   is_available?: boolean
   surface_m2?: number
   floor?: number

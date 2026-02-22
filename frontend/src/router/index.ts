@@ -127,6 +127,12 @@ export const router = createRouter({
           component: () => import('../views/admin/AdminLocationView.vue'),
           meta: { title: 'Pays et villes', requiresRole: ['admin'] },
         },
+        {
+          path: 'references',
+          name: 'admin-references',
+          component: () => import('../views/admin/AdminReferencesView.vue'),
+          meta: { title: 'Configuration référentiels', requiresRole: ['admin'] },
+        },
       ],
     },
   ],

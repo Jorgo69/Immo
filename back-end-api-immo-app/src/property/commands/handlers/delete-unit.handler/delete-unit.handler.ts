@@ -20,20 +20,21 @@ export class DeleteUnitHandler implements ICommandHandler<DeleteUnitCommand> {
       const unitRepo = this.dataSource.getRepository(UnitEntity);
       const unit = await unitRepo.findOne({
         where: { id: command.id },
-        select: { id: true, property_id: true },
+        select: { id: true, property_id: true, owner_id: true },
       });
       if (!unit) throw new NotFoundException('Unité introuvable');
-      if (unit.property_id !== command.property_id) {
+      if (unit.property_id != null && unit.property_id !== command.property_id) {
         throw new ForbiddenException('Unité non rattachée à ce bien.');
       }
 
       if (command.owner_id != null) {
-        const propRepo = this.dataSource.getRepository(PropertyEntity);
-        const property = await propRepo.findOne({
-          where: { id: command.property_id },
-          select: { owner_id: true },
-        });
-        if (!property || property.owner_id !== command.owner_id) {
+        const effectiveOwnerId = unit.property_id
+          ? (await this.dataSource.getRepository(PropertyEntity).findOne({
+              where: { id: unit.property_id },
+              select: { owner_id: true },
+            }))?.owner_id
+          : unit.owner_id;
+        if (effectiveOwnerId !== command.owner_id) {
           throw new ForbiddenException('Vous ne pouvez supprimer que les unités de vos biens.');
         }
       }

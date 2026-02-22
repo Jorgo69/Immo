@@ -20,6 +20,7 @@ import {
   Menu,
   Plus,
   Globe,
+  Settings2,
 } from 'lucide-vue-next'
 import { useAppStore } from '../stores/app'
 import { getMe } from '../services/auth.service'
@@ -69,7 +70,10 @@ const navItems = computed(() => [
     ],
   },
   { path: '/admin/profiles', label: t('admin.navProfiles'), icon: UserCircle },
-  ...(isAdmin.value ? [{ path: '/admin/location', label: t('admin.navLocation'), icon: Globe }] : []),
+  ...(isAdmin.value ? [
+    { path: '/admin/location', label: t('admin.navLocation'), icon: Globe },
+    { path: '/admin/references', label: t('admin.navReferences'), icon: Settings2 },
+  ] : []),
 ])
 
 function isActive(path: string) {

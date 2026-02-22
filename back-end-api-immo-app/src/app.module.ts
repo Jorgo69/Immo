@@ -18,6 +18,7 @@ import { PropertyModule } from './property/property.module';
 import { ProfileModule } from './profile/profile.module';
 import { LocationModule } from './location/location.module';
 import { ReferencesModule } from './references/references.module';
+import { RentalModule } from './rental/rental.module';
 
 // Entités TypeORM
 import { UserModel } from './auth/models/user.model/user.model';
@@ -34,6 +35,10 @@ import { PropertyTypeEntity } from './references/entities/property-type.entity';
 import { PropertyStatusEntity } from './references/entities/property-status.entity';
 import { UnitTypeEntity } from './references/entities/unit-type.entity';
 import { UnitFeatureEntity } from './references/entities/unit-feature.entity';
+import { RefCategoryEntity } from './references/entities/ref-category.entity';
+import { RefTypeEntity } from './references/entities/ref-type.entity';
+import { RefFeatureEntity } from './references/entities/ref-feature.entity';
+import { RentalRequestEntity } from './rental/entities/rental-request.entity';
 
 @Module({
   imports: [
@@ -53,7 +58,7 @@ import { UnitFeatureEntity } from './references/entities/unit-feature.entity';
         username: configService.get('database.username'),
         password: configService.get('database.password'),
         database: configService.get('database.database'),
-        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, UnitEntity, CountryEntity, CityEntity, ProfileEntity, PaymentMethodEntity, PropertyTypeEntity, PropertyStatusEntity, UnitTypeEntity, UnitFeatureEntity],
+        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, UnitEntity, CountryEntity, CityEntity, ProfileEntity, PaymentMethodEntity, PropertyTypeEntity, PropertyStatusEntity, UnitTypeEntity, UnitFeatureEntity, RefCategoryEntity, RefTypeEntity, RefFeatureEntity, RentalRequestEntity],
         synchronize: configService.get('database.synchronize'),
         logging: configService.get('database.logging'),
       }),
@@ -69,6 +74,7 @@ import { UnitFeatureEntity } from './references/entities/unit-feature.entity';
     ProfileModule,
     LocationModule,
     ReferencesModule,
+    RentalModule,
     HealthModule,
   ],
   controllers: [AppController],
