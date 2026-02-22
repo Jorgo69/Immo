@@ -5,15 +5,17 @@ import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { ArrowLeft, User, Upload, CreditCard, Pencil } from 'lucide-vue-next'
 import { getMyProfile, updateMyProfile, getMyPaymentMethods } from '../services/profile.service'
-import { getMe, updateUser, uploadAvatar } from '../services/auth.service'
+import { getMe, updateUser, uploadAvatar, uploadIdCard } from '../services/auth.service'
+import { useAppStore } from '../stores/app'
 import { getApiErrorMessage } from '../services/http'
-import { AppTitle, AppCard, AppButton, AppInput, LanguageSwitcher, CurrencySwitcher } from '../components/ui'
+import { AppTitle, AppCard, AppButton, AppInput, AppUpload, LanguageSwitcher, CurrencySwitcher } from '../components/ui'
 import type { ProfileDto } from '../services/profile.service'
 import type { AuthUserDto } from '../services/auth.service'
 import type { PaymentMethodDto } from '../services/profile.service'
 
 const { t } = useI18n()
 const router = useRouter()
+const appStore = useAppStore()
 
 const profile = ref<ProfileDto | null>(null)
 const user = ref<AuthUserDto | null>(null)
@@ -22,6 +24,7 @@ const paymentMethods = ref<PaymentMethodDto[]>([])
 const loading = ref(true)
 const saving = ref(false)
 const avatarUploading = ref(false)
+const idCardUploading = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 // User (non chiffré)
@@ -80,6 +83,11 @@ async function fetchData() {
       firstName.value = me.first_name ?? ''
       lastName.value = me.last_name ?? ''
       email.value = me.email ?? ''
+      appStore.setUser(me.id, me.role, undefined, {
+        first_name: me.first_name,
+        last_name: me.last_name,
+        email: me.email,
+      })
     }
   } finally {
     loading.value = false
@@ -147,11 +155,32 @@ async function onAvatarFileChange(e: Event) {
     const me = await getMe()
     if (user.value) user.value = { ...user.value, avatar_url: url }
     else user.value = me
+    if (me) {
+      appStore.setUser(me.id, me.role, undefined, {
+        first_name: me.first_name,
+        last_name: me.last_name,
+        email: me.email,
+      })
+    }
     toast.success(t('profile.updateSuccess'))
   } catch (err) {
     toast.error(getApiErrorMessage(err))
   } finally {
     avatarUploading.value = false
+  }
+}
+
+async function onIdCardFiles(files: File[]) {
+  if (files.length === 0) return
+  idCardUploading.value = true
+  try {
+    await uploadIdCard(files[0])
+    toast.success(t('profile.idCardUploaded'))
+    await fetchData()
+  } catch (err) {
+    toast.error(getApiErrorMessage(err))
+  } finally {
+    idCardUploading.value = false
   }
 }
 
@@ -234,6 +263,23 @@ onMounted(fetchData)
                 </span>
               </div>
             </div>
+          </AppCard>
+
+          <AppCard class="bg-white shadow-sm">
+            <h3 class="mb-4 text-lg font-semibold text-[var(--color-text)]">
+              {{ t('profile.idCardDocument') }}
+            </h3>
+            <p v-if="user?.id_card_url" class="mb-2 text-sm text-[var(--color-muted)]">
+              {{ t('profile.idCardUploaded') }}
+            </p>
+            <AppUpload
+              :max-files="1"
+              accept="image/*,application/pdf"
+              :label="t('profile.idCardDocument')"
+              :hint="t('profile.idCardDocumentHint')"
+              :disabled="idCardUploading"
+              @update:files="onIdCardFiles"
+            />
           </AppCard>
         </aside>
 

@@ -30,6 +30,7 @@ import { Roles } from '../auth/strategy/roles.decorator';
 import { UserRole } from '../auth/models/user.model/user.model';
 import { GetTransactionsQuery } from '../wallet/queries/impl/get-transactions.query/get-transactions.query';
 import { UploadAvatarService } from './upload-avatar.service';
+import { UploadIdCardService } from './upload-id-card.service';
 
 interface MulterFile {
   buffer: Buffer;
@@ -45,6 +46,7 @@ export class UserController {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     private readonly uploadAvatarService: UploadAvatarService,
+    private readonly uploadIdCardService: UploadIdCardService,
   ) {}
 
   @Get('all')
@@ -139,6 +141,30 @@ export class UserController {
     if (!file) throw new BadRequestException('Aucun fichier envoyé');
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     return this.uploadAvatarService.saveAvatar(req.user.id, file, baseUrl);
+  }
+
+  @Post('id-card')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @UseInterceptors(
+    FileInterceptor('id_card', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+        if (!file?.mimetype || !allowed.includes(file.mimetype)) {
+          return cb(new BadRequestException('Format non autorisé (JPEG, PNG, WebP, PDF)'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: { id_card: { type: 'string', format: 'binary' } } } })
+  @ApiOperation({ summary: 'Upload pièce d\'identité (KYC)' })
+  async uploadIdCard(@Request() req: { user: { id: string }; protocol: string; get: (n: string) => string }, @UploadedFile() file: MulterFile) {
+    if (!file) throw new BadRequestException('Aucun fichier envoyé');
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    return this.uploadIdCardService.saveIdCard(req.user.id, file, baseUrl);
   }
 
   @Delete('delete')

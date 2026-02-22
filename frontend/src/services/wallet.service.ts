@@ -11,6 +11,9 @@ export interface WalletTransactionDto {
   type: string
   status: string
   created_at: string
+  wallet_id?: string
+  gateway_ref?: string | null
+  wallet?: { id: string; user_id: string }
 }
 
 export interface PaginatedResultDto<T> {
@@ -41,5 +44,19 @@ export async function getMyTransactions(
 
 export async function recordSaving(amount: number) {
   return http.post('/wallet/transaction', { amount, type: 'saving' })
+}
+
+/** Audit admin : toutes les transactions (lecture seule). */
+export async function getAuditTransactions(
+  page = 1,
+  limit = 20,
+): Promise<PaginatedResultDto<WalletTransactionDto>> {
+  const params = new URLSearchParams()
+  params.set('page', String(page))
+  params.set('limit', String(limit))
+  const { data } = await http.get<PaginatedResultDto<WalletTransactionDto>>(
+    `/wallet/audit/transactions?${params.toString()}`,
+  )
+  return data
 }
 

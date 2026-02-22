@@ -1,6 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { DataSource } from 'typeorm';
-import { Logger, NotFoundException } from '@nestjs/common';
+import { Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { UpdatePropertyCommand } from '../../impl/update-property.command/update-property.command';
 import { PropertyEntity } from '../../../entities/property.entity';
 import { MediaEntity, MediaType } from '../../../entities/media.entity';
@@ -22,6 +22,9 @@ export class UpdatePropertyHandler implements ICommandHandler<UpdatePropertyComm
       const repo = this.dataSource.getRepository(PropertyEntity);
       const existing = await repo.findOne({ where: { id: command.id } });
       if (!existing) throw new NotFoundException('Property not found');
+      if (command.requested_by != null && existing.owner_id !== command.requested_by) {
+        throw new ForbiddenException('Vous ne pouvez modifier que vos propres biens.');
+      }
 
       if (command.agent_id !== undefined) existing.agent_id = command.agent_id;
       if (command.name !== undefined) existing.name = command.name;

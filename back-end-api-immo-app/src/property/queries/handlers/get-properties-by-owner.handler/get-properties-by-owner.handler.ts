@@ -31,7 +31,7 @@ export class GetPropertiesByOwnerHandler implements IQueryHandler<GetPropertiesB
     const qb = propRepo.createQueryBuilder('p');
     qb.leftJoinAndSelect('p.media', 'media');
     qb.leftJoinAndSelect('p.units', 'units');
-    qb.leftJoinAndSelect('p.units.ref_type', 'unit_ref_type');
+    qb.leftJoinAndSelect('units.ref_type', 'unit_ref_type');
     qb.leftJoin('p.city', 'city');
     qb.andWhere('p.owner_id = :owner_id', { owner_id: query.owner_id });
     if (query.city) qb.andWhere('city.name = :city', { city: query.city });

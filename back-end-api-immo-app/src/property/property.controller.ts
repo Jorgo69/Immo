@@ -75,10 +75,18 @@ export class PropertyController {
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Mettre à jour un bien' })
-  async update(@Param('id') id: string, @Body() body: Omit<UpdatePropertyCommand, 'id'>) {
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Mettre à jour un bien (réservé au propriétaire)' })
+  async update(
+    @Request() req: { user?: { id: string } },
+    @Param('id') id: string,
+    @Body() body: Omit<UpdatePropertyCommand, 'id' | 'requested_by'>,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new Error('Non authentifié');
     const command = new UpdatePropertyCommand();
     command.id = id;
+    command.requested_by = userId;
     Object.assign(command, body);
     return this.commandBus.execute(command);
   }
@@ -163,14 +171,18 @@ export class PropertyController {
 
   @Put(':propertyId/units/:unitId')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Modifier une unité' })
+  @ApiOperation({ summary: 'Modifier une unité (réservé au propriétaire)' })
   async updateUnit(
+    @Request() req: { user?: { id: string } },
     @Param('propertyId') _propertyId: string,
     @Param('unitId') unitId: string,
-    @Body() body: Omit<UpdateUnitCommand, 'id'>,
+    @Body() body: Omit<UpdateUnitCommand, 'id' | 'requested_by'>,
   ) {
+    const userId = req.user?.id;
+    if (!userId) throw new Error('Non authentifié');
     const command = new UpdateUnitCommand();
     command.id = unitId;
+    command.requested_by = userId;
     Object.assign(command, body);
     return this.commandBus.execute(command);
   }
@@ -201,8 +213,14 @@ export class PropertyController {
   }
 
   @Post('media')
-  @ApiOperation({ summary: 'Ajouter un média à un bien' })
-  async addMedia(@Body() command: AddMediaCommand) {
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Ajouter un média à un bien (réservé au propriétaire)' })
+  async addMedia(@Request() req: { user?: { id: string } }, @Body() body: Omit<AddMediaCommand, 'requested_by'>) {
+    const userId = req.user?.id;
+    if (!userId) throw new Error('Non authentifié');
+    const command = new AddMediaCommand();
+    Object.assign(command, body);
+    command.requested_by = userId;
     return this.commandBus.execute(command);
   }
 

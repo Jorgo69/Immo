@@ -20,6 +20,7 @@ import {
 import { getUploadUrl } from '../config/api'
 import { getPropertyById, type PropertyDetailDto, type UnitDto } from '../services/property.service'
 import { createRentalRequest } from '../services/rental.service'
+import { getMe } from '../services/auth.service'
 import { getApiErrorMessage } from '../services/http'
 import { toast } from 'vue-sonner'
 import { useAppStore } from '../stores/app'
@@ -57,9 +58,10 @@ const unitSectionRefs = ref<Map<string, HTMLElement>>(new Map())
 const showRequestModal = ref(false)
 const requestModalUnit = ref<UnitDto | null>(null)
 const submittingRequest = ref(false)
+const userVerified = ref(true)
 const appStore = useAppStore()
 
-function openRequestModal(unit: UnitDto) {
+async function openRequestModal(unit: UnitDto) {
   if (!appStore.token) {
     toast.info(t('rental.loginRequired'))
     router.push({ name: 'auth', query: { redirect: route.fullPath } })
@@ -67,6 +69,12 @@ function openRequestModal(unit: UnitDto) {
   }
   requestModalUnit.value = unit
   showRequestModal.value = true
+  try {
+    const me = await getMe()
+    userVerified.value = me.is_verified === true
+  } catch {
+    userVerified.value = false
+  }
 }
 
 function closeRequestModal() {
@@ -570,6 +578,7 @@ onUnmounted(() => {
       :unit-name="requestModalUnit.name"
       :show="showRequestModal"
       :loading="submittingRequest"
+      :user-verified="userVerified"
       @submit="onRequestSubmit"
       @close="closeRequestModal"
     />

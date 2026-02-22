@@ -15,8 +15,8 @@ export const router = createRouter({
         {
           path: 'dashboard',
           name: 'dashboard',
-          component: () => import('../views/DashboardView.vue'),
-          meta: { title: 'Tableau de bord', requiresAuth: true },
+          redirect: () => ({ name: 'admin' }),
+          meta: { title: 'Accueil', requiresAuth: true },
         },
         {
           path: 'onboarding',
@@ -65,13 +65,13 @@ export const router = createRouter({
     {
       path: '/admin',
       component: AdminLayout,
-      meta: { requiresAuth: true, requiresRole: ['admin', 'agent', 'landlord'] },
+      meta: { requiresAuth: true, requiresRole: ['admin', 'agent', 'landlord', 'tenant'] },
       children: [
         {
           path: '',
           name: 'admin',
           component: () => import('../views/AdminDashboardView.vue'),
-          meta: { title: 'Espace pro' },
+          meta: { title: 'Accueil' },
         },
         {
           path: 'properties',
@@ -90,6 +90,12 @@ export const router = createRouter({
           name: 'landlord-requests',
           component: () => import('../views/landlord/RequestsView.vue'),
           meta: { title: 'Demandes reçues', requiresRole: ['landlord', 'agent', 'admin'] },
+        },
+        {
+          path: 'landlord/units',
+          name: 'landlord-units',
+          component: () => import('../views/landlord/LandlordUnitsView.vue'),
+          meta: { title: 'Unités', requiresRole: ['landlord', 'agent', 'admin'] },
         },
         {
           path: 'properties/:id',
@@ -124,8 +130,8 @@ export const router = createRouter({
         {
           path: 'transactions',
           name: 'admin-transactions',
-          component: () => import('../views/admin/AdminSectionPlaceholder.vue'),
-          meta: { title: 'Transactions' },
+          component: () => import('../views/admin/AdminAuditView.vue'),
+          meta: { title: 'Audit des transactions', requiresRole: ['admin'] },
         },
         {
           path: 'profiles',

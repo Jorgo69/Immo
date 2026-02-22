@@ -75,7 +75,7 @@ onUnmounted(() => {
       @click.stop="toggle"
     >
       <User class="w-5 h-5 shrink-0 text-[var(--color-muted)]" />
-      <span class="hidden sm:inline">{{ t('nav.profile') }}</span>
+      <span class="hidden sm:inline">{{ appStore.displayName() || t('nav.profile') }}</span>
       <ChevronDown class="w-4 h-4 shrink-0 text-[var(--color-muted)]" />
     </button>
 
@@ -84,12 +84,12 @@ onUnmounted(() => {
       class="absolute right-0 mt-2 w-52 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg py-2 text-sm z-40"
     >
       <AppLink
-        to="/dashboard"
+        to="/admin"
         class="flex w-full items-center gap-2 px-3 py-2 text-[var(--color-text)] hover:bg-gray-100 dark:hover:bg-gray-800"
         @click="close"
       >
         <LayoutDashboard class="w-4 h-4 shrink-0 text-[var(--color-muted)]" />
-        <span>{{ t('nav.dashboard') }}</span>
+        <span>{{ t('nav.homePro') }}</span>
       </AppLink>
       <AppLink
         to="/profile"
@@ -106,15 +106,6 @@ onUnmounted(() => {
       >
         <FileText class="w-4 h-4 shrink-0 text-[var(--color-muted)]" />
         <span>{{ t('rental.myRequestsTitle') }}</span>
-      </AppLink>
-      <AppLink
-        v-if="isPro"
-        to="/admin"
-        class="flex w-full items-center gap-2 px-3 py-2 text-[var(--color-text)] hover:bg-gray-100 dark:hover:bg-gray-800"
-        @click="close"
-      >
-        <LayoutDashboard class="w-4 h-4 shrink-0 text-[var(--color-muted)]" />
-        <span>{{ t('nav.admin') }}</span>
       </AppLink>
       <div class="my-2 border-t border-gray-200 dark:border-gray-700" />
       <button

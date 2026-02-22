@@ -44,6 +44,14 @@ export class UserModel {
   @Column({ type: 'boolean', default: false })
   is_verified: boolean;
 
+  /** URL de la pièce d'identité (KYC). */
+  @Column({ type: 'text', nullable: true, name: 'id_card_url' })
+  id_card_url: string | null;
+
+  /** Téléphone vérifié (OTP ou canal validé). */
+  @Column({ type: 'boolean', default: false, name: 'phone_verified' })
+  phone_verified: boolean;
+
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, unknown>;
 

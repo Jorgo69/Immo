@@ -26,6 +26,9 @@ export class UpdateUnitCommand {
   @ApiProperty()
   id: string;
 
+  /** ID de l'utilisateur connecté (injecté par le contrôleur, pour vérification ownership). */
+  requested_by?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsUUID()

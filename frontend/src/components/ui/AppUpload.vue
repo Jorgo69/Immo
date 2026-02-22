@@ -37,7 +37,9 @@ const canAddMore = computed(() => {
 })
 
 function addFiles(newFiles: FileList | File[]) {
-  const list = Array.from(newFiles).filter((f) => f.type.startsWith('image/'))
+  const list = Array.from(newFiles).filter((f) =>
+    f.type.startsWith('image/') || f.type === 'application/pdf',
+  )
   if (props.maxFiles > 0) {
     const remaining = props.maxFiles - files.value.length
     list.splice(remaining)

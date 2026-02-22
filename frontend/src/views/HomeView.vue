@@ -40,7 +40,7 @@ function goSearch() {
 }
 
 function goSaving() {
-  router.push('/dashboard')
+  router.push('/admin')
 }
 
 function goAuth() {

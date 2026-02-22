@@ -12,8 +12,10 @@ const props = withDefaults(
     unitName?: string
     show: boolean
     loading?: boolean
+    /** Si false, affiche un message invitant à compléter/vérifier le profil (KYC). */
+    userVerified?: boolean
   }>(),
-  { loading: false }
+  { loading: false, userVerified: true }
 )
 
 const emit = defineEmits<{
@@ -46,6 +48,9 @@ function submit() {
 
 <template>
   <form class="space-y-4" @submit.prevent="submit">
+    <p v-if="!userVerified" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+      {{ t('rental.profileNotVerifiedWarning') }}
+    </p>
     <p v-if="unitName" class="text-sm text-[var(--color-muted)]">
       {{ t('rental.unit') }} : <strong class="text-[var(--color-text)]">{{ unitName }}</strong>
     </p>

@@ -7,20 +7,19 @@ import { useI18n } from 'vue-i18n'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { computed, onMounted, ref } from 'vue'
 import {
-  LayoutDashboard,
-  Building2,
   Home,
+  Building2,
+  Key,
+  Wallet,
+  Settings2,
   ChevronDown,
   LogOut,
   User,
   Users,
-  DoorOpen,
-  Wallet,
-  UserCircle,
   Menu,
   Plus,
+  FileText,
   Globe,
-  Settings2,
 } from 'lucide-vue-next'
 import { useAppStore } from '../stores/app'
 import { getMe } from '../services/auth.service'
@@ -35,7 +34,7 @@ const appStore = useAppStore()
 const sidebarOpen = ref(true)
 
 const pageTitle = computed(() => (route.meta.title as string) ?? t('admin.title'))
-const userLabel = computed(() => appStore.userId ? t('nav.profile') : '')
+const userLabel = computed(() => appStore.displayName() || t('nav.profile'))
 const isLandlord = computed(() => appStore.userRole === 'landlord')
 const isAgent = computed(() => appStore.userRole === 'agent')
 const isAdmin = computed(() => appStore.userRole === 'admin')
@@ -43,41 +42,43 @@ const isAdmin = computed(() => appStore.userRole === 'admin')
 const canAddOrManageProperties = computed(() => isLandlord.value || isAgent.value || isAdmin.value)
 
 // Rafraîchir l’utilisateur depuis l’API pour avoir un owner_id UUID valide (évite 400 sur création bien).
-const navItems = computed(() => [
-  { path: '/', label: t('nav.home'), icon: Home },
-  { path: '/admin', label: t('admin.navDashboard'), icon: LayoutDashboard },
-  ...(canAddOrManageProperties.value ? [{
-    label: t('admin.navProperties'),
-    icon: Building2,
-    children: [
-      ...(isLandlord.value ? [
+const navItems = computed(() => {
+  if (appStore.userRole === 'tenant') {
+    return [
+      { path: '/admin', label: t('admin.navHome'), icon: Home },
+      { path: '/my-requests', label: t('admin.proMyRequests'), icon: FileText },
+      { path: '/profile/edit', label: t('admin.navSettings'), icon: Settings2 },
+    ]
+  }
+  return [
+    { path: '/admin', label: t('admin.navHome'), icon: Home },
+    ...(canAddOrManageProperties.value ? [{
+      label: t('admin.navMyAssets'),
+      icon: Building2,
+      children: [
         { path: '/admin/landlord/properties', label: t('landlord.myProperties') },
+        { path: '/admin/landlord/properties?openAdd=property', label: t('landlord.addProperty') },
         { path: '/admin/landlord/requests', label: t('rental.requestsTitle') },
-      ] : []),
-      { path: '/admin/landlord/properties?openAdd=property', label: t('landlord.addProperty') },
-      { path: '/admin/properties', label: t('admin.navPropertiesList') },
-    ],
-  }] : [{
-    label: t('admin.navProperties'),
-    icon: Building2,
-    children: [{ path: '/admin/properties', label: t('admin.navPropertiesList') }],
-  }]),
-  { path: '/admin/users', label: t('admin.navUsers'), icon: Users },
-  { path: '/admin/rooms', label: t('admin.navRooms'), icon: DoorOpen },
-  {
-    label: t('admin.navFinances'),
-    icon: Wallet,
-    children: [
-      { path: '/admin/wallets', label: t('admin.navWallets') },
-      { path: '/admin/transactions', label: t('admin.navTransactions') },
-    ],
-  },
-  { path: '/admin/profiles', label: t('admin.navProfiles'), icon: UserCircle },
-  ...(isAdmin.value ? [
-    { path: '/admin/location', label: t('admin.navLocation'), icon: Globe },
-    { path: '/admin/references', label: t('admin.navReferences'), icon: Settings2 },
-  ] : []),
-])
+        ...(isAdmin.value ? [{ path: '/admin/properties', label: t('admin.navPropertiesList') }] : []),
+      ],
+    }] : []),
+    ...(canAddOrManageProperties.value ? [{ path: '/admin/landlord/units', label: t('admin.navUnits'), icon: Key }] : []),
+    {
+      label: t('admin.navFinances'),
+      icon: Wallet,
+      children: [
+        { path: '/admin/wallets', label: t('admin.navWallets') },
+        { path: '/admin/transactions', label: t('admin.navTransactions') },
+      ],
+    },
+    { path: '/profile/edit', label: t('admin.navSettings'), icon: Settings2 },
+    ...(isAdmin.value ? [
+      { path: '/admin/users', label: t('admin.navUsers'), icon: Users },
+      { path: '/admin/location', label: t('admin.navLocation'), icon: Globe },
+      { path: '/admin/references', label: t('admin.navReferences'), icon: Settings2 },
+    ] : []),
+  ]
+})
 
 function isActive(path: string) {
   const pathBase = path.split('?')[0]
@@ -93,7 +94,11 @@ onMounted(async () => {
   if (appStore.token) {
     try {
       const user = await getMe()
-      appStore.setUser(user.id, user.role)
+      appStore.setUser(user.id, user.role, undefined, {
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+      })
     } catch {
       // Token invalide ou expiré
     }

@@ -5,10 +5,14 @@ import { Body, Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
+import { RolesGuard } from '../auth/strategy/roles.guard';
+import { Roles } from '../auth/strategy/roles.decorator';
+import { UserRole } from '../auth/models/user.model/user.model';
 import { GetOrCreateWalletCommand } from './commands/impl/get-or-create-wallet.command/get-or-create-wallet.command';
 import { RecordTransactionCommand } from './commands/impl/record-transaction.command/record-transaction.command';
 import { GetWalletByUserQuery } from './queries/impl/get-wallet-by-user.query/get-wallet-by-user.query';
 import { GetTransactionsQuery } from './queries/impl/get-transactions.query/get-transactions.query';
+import { GetAllTransactionsAuditQuery } from './queries/impl/get-all-transactions-audit.query/get-all-transactions-audit.query';
 
 @ApiTags('Wallet')
 @Controller('wallet')
@@ -53,5 +57,13 @@ export class WalletController {
     query.page = q.page;
     query.limit = q.limit;
     return this.queryBus.execute(query);
+  }
+
+  @Get('audit/transactions')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Audit : toutes les transactions (lecture seule, admin)' })
+  async getAuditTransactions(@Query() q: GetAllTransactionsAuditQuery) {
+    return this.queryBus.execute(q);
   }
 }

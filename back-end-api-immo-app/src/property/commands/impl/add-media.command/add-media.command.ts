@@ -9,6 +9,8 @@ import { I18nDto } from '../../../dto/i18n.dto';
 
 export class AddMediaCommand {
   @ApiProperty() @IsNotEmpty() @IsUUID() property_id: string;
+  /** ID de l'utilisateur connecté (injecté par le contrôleur, pour vérification ownership). */
+  requested_by?: string;
   @ApiProperty() @IsNotEmpty() @IsString() url: string;
   @ApiProperty({ enum: MediaType }) @IsNotEmpty() @IsEnum(MediaType) type: MediaType;
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsInt() @Min(1) rank?: number;

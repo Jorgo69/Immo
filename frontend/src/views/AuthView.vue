@@ -100,11 +100,15 @@ async function verifyCode() {
       email: email.value.trim() || undefined,
     })
     appStore.setToken(data.token)
-    appStore.setUser(data.user.id, data.user.role, data.is_profile_complete)
+    appStore.setUser(data.user.id, data.user.role, data.is_profile_complete, {
+      first_name: data.user.first_name,
+      last_name: data.user.last_name,
+      email: data.user.email,
+    })
     toast.success(t('auth.loginSuccess'))
     const redirect =
       data.is_profile_complete
-        ? ((router.currentRoute.value.query.redirect as string) || '/dashboard')
+        ? ((router.currentRoute.value.query.redirect as string) || '/admin')
         : '/onboarding'
     router.push(redirect)
   } catch (e) {

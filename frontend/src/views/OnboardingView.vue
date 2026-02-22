@@ -131,7 +131,7 @@ async function next() {
       preparing.value = true
       appStore.setUser(appStore.userId, appStore.userRole, true)
       await new Promise((r) => setTimeout(r, 1800))
-      const redirect = (router.currentRoute.value.query.redirect as string) || '/dashboard'
+      const redirect = (router.currentRoute.value.query.redirect as string) || '/admin'
       router.push(redirect)
       return
     }

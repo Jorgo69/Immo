@@ -67,7 +67,7 @@ function isItemActive(item: NavItem): boolean {
   if (item.key === 'profile') {
     return (
       route.path.startsWith('/profile') ||
-      route.name === 'dashboard' ||
+      route.name === 'admin' ||
       route.path.startsWith('/admin')
     )
   }

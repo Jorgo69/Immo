@@ -42,13 +42,14 @@ const loading = ref(true)
 const profileViewRole = ref<'tenant' | 'landlord'>('tenant')
 const gridRef = ref<HTMLElement | null>(null)
 
+/** Nom + Prénom, sinon Email, sinon téléphone ; pas de placeholder générique si une donnée existe. */
 const displayName = computed(() => {
   if (!user.value) return t('profile.title')
   const first = user.value.first_name?.trim()
   const last = user.value.last_name?.trim()
-  if (first && last) return `${first} ${last}`
-  if (first) return first
-  if (last) return last
+  if (first || last) return [first, last].filter(Boolean).join(' ')
+  const email = user.value.email?.trim()
+  if (email) return email
   return user.value.phone_number || t('profile.title')
 })
 
@@ -62,15 +63,15 @@ const kycBadgeClass = computed(() => {
 
 const tenantActions = [
   { key: 'favorites', icon: Heart, to: '/property' },
-  { key: 'myRequests', icon: FileText, to: '/dashboard' },
-  { key: 'myVisits', icon: CalendarDays, to: '/dashboard' },
+  { key: 'myRequests', icon: FileText, to: '/my-requests' },
+  { key: 'myVisits', icon: CalendarDays, to: '/admin' },
   { key: 'kyc', icon: ShieldCheck, to: { name: 'profile-edit' } },
   { key: 'settings', icon: Settings, to: { name: 'profile-edit' } },
 ]
 const landlordActions = [
   { key: 'myListings', icon: Megaphone, to: '/admin/properties' },
   { key: 'myProperties', icon: Home, to: '/admin/properties' },
-  { key: 'myVisits', icon: CalendarDays, to: '/dashboard' },
+  { key: 'myVisits', icon: CalendarDays, to: '/admin' },
   { key: 'kyc', icon: ShieldCheck, to: { name: 'profile-edit' } },
   { key: 'settings', icon: Settings, to: { name: 'profile-edit' } },
 ]
@@ -104,6 +105,11 @@ async function load() {
       getMyPaymentMethods().catch(() => []),
     ])
     user.value = me
+    appStore.setUser(me.id, me.role, undefined, {
+      first_name: me.first_name,
+      last_name: me.last_name,
+      email: me.email,
+    })
     wallet.value = walletData ?? null
     transactions.value = txRes?.data ?? []
     paymentMethods.value = Array.isArray(methods) ? methods : []
@@ -304,7 +310,7 @@ watch(
                 </div>
               </div>
               <RouterLink
-                :to="{ name: 'dashboard' }"
+                :to="{ name: 'admin' }"
                 class="mt-5 block text-center text-sm font-medium text-emerald-400 hover:text-emerald-300"
               >
                 {{ t('profile.viewDashboard') }} →

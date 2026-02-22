@@ -1,7 +1,7 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { DataSource } from 'typeorm';
 import * as crypto from 'crypto';
-import { Logger, NotFoundException } from '@nestjs/common';
+import { Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { UpdateUnitCommand } from '../../impl/update-unit.command/update-unit.command';
 import { UnitEntity } from '../../../entities/unit.entity';
 import { PropertyEntity } from '../../../entities/property.entity';
@@ -26,8 +26,18 @@ export class UpdateUnitHandler implements ICommandHandler<UpdateUnitCommand> {
   async execute(command: UpdateUnitCommand): Promise<UnitEntity> {
     try {
       const repo = this.dataSource.getRepository(UnitEntity);
+      const propertyRepo = this.dataSource.getRepository(PropertyEntity);
       const existing = await repo.findOne({ where: { id: command.id }, relations: ['property'] });
       if (!existing) throw new NotFoundException('Unit not found');
+
+      if (command.requested_by != null) {
+        const effectiveOwnerId = existing.property_id
+          ? (await propertyRepo.findOne({ where: { id: existing.property_id }, select: { owner_id: true } }))?.owner_id
+          : existing.owner_id;
+        if (effectiveOwnerId !== command.requested_by) {
+          throw new ForbiddenException('Vous ne pouvez modifier que les unités de vos biens.');
+        }
+      }
 
       if (command.property_id !== undefined) existing.property_id = command.property_id ?? null;
       if (command.ref_type_id !== undefined) existing.ref_type_id = command.ref_type_id;

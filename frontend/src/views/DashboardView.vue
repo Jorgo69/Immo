@@ -75,6 +75,13 @@ const activityItems = ref<Array<{ label: string; date: string; badge: 'info' | '
 async function fetchUser() {
   const me = await getMe().catch(() => null)
   user.value = me ? { first_name: me.first_name, role: me.role } : null
+  if (me) {
+    appStore.setUser(me.id, me.role, undefined, {
+      first_name: me.first_name,
+      last_name: me.last_name,
+      email: me.email,
+    })
+  }
 }
 
 async function fetchWallet() {

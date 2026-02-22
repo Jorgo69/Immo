@@ -9,6 +9,8 @@ export interface AuthUserDto {
   avatar_url?: string
   is_profile_complete?: boolean
   is_verified?: boolean
+  id_card_url?: string | null
+  phone_verified?: boolean
   preferred_lang: string
   role: 'tenant' | 'landlord' | 'agent' | 'admin'
   is_active: boolean
@@ -85,6 +87,17 @@ export async function uploadAvatar(file: File): Promise<{ url: string }> {
   const form = new FormData()
   form.append('avatar', file)
   const { data } = await http.post<{ url: string }>('/user/avatar', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 15000,
+  })
+  return data
+}
+
+/** Upload pièce d'identité (KYC). Retourne l'URL du document. */
+export async function uploadIdCard(file: File): Promise<{ url: string }> {
+  const form = new FormData()
+  form.append('id_card', file)
+  const { data } = await http.post<{ url: string }>('/user/id-card', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 15000,
   })

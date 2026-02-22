@@ -19,6 +19,8 @@ const ME_SELECT: (keyof UserModel)[] = [
   'avatar_url',
   'is_profile_complete',
   'is_verified',
+  'id_card_url',
+  'phone_verified',
   'preferred_lang',
   'role',
   'is_active',
@@ -35,6 +37,8 @@ export interface AuthMeResult {
   avatar_url?: string;
   is_profile_complete?: boolean;
   is_verified?: boolean;
+  id_card_url?: string | null;
+  phone_verified?: boolean;
   preferred_lang: string;
   role: string;
   is_active: boolean;
