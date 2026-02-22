@@ -28,13 +28,20 @@ function onInput(e: Event) {
     <label v-if="label" class="text-sm font-medium text-[var(--color-text)]">
       {{ label }}
     </label>
-    <select
-      :value="modelValue"
-      :disabled="disabled"
-      class="w-full px-3 py-2 rounded-lg border text-[var(--color-text)] bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent disabled:opacity-50"
+    <div
+      class="flex rounded-lg border bg-white dark:bg-gray-800 transition-colors focus-within:ring-2 focus-within:ring-[var(--color-accent)] focus-within:border-transparent"
       :class="error ? 'border-red-500' : 'border-gray-200 dark:border-gray-600'"
-      @change="onInput"
     >
+      <span v-if="$slots.prefix" class="inline-flex items-center pl-3 text-[var(--color-muted)]">
+        <slot name="prefix" />
+      </span>
+      <select
+        :value="modelValue"
+        :disabled="disabled"
+        class="w-full min-w-0 px-3 py-2 rounded-lg text-[var(--color-text)] bg-transparent focus:outline-none disabled:opacity-50"
+        :class="$slots.prefix ? 'pl-1' : ''"
+        @change="onInput"
+      >
       <option value="" disabled>{{ placeholder ?? '—' }}</option>
       <option
         v-for="opt in options"
@@ -44,6 +51,10 @@ function onInput(e: Event) {
         {{ opt.label }}
       </option>
     </select>
+      <span v-if="$slots.suffix" class="inline-flex items-center pr-3 text-[var(--color-muted)]">
+        <slot name="suffix" />
+      </span>
+    </div>
     <p v-if="error" class="text-xs text-red-600">{{ error }}</p>
   </div>
 </template>

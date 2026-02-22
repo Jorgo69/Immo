@@ -24,7 +24,7 @@ import { getMe } from '../services/auth.service'
 import { getMyWallet, getMyTransactions } from '../services/wallet.service'
 import { getMyPaymentMethods } from '../services/profile.service'
 import { useAppStore } from '../stores/app'
-import { AppCard, LanguageSwitcher, ThemeToggle } from '../components/ui'
+import { AppCard, AppImage, LanguageSwitcher, ThemeToggle } from '../components/ui'
 import type { AuthUserDto } from '../services/auth.service'
 import type { WalletDto } from '../services/wallet.service'
 import type { WalletTransactionDto } from '../services/wallet.service'
@@ -186,10 +186,11 @@ watch(
                 <div
                   class="relative h-24 w-24 overflow-hidden rounded-full border-2 border-white bg-gray-200 shadow-md dark:border-gray-700 dark:bg-gray-700"
                 >
-                  <img
+                  <AppImage
                     v-if="user?.avatar_url"
                     :src="user.avatar_url"
                     :alt="displayName"
+                    fit="cover"
                     class="h-full w-full object-cover"
                   />
                   <User v-else class="mx-auto h-12 w-12 text-gray-400" />

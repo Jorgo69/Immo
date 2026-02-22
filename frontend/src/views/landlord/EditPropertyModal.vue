@@ -22,7 +22,7 @@ import {
 } from '../../services/property.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
-import { AppButton, AppInput, AppTitle, AppSelect, AppDropzone } from '../../components/ui'
+import { AppButton, AppInput, AppTitle, AppSelect, AppUpload } from '../../components/ui'
 import ImageWithMeta from '../../components/landlord/ImageWithMeta.vue'
 import MapLocationPickerLoading from '../../components/MapLocationPickerLoading.vue'
 
@@ -504,7 +504,7 @@ onMounted(() => {
                   @remove="removeExistingItem(idx)"
                 />
               </div>
-              <AppDropzone :max-files="10" @update:files="photoFiles = $event" />
+              <AppUpload :max-files="10" @update:files="photoFiles = $event" />
               <div v-if="newImageItems.length" class="space-y-3">
                 <p class="text-xs text-[var(--color-muted)]">Nouvelles images</p>
                 <ImageWithMeta

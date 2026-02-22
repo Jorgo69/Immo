@@ -11,7 +11,7 @@ import { updateUnit, uploadPropertyImage, type UpdateUnitPayload, type UnitDto, 
 import { getRefTypes, getRefFeaturesByTypeId, type RefTypeDto, type RefFeatureDto } from '../../services/references.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
-import { AppButton, AppInput, AppTitle, AppDropzone } from '../../components/ui'
+import { AppButton, AppInput, AppSelect, AppTitle, AppUpload } from '../../components/ui'
 import ImageWithMeta from '../../components/landlord/ImageWithMeta.vue'
 
 const props = defineProps<{
@@ -83,6 +83,11 @@ const featureOptions = computed(() =>
     label: locale.value === 'fr' ? f.label_fr : f.label_en || f.label_fr,
   }))
 )
+const statusOptions = computed(() => [
+  { value: 'available', label: t('landlord.unitStatusAvailable') },
+  { value: 'occupied', label: t('landlord.unitStatusOccupied') },
+  { value: 'notice_given', label: t('landlord.unitStatusNoticeGiven') },
+])
 
 const isValid = computed(() => {
   const f = form.value
@@ -302,46 +307,20 @@ async function submit() {
       >
         <header class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <AppTitle id="edit-unit-title" :level="3">{{ t('landlord.editUnit') }}</AppTitle>
-          <button
-            type="button"
-            class="p-2 rounded-lg text-[var(--color-muted)] hover:bg-gray-100 dark:hover:bg-gray-700"
-            :aria-label="t('common.cancel')"
-            @click="close"
-          >
+          <AppButton type="button" variant="ghost" size="sm" :aria-label="t('common.cancel')" @click="close">
             <X class="w-5 h-5" />
-          </button>
+          </AppButton>
         </header>
         <div class="flex-1 overflow-y-auto p-6 space-y-4">
           <AppInput v-model="form.name" :label="t('landlord.unitName')" :placeholder="t('landlord.unitNamePlaceholder')" />
-          <div>
-            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.unitType') }}</label>
-            <select
-              v-model="form.ref_type_id"
-              class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
-            >
-              <option value="">—</option>
-              <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.unitStatus') }}</label>
-            <select
-              v-model="form.unit_status"
-              class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
-            >
-              <option value="available">{{ t('landlord.unitStatusAvailable') }}</option>
-              <option value="occupied">{{ t('landlord.unitStatusOccupied') }}</option>
-              <option value="notice_given">{{ t('landlord.unitStatusNoticeGiven') }}</option>
-            </select>
-            <div v-if="form.unit_status === 'notice_given'" class="mt-2">
-              <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.availableFrom') }} *</label>
-              <input
-                v-model="form.available_from"
-                type="date"
-                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
-              />
-            </div>
-          </div>
+          <AppSelect v-model="form.ref_type_id" :label="t('landlord.unitType')" :options="typeOptions" placeholder="—" />
+          <AppSelect v-model="form.unit_status" :label="t('landlord.unitStatus')" :options="statusOptions" />
+          <AppInput
+            v-if="form.unit_status === 'notice_given'"
+            v-model="form.available_from"
+            type="date"
+            :label="t('landlord.availableFrom') + ' *'"
+          />
           <AppInput
             :model-value="priceInput"
             type="number"
@@ -395,20 +374,8 @@ async function submit() {
           <div>
             <label class="block text-sm font-medium text-[var(--color-text)] mb-2">{{ t('landlord.description') }}</label>
             <div class="flex gap-2 mb-2">
-              <button
-                type="button"
-                :class="['px-3 py-1.5 rounded-lg text-sm font-medium', descriptionLangTab === 'fr' ? 'bg-[var(--color-accent)] text-white' : 'bg-gray-100 dark:bg-gray-700 text-[var(--color-text)]']"
-                @click="descriptionLangTab = 'fr'"
-              >
-                {{ t('landlord.langFr') }}
-              </button>
-              <button
-                type="button"
-                :class="['px-3 py-1.5 rounded-lg text-sm font-medium', descriptionLangTab === 'en' ? 'bg-[var(--color-accent)] text-white' : 'bg-gray-100 dark:bg-gray-700 text-[var(--color-text)]']"
-                @click="descriptionLangTab = 'en'"
-              >
-                {{ t('landlord.langEn') }}
-              </button>
+              <AppButton type="button" size="sm" :variant="descriptionLangTab === 'fr' ? 'primary' : 'secondary'" @click="descriptionLangTab = 'fr'">{{ t('landlord.langFr') }}</AppButton>
+              <AppButton type="button" size="sm" :variant="descriptionLangTab === 'en' ? 'primary' : 'secondary'" @click="descriptionLangTab = 'en'">{{ t('landlord.langEn') }}</AppButton>
             </div>
             <textarea
               v-if="descriptionLangTab === 'fr'"
@@ -457,7 +424,7 @@ async function submit() {
                 @remove="removeExistingItem(idx)"
               />
             </div>
-            <AppDropzone :max-files="10" @update:files="photoFiles = $event" />
+            <AppUpload :max-files="10" @update:files="photoFiles = $event" />
             <div v-if="newImageItems.length" class="space-y-2 mt-2">
               <ImageWithMeta
                 v-for="(item, idx) in newImageItems"

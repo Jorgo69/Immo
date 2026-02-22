@@ -14,7 +14,7 @@ import type { PropertyListItemDto } from '../../services/property.service'
 import { getCities } from '../../services/location.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
-import { AppButton, AppInput, AppTitle, AppDropzone } from '../../components/ui'
+import { AppButton, AppInput, AppSelect, AppTitle, AppUpload } from '../../components/ui'
 import ImageWithMeta from '../../components/landlord/ImageWithMeta.vue'
 
 const props = defineProps<{
@@ -82,6 +82,17 @@ const typeOptions = computed(() =>
     label: locale.value === 'fr' ? r.label_fr : r.label_en || r.label_fr,
   }))
 )
+const propertyOptions = computed(() =>
+  myProperties.value.map((p) => ({ value: p.id, label: p.name }))
+)
+const cityOptionsForSelect = computed(() =>
+  cities.value.map((c) => ({ value: c.id, label: c.name }))
+)
+const statusOptions = computed(() => [
+  { value: 'available', label: t('landlord.unitStatusAvailable') },
+  { value: 'occupied', label: t('landlord.unitStatusOccupied') },
+  { value: 'notice_given', label: t('landlord.unitStatusNoticeGiven') },
+])
 
 const featureOptions = computed(() =>
   refFeatures.value.map((f) => ({
@@ -273,9 +284,9 @@ watch(
       >
         <header class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <AppTitle id="add-unit-title" :level="3">{{ t('landlord.addUnit') }}</AppTitle>
-          <button type="button" class="p-2 rounded-lg text-[var(--color-muted)] hover:bg-gray-100 dark:hover:bg-gray-700" :aria-label="t('common.cancel')" @click="close">
+          <AppButton type="button" variant="ghost" size="sm" :aria-label="t('common.cancel')" @click="close">
             <X class="w-5 h-5" />
-          </button>
+          </AppButton>
         </header>
         <p v-if="propertyName" class="px-4 pb-2 text-sm text-[var(--color-muted)]">{{ propertyName }}</p>
 
@@ -295,28 +306,22 @@ watch(
                 </label>
               </div>
             </div>
-            <div v-if="showAttachSelect" class="min-w-[200px]">
-              <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.selectProperty') }}</label>
-              <select
-                v-model="form.attachedPropertyId"
-                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
-              >
-                <option value="">—</option>
-                <option v-for="p in myProperties" :key="p.id" :value="p.id">{{ p.name }}</option>
-              </select>
-            </div>
+            <AppSelect
+              v-if="showAttachSelect"
+              v-model="form.attachedPropertyId"
+              :label="t('landlord.selectProperty')"
+              :options="propertyOptions"
+              placeholder="—"
+              class="min-w-[200px]"
+            />
             <template v-if="showStandaloneFields">
               <AppInput v-model="form.address" :label="t('landlord.address')" :placeholder="t('landlord.addressPlaceholder')" />
-              <div>
-                <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.city') }}</label>
-                <select
-                  v-model="form.city_id"
-                  class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
-                >
-                  <option value="">—</option>
-                  <option v-for="c in cities" :key="c.id" :value="c.id">{{ c.name }}</option>
-                </select>
-              </div>
+              <AppSelect
+                v-model="form.city_id"
+                :label="t('landlord.city')"
+                :options="cityOptionsForSelect"
+                placeholder="—"
+              />
               <div class="grid grid-cols-2 gap-2">
                 <AppInput v-model="form.gps_latitude" :label="'Lat'" />
                 <AppInput v-model="form.gps_longitude" :label="'Long'" />
@@ -326,40 +331,27 @@ watch(
 
           <AppInput v-model="form.name" :label="t('landlord.unitName')" :placeholder="t('landlord.unitNamePlaceholder')" />
 
-          <div>
-            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.unitType') }}</label>
-            <select
-              v-model="form.ref_type_id"
-              class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800 focus:ring-2 focus:ring-[var(--color-accent)]"
-            >
-              <option value="">—</option>
-              <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-            </select>
-          </div>
+          <AppSelect
+            v-model="form.ref_type_id"
+            :label="t('landlord.unitType')"
+            :options="typeOptions"
+            placeholder="—"
+          />
 
           <AppInput :model-value="priceInput" type="number" :label="t('landlord.unitPrice')" :min="0" @update:model-value="onPriceInput" />
 
-          <!-- Statut + date -->
-          <div>
-            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.unitStatus') }}</label>
-            <select
-              v-model="form.unit_status"
-              class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
-            >
-              <option value="available">{{ t('landlord.unitStatusAvailable') }}</option>
-              <option value="occupied">{{ t('landlord.unitStatusOccupied') }}</option>
-              <option value="notice_given">{{ t('landlord.unitStatusNoticeGiven') }}</option>
-            </select>
-            <div v-if="form.unit_status === 'notice_given'" class="mt-2">
-              <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.availableFrom') }} *</label>
-              <input
-                v-model="form.available_from"
-                type="date"
-                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
-                :placeholder="t('landlord.availableFromPlaceholder')"
-              />
-            </div>
-          </div>
+          <AppSelect
+            v-model="form.unit_status"
+            :label="t('landlord.unitStatus')"
+            :options="statusOptions"
+          />
+          <AppInput
+            v-if="form.unit_status === 'notice_given'"
+            v-model="form.available_from"
+            type="date"
+            :label="t('landlord.availableFrom') + ' *'"
+            :placeholder="t('landlord.availableFromPlaceholder')"
+          />
 
           <div class="grid grid-cols-2 gap-4">
             <AppInput :model-value="form.caution_months != null ? form.caution_months : undefined" type="number" :label="t('landlord.cautionMonths')" :min="0" :max="24" @update:model-value="(v) => { form.caution_months = v === '' || v == null ? null : Number(v) }" />
@@ -380,8 +372,8 @@ watch(
           <div>
             <label class="block text-sm font-medium text-[var(--color-text)] mb-2">{{ t('landlord.description') }}</label>
             <div class="flex gap-2 mb-2">
-              <button type="button" :class="['px-3 py-1.5 rounded-lg text-sm font-medium', descriptionLangTab === 'fr' ? 'bg-[var(--color-accent)] text-white' : 'bg-gray-100 dark:bg-gray-700 text-[var(--color-text)]']" @click="descriptionLangTab = 'fr'">{{ t('landlord.langFr') }}</button>
-              <button type="button" :class="['px-3 py-1.5 rounded-lg text-sm font-medium', descriptionLangTab === 'en' ? 'bg-[var(--color-accent)] text-white' : 'bg-gray-100 dark:bg-gray-700 text-[var(--color-text)]']" @click="descriptionLangTab = 'en'">{{ t('landlord.langEn') }}</button>
+              <AppButton type="button" size="sm" :variant="descriptionLangTab === 'fr' ? 'primary' : 'secondary'" @click="descriptionLangTab = 'fr'">{{ t('landlord.langFr') }}</AppButton>
+              <AppButton type="button" size="sm" :variant="descriptionLangTab === 'en' ? 'primary' : 'secondary'" @click="descriptionLangTab = 'en'">{{ t('landlord.langEn') }}</AppButton>
             </div>
             <textarea
               v-if="descriptionLangTab === 'fr'"
@@ -404,7 +396,7 @@ watch(
             <p v-if="form.ref_type_id && !refFeatures.length" class="text-sm text-[var(--color-muted)]">{{ t('admin.references.noFeatures') }}</p>
           </div>
 
-          <AppDropzone :label="t('landlord.stepDocuments')" :max-files="10" @update:files="photoFiles = $event" />
+          <AppUpload :label="t('landlord.stepDocuments')" :max-files="10" @update:files="photoFiles = $event" />
           <div v-if="imageItems.length" class="space-y-3">
             <p class="text-sm font-medium text-[var(--color-text)]">{{ t('landlord.imageDescription') }}</p>
             <ImageWithMeta v-for="(item, idx) in imageItems" :key="idx" :item="item" :index="idx" :can-remove="true" @update:item="(p) => updateImageItem(idx, p)" @remove="removeImageItem(idx)" />

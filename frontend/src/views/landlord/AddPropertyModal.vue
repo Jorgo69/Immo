@@ -14,7 +14,7 @@ import { useReferenceStore } from '../../stores/references'
 import { createProperty, uploadPropertyImage, type CreatePropertyPayload, type PropertyImageItemDto } from '../../services/property.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
-import { AppButton, AppInput, AppTitle, AppSelect, AppDropzone } from '../../components/ui'
+import { AppButton, AppInput, AppTitle, AppSelect, AppUpload } from '../../components/ui'
 import ImageWithMeta from '../../components/landlord/ImageWithMeta.vue'
 import MapLocationPickerLoading from '../../components/MapLocationPickerLoading.vue'
 
@@ -426,7 +426,7 @@ onMounted(() => {
               :label="t('landlord.titleDeed')"
               :placeholder="t('landlord.titleDeedPlaceholder')"
             />
-            <AppDropzone
+            <AppUpload
               :label="t('landlord.stepDocuments')"
               :max-files="10"
               @update:files="photoFiles = $event"

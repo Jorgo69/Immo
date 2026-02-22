@@ -7,6 +7,7 @@ import { ref, computed } from 'vue'
 import { MapPin, Heart } from 'lucide-vue-next'
 import { useAppStore } from '../stores/app'
 import { getUploadUrl } from '../config/api'
+import AppImage from './ui/AppImage.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -72,12 +73,12 @@ function toggleFavorite(e: Event) {
     >
       <template v-if="images.length">
         <template v-for="(url, i) in images" :key="i">
-          <img
+          <AppImage
             v-show="i === currentImageIndex"
             :src="url"
             :alt="title"
-            class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300"
-            loading="lazy"
+            fit="cover"
+            class="absolute inset-0 h-full w-full transition-opacity duration-300"
           />
         </template>
         <!-- Indicateurs si plusieurs images -->

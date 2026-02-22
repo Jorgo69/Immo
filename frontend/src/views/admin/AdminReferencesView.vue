@@ -3,7 +3,7 @@
  * Configuration des référentiels (Admin) — Catégories, Types par catégorie, Équipements par type.
  * CRUD complet : ajout d'une catégorie (ex. Vente), d'un type (ex. Parcelle), d'un équipement (ex. Titre foncier).
  */
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Settings2, Trash2, Layers } from 'lucide-vue-next'
 import {
@@ -22,7 +22,7 @@ import {
 } from '../../services/references.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
-import { AppButton, AppCard, AppInput, AppTitle, AppParagraph } from '../../components/ui'
+import { AppButton, AppCard, AppInput, AppSelect, AppTitle, AppParagraph } from '../../components/ui'
 import ConfirmModal from '../../components/ui/ConfirmModal.vue'
 
 const { t, locale } = useI18n()
@@ -47,6 +47,13 @@ const creatingFeature = ref(false)
 const confirmDelete = ref<{ kind: 'category' | 'type' | 'feature'; id: string; label: string } | null>(null)
 
 const label = (r: { label_fr: string; label_en?: string }) => (locale.value === 'fr' ? r.label_fr : (r.label_en || r.label_fr))
+
+const categoryOptions = computed(() =>
+  categories.value.map((c) => ({ value: c.id, label: label(c) }))
+)
+const typeOptionsForSelect = computed(() =>
+  types.value.map((ty) => ({ value: ty.id, label: label(ty) }))
+)
 
 async function loadCategories() {
   categories.value = await getRefCategories()
@@ -192,7 +199,7 @@ function openDeleteConfirm(kind: 'category' | 'type' | 'feature', item: RefDto |
           <AppInput v-model="newCategory.code" :label="t('admin.references.code')" :placeholder="t('admin.references.codePlaceholder')" class="min-w-[120px]" />
           <AppInput v-model="newCategory.label_fr" :label="t('admin.references.labelFr')" class="min-w-[160px]" />
           <AppInput v-model="newCategory.label_en" :label="t('admin.references.labelEn')" class="min-w-[160px]" />
-          <AppInput v-model.number="newCategory.sort_order" type="number" :label="t('admin.references.sortOrder')" class="w-20" />
+          <AppInput :model-value="newCategory.sort_order" type="number" :label="t('admin.references.sortOrder')" class="w-20" @update:model-value="(v) => (newCategory.sort_order = Number(v) || 0)" />
           <AppButton type="submit" variant="primary" size="sm" :loading="creatingCategory">
             {{ t('admin.references.create') }}
           </AppButton>
@@ -206,14 +213,9 @@ function openDeleteConfirm(kind: 'category' | 'type' | 'feature', item: RefDto |
             <span class="font-medium text-[var(--color-text)]">{{ label(c) }}</span>
             <span class="text-xs text-[var(--color-muted)]">{{ c.code }}</span>
             <div class="flex gap-2">
-              <button
-                type="button"
-                class="p-1.5 rounded text-[var(--color-muted)] hover:bg-gray-200 dark:hover:bg-gray-700"
-                :aria-label="t('admin.references.delete')"
-                @click="openDeleteConfirm('category', c)"
-              >
+              <AppButton type="button" variant="ghost" size="sm" :aria-label="t('admin.references.delete')" @click="openDeleteConfirm('category', c)">
                 <Trash2 class="w-4 h-4" />
-              </button>
+              </AppButton>
             </div>
           </li>
         </ul>
@@ -228,21 +230,19 @@ function openDeleteConfirm(kind: 'category' | 'type' | 'feature', item: RefDto |
         </h3>
         <div class="flex flex-wrap gap-4 mb-4">
           <div class="min-w-[200px]">
-            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('admin.references.category') }}</label>
-            <select
+            <AppSelect
               v-model="selectedCategoryId"
-              class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-[var(--color-text)]"
-            >
-              <option value="">{{ t('admin.references.selectCategory') }}</option>
-              <option v-for="c in categories" :key="c.id" :value="c.id">{{ label(c) }}</option>
-            </select>
+              :label="t('admin.references.category')"
+              :options="categoryOptions"
+              :placeholder="t('admin.references.selectCategory')"
+            />
           </div>
         </div>
         <form v-if="selectedCategoryId" class="flex flex-wrap items-end gap-3 mb-4" @submit.prevent="addType">
           <AppInput v-model="newType.code" :label="t('admin.references.code')" placeholder="ex. parcelle" class="min-w-[120px]" />
           <AppInput v-model="newType.label_fr" :label="t('admin.references.labelFr')" class="min-w-[160px]" />
           <AppInput v-model="newType.label_en" :label="t('admin.references.labelEn')" class="min-w-[160px]" />
-          <AppInput v-model.number="newType.sort_order" type="number" :label="t('admin.references.sortOrder')" class="w-20" />
+          <AppInput :model-value="newType.sort_order" type="number" :label="t('admin.references.sortOrder')" class="w-20" @update:model-value="(v) => (newType.sort_order = Number(v) || 0)" />
           <AppButton type="submit" variant="primary" size="sm" :loading="creatingType">
             {{ t('admin.references.create') }}
           </AppButton>
@@ -255,14 +255,9 @@ function openDeleteConfirm(kind: 'category' | 'type' | 'feature', item: RefDto |
           >
             <span class="font-medium text-[var(--color-text)]">{{ label(ty) }}</span>
             <span class="text-xs text-[var(--color-muted)]">{{ ty.code }}</span>
-            <button
-              type="button"
-              class="p-1.5 rounded text-[var(--color-muted)] hover:bg-gray-200 dark:hover:bg-gray-700"
-              :aria-label="t('admin.references.delete')"
-              @click="openDeleteConfirm('type', ty)"
-            >
+            <AppButton type="button" variant="ghost" size="sm" :aria-label="t('admin.references.delete')" @click="openDeleteConfirm('type', ty)">
               <Trash2 class="w-4 h-4" />
-            </button>
+            </AppButton>
           </li>
         </ul>
         <p v-else-if="selectedCategoryId" class="text-sm text-[var(--color-muted)]">{{ t('admin.references.noTypes') }}</p>
@@ -276,21 +271,19 @@ function openDeleteConfirm(kind: 'category' | 'type' | 'feature', item: RefDto |
         </h3>
         <div class="flex flex-wrap gap-4 mb-4">
           <div class="min-w-[200px]">
-            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('admin.references.type') }}</label>
-            <select
+            <AppSelect
               v-model="selectedTypeId"
-              class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-[var(--color-text)]"
-            >
-              <option value="">{{ t('admin.references.selectType') }}</option>
-              <option v-for="ty in types" :key="ty.id" :value="ty.id">{{ label(ty) }}</option>
-            </select>
+              :label="t('admin.references.type')"
+              :options="typeOptionsForSelect"
+              :placeholder="t('admin.references.selectType')"
+            />
           </div>
         </div>
         <form v-if="selectedTypeId" class="flex flex-wrap items-end gap-3 mb-4" @submit.prevent="addFeature">
           <AppInput v-model="newFeature.code" :label="t('admin.references.code')" placeholder="ex. Titre foncier" class="min-w-[140px]" />
           <AppInput v-model="newFeature.label_fr" :label="t('admin.references.labelFr')" class="min-w-[160px]" />
           <AppInput v-model="newFeature.label_en" :label="t('admin.references.labelEn')" class="min-w-[160px]" />
-          <AppInput v-model.number="newFeature.sort_order" type="number" :label="t('admin.references.sortOrder')" class="w-20" />
+          <AppInput :model-value="newFeature.sort_order" type="number" :label="t('admin.references.sortOrder')" class="w-20" @update:model-value="(v) => (newFeature.sort_order = Number(v) || 0)" />
           <AppButton type="submit" variant="primary" size="sm" :loading="creatingFeature">
             {{ t('admin.references.create') }}
           </AppButton>
@@ -303,14 +296,9 @@ function openDeleteConfirm(kind: 'category' | 'type' | 'feature', item: RefDto |
           >
             <span class="font-medium text-[var(--color-text)]">{{ label(f) }}</span>
             <span class="text-xs text-[var(--color-muted)]">{{ f.code }}</span>
-            <button
-              type="button"
-              class="p-1.5 rounded text-[var(--color-muted)] hover:bg-gray-200 dark:hover:bg-gray-700"
-              :aria-label="t('admin.references.delete')"
-              @click="openDeleteConfirm('feature', f)"
-            >
+            <AppButton type="button" variant="ghost" size="sm" :aria-label="t('admin.references.delete')" @click="openDeleteConfirm('feature', f)">
               <Trash2 class="w-4 h-4" />
-            </button>
+            </AppButton>
           </li>
         </ul>
         <p v-else-if="selectedTypeId" class="text-sm text-[var(--color-muted)]">{{ t('admin.references.noFeatures') }}</p>
