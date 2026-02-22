@@ -17,6 +17,8 @@ import {
 import gsap from 'gsap'
 import { getMe } from '../services/auth.service'
 import { getMyWallet, getMyTransactions, recordSaving } from '../services/wallet.service'
+import { getApiErrorMessage } from '../services/http'
+import { toast } from 'vue-sonner'
 import { AppCard, AppButton, StatCard } from '../components/ui'
 import { useAppStore } from '../stores/app'
 import type { WalletTransactionDto } from '../services/wallet.service'
@@ -91,7 +93,9 @@ async function load() {
   try {
     await Promise.all([fetchUser(), fetchWallet(), fetchTransactions()])
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erreur'
+    const msg = getApiErrorMessage(e)
+    toast.error(msg)
+    error.value = msg
   } finally {
     loading.value = false
   }
@@ -133,7 +137,9 @@ async function addSaving() {
     await fetchTransactions()
     animateBalance()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erreur'
+    const msg = getApiErrorMessage(e)
+    toast.error(msg)
+    error.value = msg
   } finally {
     savingLoading.value = false
   }

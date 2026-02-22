@@ -1,32 +1,36 @@
 /**
  * Commande : mettre à jour un bien (champs optionnels).
+ * Inclut tableau d'images (url, rank, is_primary, description i18n) et description i18n.
  */
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsOptional,
   IsNumber,
-  IsObject,
   IsString,
   IsUUID,
   IsEnum,
-  IsDateString,
-  Min,
+  IsArray,
   MaxLength,
+  IsUrl,
+  ValidateNested,
 } from 'class-validator';
-import { PropertyStatus } from '../../../entities/property.entity';
+import { PropertyStatus, PropertyBuildingType } from '../../../entities/property.entity';
+import { I18nDto } from '../../../dto/i18n.dto';
+import { PropertyImageItemDto } from '../../../dto/property-image.dto';
 
 export class UpdatePropertyCommand {
-  @ApiProperty() id: string; // Renseigné depuis la route
-  @ApiProperty({ required: false }) @IsOptional() @IsUUID() agent_id?: string;
-  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(255) title?: string;
-  @ApiProperty({ required: false }) @IsOptional() @IsObject() title_translations?: Record<string, string>;
-  @ApiProperty({ required: false }) @IsOptional() @IsObject() description_translations?: Record<string, string>;
-  @ApiProperty({ required: false }) @IsOptional() @IsNumber() @Min(0) price_monthly?: number;
-  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(100) city?: string;
-  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(100) district?: string;
-  @ApiProperty({ required: false }) @IsOptional() @IsString() address_details?: string;
-  @ApiProperty({ required: false }) @IsOptional() @IsNumber() latitude?: number;
-  @ApiProperty({ required: false }) @IsOptional() @IsNumber() longitude?: number;
-  @ApiProperty({ required: false, enum: PropertyStatus }) @IsOptional() @IsEnum(PropertyStatus) status?: PropertyStatus;
-  @ApiProperty({ required: false }) @IsOptional() @IsDateString() available_date?: string;
+  @ApiProperty() id: string;
+  @ApiPropertyOptional() @IsOptional() @IsUUID() agent_id?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(255) name?: string;
+  @ApiPropertyOptional() @IsOptional() @IsEnum(PropertyBuildingType) building_type?: PropertyBuildingType;
+  @ApiPropertyOptional() @IsOptional() @IsString() address?: string;
+  @ApiPropertyOptional() @IsOptional() @IsUUID() city_id?: string;
+  @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsNumber() gps_latitude?: number;
+  @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsNumber() gps_longitude?: number;
+  @ApiPropertyOptional() @IsOptional() @IsString() @IsUrl() main_image?: string;
+  @ApiPropertyOptional() @IsOptional() @IsArray() @IsString({ each: true }) gallery?: string[];
+  @ApiPropertyOptional() @IsOptional() @ValidateNested() @Type(() => I18nDto) description?: I18nDto;
+  @ApiPropertyOptional({ type: [PropertyImageItemDto] }) @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => PropertyImageItemDto) images?: PropertyImageItemDto[];
+  @ApiPropertyOptional() @IsOptional() @IsEnum(PropertyStatus) status?: PropertyStatus;
 }

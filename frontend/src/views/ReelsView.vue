@@ -3,19 +3,22 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { MapPin, ChevronUp, ChevronDown, Play } from 'lucide-vue-next'
+import { getUploadUrl } from '../config/api'
 import {
   searchProperties,
   getPropertyById,
   type PropertyDetailDto,
   type PropertyListItemDto,
-  type RoomDto,
+  type UnitDto,
 } from '../services/property.service'
+import { getApiErrorMessage } from '../services/http'
+import { toast } from 'vue-sonner'
 import { AppTitle, AppParagraph, AppButton } from '../components/ui'
 
 const { t } = useI18n()
 const router = useRouter()
 
-type RoomReel = { room: RoomDto; property: PropertyDetailDto }
+type RoomReel = { room: UnitDto; property: PropertyDetailDto }
 
 const reels = ref<RoomReel[]>([])
 const currentIndex = ref(0)
@@ -24,7 +27,7 @@ const error = ref('')
 
 const current = computed<RoomReel | null>(() => reels.value[currentIndex.value] ?? null)
 const hasMedia = computed(() => !!current.value?.property.media?.length)
-const heroImage = computed(() => (current.value?.property.media?.[0]?.url ?? '') as string)
+const heroImage = computed(() => getUploadUrl(current.value?.property.media?.[0]?.url ?? ''))
 
 async function loadList() {
   loadingList.value = true
@@ -36,21 +39,26 @@ async function loadList() {
     )
     const nextReels: RoomReel[] = []
     for (const detail of details) {
-      if (detail.rooms?.length) {
-        for (const room of detail.rooms) {
-          nextReels.push({ room, property: detail })
+      const units = detail.units ?? detail.rooms ?? []
+      if (units.length) {
+        for (const room of units) {
+          nextReels.push({ room: room as UnitDto, property: detail })
         }
       } else {
+        const price = detail.price_monthly ?? detail.units?.[0]?.price ?? '0'
         nextReels.push({
           room: {
             id: detail.id,
-            name: detail.title,
-            type: null,
-            price_monthly: detail.price_monthly,
+            property_id: detail.id,
+            name: detail.name ?? detail.title ?? '',
+            type: 'studio',
+            price,
+            description: null,
+            features: [],
+            images: [],
+            is_available: true,
             surface_m2: null,
             floor: null,
-            is_available: true,
-            description_translations: detail.description_translations ?? null,
           },
           property: detail,
         })
@@ -59,7 +67,9 @@ async function loadList() {
     reels.value = nextReels
     currentIndex.value = 0
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erreur'
+    const msg = getApiErrorMessage(e)
+    toast.error(msg)
+    error.value = msg
   } finally {
     loadingList.value = false
   }
@@ -130,17 +140,17 @@ onMounted(loadList)
           </h2>
           <p class="flex items-center gap-1 text-xs text-gray-200">
             <MapPin class="w-3 h-3 shrink-0" />
-            <span>{{ current.property.city }}</span>
+            <span>{{ typeof current.property.city === 'string' ? current.property.city : current.property.city?.name ?? '' }}</span>
           </p>
           <p class="text-sm font-semibold text-[var(--color-accent)]">
-            <span>{{ formatPrice(current.room.price_monthly ?? current.property.price_monthly) }}</span>
+            <span>{{ formatPrice(current.room.price ?? current.room.price_monthly ?? current.property.price_monthly ?? current.property.units?.[0]?.price ?? '0') }}</span>
             <span class="text-xs text-gray-200"> {{ t('property.perMonth') }}</span>
           </p>
           <p
-            v-if="current.room.description_translations?.fr || current.property.description_translations?.fr"
+            v-if="current.room.description || (current.room as { description_translations?: { fr?: string } }).description_translations?.fr || current.property.description_translations?.fr"
             class="text-xs text-gray-100 line-clamp-3"
           >
-            {{ current.room.description_translations?.fr ?? current.property.description_translations?.fr }}
+            {{ current.room.description ?? (current.room as { description_translations?: { fr?: string } }).description_translations?.fr ?? current.property.description_translations?.fr }}
           </p>
         </div>
 

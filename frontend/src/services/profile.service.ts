@@ -9,6 +9,8 @@ export interface ProfileDto {
   profession_masked: string | null
   company_masked: string | null
   emergency_contact_masked: string | null
+  preferred_zone: string | null
+  preferred_zones: string[] | null
   kyc_status: string
 }
 
@@ -24,6 +26,8 @@ export async function updateMyProfile(payload: {
   company?: string
   emergency_contact?: string
   preferred_zone?: string
+  /** Plusieurs zones (sélection multiple, comme sujets d’intérêt). */
+  preferred_zones?: string[]
   budget_min?: string
   budget_max?: string
 }) {

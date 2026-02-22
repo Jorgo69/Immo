@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Home, Briefcase, Upload, Check } from 'lucide-vue-next'
 import { useAppStore } from '../stores/app'
@@ -41,7 +41,7 @@ const avatarUploading = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const selectedRole = ref<'tenant' | 'landlord'>('tenant')
-const preferredZone = ref('')
+const preferredZones = ref<string[]>([])
 const budgetMin = ref('')
 const budgetMax = ref('')
 
@@ -55,6 +55,14 @@ const canGoNext = computed(() => {
 
 function zoneLabel(id: string) {
   return t('home.quartiers.' + id)
+}
+
+function toggleZone(zoneId: string) {
+  const current = preferredZones.value
+  const hasZone = current.includes(zoneId)
+  preferredZones.value = hasZone
+    ? current.filter((z) => z !== zoneId)
+    : [...current, zoneId]
 }
 
 async function saveStep1() {
@@ -97,7 +105,7 @@ async function saveStep3() {
   loading.value = true
   try {
     await updateMyProfile({
-      preferred_zone: preferredZone.value || undefined,
+      preferred_zones: preferredZones.value.length > 0 ? preferredZones.value : undefined,
       budget_min: budgetMin.value || undefined,
       budget_max: budgetMax.value || undefined,
     })
@@ -340,32 +348,34 @@ async function onAvatarFileChange(e: Event) {
             <div class="space-y-6">
               <div>
                 <label class="mb-2 block text-sm font-medium text-[var(--color-text)]">
-                  {{ t('onboarding.zoneLabel') }}
+                  {{ t(selectedRole === 'landlord' ? 'onboarding.zoneLabelLandlord' : 'onboarding.zoneLabelTenant') }}
                 </label>
+                <p class="mb-2 text-xs text-[var(--color-muted)]">
+                  {{ t('onboarding.zoneMultiHint') }}
+                </p>
                 <div class="flex flex-wrap gap-2">
-                  <AppButton
-                    v-for="zoneId in ZONE_IDS"
+                  <button
+                    v-for="zoneId of ZONE_IDS"
                     :key="zoneId"
                     type="button"
-                    variant="outline"
-                    size="sm"
                     :class="[
-                      preferredZone === zoneId
+                      'rounded-lg border px-4 py-2 text-sm transition outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]',
+                      preferredZones.includes(zoneId)
                         ? 'border-[var(--color-accent)] bg-emerald-50 text-[var(--color-accent)] dark:bg-emerald-950/30'
-                        : '',
+                        : 'border-gray-200 bg-white text-[var(--color-text)] hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800',
                     ]"
-                    @click="preferredZone = preferredZone === zoneId ? '' : zoneId"
+                    @click.prevent="toggleZone(zoneId)"
                   >
                     {{ zoneLabel(zoneId) }}
-                  </AppButton>
+                  </button>
                 </div>
               </div>
               <div>
                 <label class="mb-2 block text-sm font-medium text-[var(--color-text)]">
-                  {{ t('onboarding.budgetLabel') }}
+                  {{ t(selectedRole === 'landlord' ? 'onboarding.budgetLabelLandlord' : 'onboarding.budgetLabelTenant') }}
                 </label>
                 <p class="mb-3 text-xs text-[var(--color-muted)]">
-                  {{ t('onboarding.budgetQuick') }}
+                  {{ t(selectedRole === 'landlord' ? 'onboarding.budgetQuickLandlord' : 'onboarding.budgetQuickTenant') }}
                 </p>
                 <div class="mb-4 flex flex-wrap gap-2">
                   <AppButton

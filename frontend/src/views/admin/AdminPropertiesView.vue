@@ -7,6 +7,8 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Building2, ChevronRight, Search } from 'lucide-vue-next'
 import { searchProperties, type PropertyListItemDto, type PropertySearchFilters } from '../../services/property.service'
+import { getApiErrorMessage } from '../../services/http'
+import { toast } from 'vue-sonner'
 import { AppTitle, AppButton, AppCard } from '../../components/ui'
 import { AppPagination } from '../../components/ui'
 
@@ -50,6 +52,11 @@ async function fetchList(page = 1) {
     properties.value = result.data
     total.value = result.total
     totalPages.value = result.totalPages
+  } catch (e) {
+    toast.error(getApiErrorMessage(e))
+    properties.value = []
+    total.value = 0
+    totalPages.value = 0
   } finally {
     loading.value = false
   }
@@ -192,11 +199,11 @@ fetchList(1)
                   >
                     <Building2 class="h-5 w-5" />
                   </div>
-                  <span class="font-medium text-[var(--color-text)]">{{ p.title }}</span>
+                  <span class="font-medium text-[var(--color-text)]">{{ p.name ?? p.title }}</span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-[var(--color-text)]">{{ p.city }}</td>
-              <td class="px-4 py-3 text-[var(--color-text)]">{{ formatPrice(p.price_monthly) }}</td>
+              <td class="px-4 py-3 text-[var(--color-text)]">{{ typeof p.city === 'string' ? p.city : p.city?.name }}</td>
+              <td class="px-4 py-3 text-[var(--color-text)]">{{ formatPrice((p.price_monthly ?? p.units?.[0]?.price) ?? '0') }}</td>
               <td class="px-4 py-3">
                 <span
                   class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"

@@ -17,10 +17,19 @@ export class AddMediaHandler implements ICommandHandler<AddMediaCommand> {
       if (!property) throw new NotFoundException('Property not found');
 
       const repo = this.dataSource.getRepository(MediaEntity);
-      const media = repo.create({ property_id: command.property_id, url: command.url, type: command.type });
+      const media = repo.create({
+        property_id: command.property_id,
+        url: command.url,
+        type: command.type,
+        rank: command.rank ?? 1,
+        is_primary: command.is_primary ?? false,
+        description: command.description && typeof command.description === 'object'
+          ? (command.description as Record<string, string>)
+          : null,
+      });
       const saved = await repo.save(media);
       this.logger.log(`Media ajouté: ${saved.id} (${command.type})`);
-      return saved;
+      return saved as MediaEntity;
     } catch (error) {
       this.logger.error(`Erreur add media: ${error instanceof Error ? error.message : error}`);
       throw error;

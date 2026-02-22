@@ -1,0 +1,65 @@
+# Property Seed — Données "Elite" / "Premium"
+# REST Client : exécuter dans l'ordre après avoir récupéré un JWT (auth.http) et un city_id (GET cities ci-dessous).
+# Variables : définir @authToken avec le token renvoyé par POST /auth/verify-otp et @cityId avec un UUID de GET /location/cities.
+
+@baseUrl = http://localhost:3000
+@authToken = YOUR_JWT_TOKEN_HERE
+@cityId = YOUR_CITY_UUID_HERE
+@propertyId = YOUR_PROPERTY_UUID_HERE
+
+### ——— 1. Récupérer les villes (pour copier un city_id) ———
+GET {{baseUrl}}/location/cities
+# GET {{baseUrl}}/location/cities?country_id=UUID_PAYS
+
+### ——— 2. Créer le bien "Premium" (i18n, localisation précise) ———
+# @name create_premium_property
+POST {{baseUrl}}/property
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "name": "Résidence Les Jardins de Cocody",
+  "building_type": "immeuble",
+  "address": "Avenue Jean-Paul II, face station Total, Cotonou",
+  "city_id": "{{cityId}}",
+  "gps_latitude": 6.3703,
+  "gps_longitude": 2.3912,
+  "status": "available",
+  "description": {
+    "fr": "Immeuble moderne de standing, dallé, bord de pavé. Sécurité 24h, accès véhicule facile. Proche zones d'affaires et commodités.",
+    "en": "Modern upscale building, tiled, paved access. 24h security, easy vehicle access. Close to business areas and amenities."
+  }
+}
+
+### ——— 3. Créer l'unité "Elite" ———
+# Remplacer {{propertyId}} par l'id renvoyé en étape 2, ou utiliser la référence : {{create_premium_property.response.body.id}}
+
+# @name create_elite_unit
+POST {{baseUrl}}/property/{{propertyId}}/units
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "name": "Studio Elite A1",
+  "type": "studio",
+  "price": 25000,
+  "description": {
+    "fr": "Studio moderne entièrement staffé avec spots LED, entrée couchée, sanitaire propre. Situé au 1er étage d'un immeuble dallé, bord de pavé, accès véhicule facile.",
+    "en": "Modern fully staffed studio with LED spots, cozy entrance, clean sanitary. Located on the 1st floor of a tiled building, paved access, easy vehicle access."
+  },
+  "features": {
+    "fr": ["Compteur Personnel", "Staffé", "Accès Véhicule", "Sanitaire Intérieur"],
+    "en": ["Private meter", "Staffed", "Vehicle access", "Indoor bathroom"]
+  },
+  "caution_months": 3,
+  "avance_months": 1,
+  "frais_dossier": 10000,
+  "prepaid_electricity": true,
+  "water_included": true,
+  "is_available": true,
+  "floor": 1,
+  "surface_m2": 28
+}
+
+### ——— 4. Vérifier le bien créé (détail avec unités) ———
+GET {{baseUrl}}/property/{{propertyId}}

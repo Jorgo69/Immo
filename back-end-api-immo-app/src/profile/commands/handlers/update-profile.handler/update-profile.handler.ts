@@ -67,6 +67,14 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
         if (command.preferred_zone !== undefined) {
           profile.preferred_zone = command.preferred_zone?.trim() || null;
         }
+        if (command.preferred_zones !== undefined) {
+          const arr = Array.isArray(command.preferred_zones)
+            ? command.preferred_zones.filter((z): z is string => typeof z === 'string').map((z) => z.trim()).filter(Boolean)
+            : [];
+          profile.preferred_zones = arr.length > 0 ? arr : null;
+          // Remplir aussi preferred_zone (1ère zone) pour lisibilité en BDD et rétrocompat
+          profile.preferred_zone = arr.length > 0 ? arr[0] : null;
+        }
         if (command.budget_min !== undefined) {
           profile.budget_min_enc = command.budget_min
             ? this.encryption.encrypt(command.budget_min, user.encryption_salt)
@@ -87,6 +95,7 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
           company_masked: profile.company_enc ? '********' : null,
           emergency_contact_masked: profile.emergency_contact_enc ? '********' : null,
           preferred_zone: profile.preferred_zone,
+          preferred_zones: profile.preferred_zones ?? (profile.preferred_zone ? [profile.preferred_zone] : null),
           kyc_status: profile.kyc_status,
         };
       });

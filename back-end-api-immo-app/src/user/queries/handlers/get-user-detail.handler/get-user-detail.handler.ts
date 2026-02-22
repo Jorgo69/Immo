@@ -7,7 +7,7 @@ import { NotFoundException } from '@nestjs/common';
 import { GetUserDetailQuery } from '../../impl/get-user-detail.query/get-user-detail.query';
 import { UserModel } from '../../../../auth/models/user.model/user.model';
 import { PropertyEntity } from '../../../../property/entities/property.entity';
-import { RoomEntity } from '../../../../property/entities/room.entity';
+import { UnitEntity } from '../../../../property/entities/unit.entity';
 import { WalletEntity } from '../../../../wallet/entities/wallet.entity';
 import { TransactionEntity } from '../../../../wallet/entities/transaction.entity';
 
@@ -56,7 +56,7 @@ export class GetUserDetailHandler implements IQueryHandler<GetUserDetailQuery> {
     }
 
     const propertyRepo = this.dataSource.getRepository(PropertyEntity);
-    const roomRepo = this.dataSource.getRepository(RoomEntity);
+    const unitRepo = this.dataSource.getRepository(UnitEntity);
     const walletRepo = this.dataSource.getRepository(WalletEntity);
     const transactionRepo = this.dataSource.getRepository(TransactionEntity);
 
@@ -76,15 +76,15 @@ export class GetUserDetailHandler implements IQueryHandler<GetUserDetailQuery> {
     let roomsAsOwnerTotal = 0;
     let roomsAsAgentTotal = 0;
     if (ownedIds.length > 0) {
-      roomsAsOwnerTotal = await roomRepo
-        .createQueryBuilder('r')
-        .where('r.property_id IN (:...ids)', { ids: ownedIds })
+      roomsAsOwnerTotal = await unitRepo
+        .createQueryBuilder('u')
+        .where('u.property_id IN (:...ids)', { ids: ownedIds })
         .getCount();
     }
     if (managedIds.length > 0) {
-      roomsAsAgentTotal = await roomRepo
-        .createQueryBuilder('r')
-        .where('r.property_id IN (:...ids)', { ids: managedIds })
+      roomsAsAgentTotal = await unitRepo
+        .createQueryBuilder('u')
+        .where('u.property_id IN (:...ids)', { ids: managedIds })
         .getCount();
     }
 

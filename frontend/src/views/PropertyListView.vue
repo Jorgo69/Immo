@@ -4,8 +4,9 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, List, Map } from 'lucide-vue-next'
 import { searchProperties, semanticSearchProperties } from '../services/property.service'
+import { getApiErrorMessage } from '../services/http'
+import { toast } from 'vue-sonner'
 import PropertyMap from '../components/PropertyMap.vue'
-import type { PropertyForMap } from '../components/PropertyMap.vue'
 import { AppTitle, AppCard, AppButton, AppInput, AppPagination } from '../components/ui'
 import PropertyCard from '../components/PropertyCard.vue'
 
@@ -14,17 +15,7 @@ const router = useRouter()
 
 const PAGE_SIZE = 12
 
-type PropertyItem = {
-  id: string
-  title: string
-  city: string
-  price_monthly: string
-  status: string
-  latitude?: string | null
-  longitude?: string | null
-  media?: Array<{ id: string; url: string; type: string }>
-}
-const properties = ref<PropertyItem[]>([])
+const properties = ref<import('../services/property.service').PropertyListItemDto[]>([])
 const viewMode = ref<'list' | 'map'>('list')
 const loading = ref(true)
 const searchText = ref('')
@@ -54,9 +45,14 @@ async function fetchList(page = 1) {
       useAi.value && filters.q
         ? await semanticSearchProperties(filters)
         : await searchProperties(filters)
-    properties.value = result.data
+    properties.value = result.data as import('../services/property.service').PropertyListItemDto[]
     total.value = result.total
     totalPages.value = result.totalPages
+  } catch (e) {
+    toast.error(getApiErrorMessage(e))
+    properties.value = []
+    total.value = 0
+    totalPages.value = 0
   } finally {
     loading.value = false
   }
@@ -182,7 +178,7 @@ onMounted(fetchList)
     <template v-else>
       <PropertyMap
         v-if="viewMode === 'map'"
-        :properties="(properties as PropertyForMap[])"
+        :properties="properties.map((p) => ({ id: p.id, title: (p.name ?? p.title) ?? '', city: typeof p.city === 'string' ? p.city : (p.city?.name ?? ''), price_monthly: (p.price_monthly ?? p.units?.[0]?.price) ?? '0', latitude: p.gps_latitude ?? null, longitude: p.gps_longitude ?? null }))"
         @select="onMapSelect"
       />
       <template v-else>
@@ -194,10 +190,10 @@ onMounted(fetchList)
           >
             <PropertyCard
               :id="p.id"
-              :title="p.title"
-              :city="p.city"
-              :price-monthly="p.price_monthly"
-              :image-url="p.media?.[0]?.url ?? null"
+              :title="(p.name ?? p.title) ?? ''"
+              :city="typeof p.city === 'string' ? p.city : (p.city?.name ?? '')"
+              :price-monthly="(p.price_monthly ?? p.units?.[0]?.price) ?? '0'"
+              :image-url="p.main_image ?? p.media?.[0]?.url ?? null"
               variant="list"
               @click="(id) => router.push(`/property/${id}`)"
             />

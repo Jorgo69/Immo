@@ -16,6 +16,8 @@ import { HealthModule } from './health/health.module';
 import { WalletModule } from './wallet/wallet.module';
 import { PropertyModule } from './property/property.module';
 import { ProfileModule } from './profile/profile.module';
+import { LocationModule } from './location/location.module';
+import { ReferencesModule } from './references/references.module';
 
 // Entités TypeORM
 import { UserModel } from './auth/models/user.model/user.model';
@@ -23,9 +25,15 @@ import { WalletEntity } from './wallet/entities/wallet.entity';
 import { TransactionEntity } from './wallet/entities/transaction.entity';
 import { PropertyEntity } from './property/entities/property.entity';
 import { MediaEntity } from './property/entities/media.entity';
-import { RoomEntity } from './property/entities/room.entity';
+import { UnitEntity } from './property/entities/unit.entity';
+import { CountryEntity } from './location/entities/country.entity';
+import { CityEntity } from './location/entities/city.entity';
 import { ProfileEntity } from './profile/entities/profile.entity';
 import { PaymentMethodEntity } from './profile/entities/payment-method.entity';
+import { PropertyTypeEntity } from './references/entities/property-type.entity';
+import { PropertyStatusEntity } from './references/entities/property-status.entity';
+import { UnitTypeEntity } from './references/entities/unit-type.entity';
+import { UnitFeatureEntity } from './references/entities/unit-feature.entity';
 
 @Module({
   imports: [
@@ -45,7 +53,7 @@ import { PaymentMethodEntity } from './profile/entities/payment-method.entity';
         username: configService.get('database.username'),
         password: configService.get('database.password'),
         database: configService.get('database.database'),
-        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, RoomEntity, ProfileEntity, PaymentMethodEntity],
+        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, UnitEntity, CountryEntity, CityEntity, ProfileEntity, PaymentMethodEntity, PropertyTypeEntity, PropertyStatusEntity, UnitTypeEntity, UnitFeatureEntity],
         synchronize: configService.get('database.synchronize'),
         logging: configService.get('database.logging'),
       }),
@@ -59,6 +67,8 @@ import { PaymentMethodEntity } from './profile/entities/payment-method.entity';
     WalletModule,
     PropertyModule,
     ProfileModule,
+    LocationModule,
+    ReferencesModule,
     HealthModule,
   ],
   controllers: [AppController],

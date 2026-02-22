@@ -3,10 +3,10 @@ import { apiConfig } from '../config/api'
 import { useAppStore } from '../stores/app'
 
 /**
- * Instance Axios centralisée.
+ * Instance Axios centralisée (ARCHITECTURE §8, §9).
  *
- * - baseURL vient de VITE_API_BASE_URL (sinon proxys Vite en dev).
- * - Timeout raisonnable pour éviter les requêtes qui pendouillent.
+ * - baseURL = VITE_API_BASE_URL (/api en dev) : tous les appels passent par ce préfixe.
+ * - Évite tout conflit avec les routes SPA (ex: /property, /admin/landlord/properties) au rechargement (F5).
  * - Interceptor request : injecte le JWT s'il existe.
  */
 

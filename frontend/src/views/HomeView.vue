@@ -7,6 +7,8 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Search, Wallet, Building2 } from 'lucide-vue-next'
 import { searchProperties, getPropertyById, type PropertyDetailDto } from '../services/property.service'
+import { getApiErrorMessage } from '../services/http'
+import { toast } from 'vue-sonner'
 import { AppTitle, AppParagraph, AppButton, AppCard, InfiniteMarquee } from '../components/ui'
 import HeroCarousel from '../components/home/HeroCarousel.vue'
 import QuartiersBar from '../components/home/QuartiersBar.vue'
@@ -26,7 +28,6 @@ const router = useRouter()
 const mainRef = ref<HTMLElement | null>(null)
 const featured = ref<PropertyDetailDto[]>([])
 const featuredLoading = ref(true)
-const featuredError = ref('')
 let staggerCleanup: (() => void) | null = null
 
 useScrollReveal({ scope: mainRef })
@@ -48,14 +49,13 @@ function goAuth() {
 
 async function loadFeatured() {
   featuredLoading.value = true
-  featuredError.value = ''
   try {
     const result = await searchProperties({ limit: 10 })
     const firstThree = result.data.slice(0, 3)
     const details = await Promise.all(firstThree.map((p) => getPropertyById(p.id)))
     featured.value = details
   } catch (e) {
-    featuredError.value = e instanceof Error ? e.message : 'Erreur'
+    toast.error(t('home.featuredError') + ' ' + getApiErrorMessage(e))
   } finally {
     featuredLoading.value = false
   }
@@ -124,13 +124,9 @@ onUnmounted(() => {
       </div>
       <AppParagraph muted small class="mb-6">{{ t('home.featuredSubtitle') }}</AppParagraph>
 
-      <p v-if="featuredError" class="text-sm text-red-600">
-        {{ t('home.featuredError') }} ({{ featuredError }})
-      </p>
-
       <!-- Skeleton pendant le chargement -->
       <div
-        v-else-if="featuredLoading"
+        v-if="featuredLoading"
         id="featured-cards"
         class="grid grid-cols-1 gap-card sm:grid-cols-3"
       >
@@ -151,10 +147,10 @@ onUnmounted(() => {
           >
             <PropertyCard
               :id="p.id"
-              :title="p.title"
-              :city="p.city"
-              :price-monthly="p.price_monthly"
-              :image-url="p.media?.[0]?.url ?? null"
+              :title="(p.name ?? p.title) ?? ''"
+              :city="typeof p.city === 'string' ? p.city : (p.city?.name ?? '')"
+              :price-monthly="(p.price_monthly ?? p.units?.[0]?.price) ?? '0'"
+              :image-url="p.main_image ?? p.media?.[0]?.url ?? null"
               :media="p.media ?? null"
               @click="openProperty"
               @favorite="onFavorite"

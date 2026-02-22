@@ -115,8 +115,6 @@ async function verifyCode() {
   }
 }
 
-const sentByEmail = () => sentChannels.value.includes('email')
-
 onMounted(() => {
   const tl = gsap.timeline()
   tl.from('.auth-hero', { opacity: 0, y: -10, duration: 0.3, ease: 'power2.out' }).from(
@@ -198,7 +196,7 @@ onMounted(() => {
               <AppInput
                 v-model="phoneLocal"
                 class="flex-1 border-0 bg-transparent px-0 py-0"
-                type="tel"
+                type="text"
                 inputmode="tel"
                 :label="undefined"
                 :placeholder="'90 12 34 56'"

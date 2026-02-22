@@ -3,15 +3,18 @@ import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { Toaster } from 'vue-sonner'
 import { useAppStore } from './stores/app'
+import { useReferenceStore } from './stores/references'
 import { i18n } from './i18n'
 
-// Au chargement : aligner la locale i18n sur le store (persistée dans localStorage).
 const appStore = useAppStore()
-onMounted(() => {
+const referenceStore = useReferenceStore()
+
+onMounted(async () => {
   const stored = appStore.locale
   if (stored === 'en' || stored === 'fr') {
     i18n.global.locale.value = stored
   }
+  await referenceStore.fetch()
 })
 </script>
 

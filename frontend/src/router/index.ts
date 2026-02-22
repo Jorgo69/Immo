@@ -74,6 +74,12 @@ export const router = createRouter({
           meta: { title: 'Liste des biens' },
         },
         {
+          path: 'landlord/properties',
+          name: 'landlord-properties',
+          component: () => import('../views/landlord/Properties.vue'),
+          meta: { title: 'Mes biens', requiresRole: ['landlord', 'agent', 'admin'] },
+        },
+        {
           path: 'properties/:id',
           name: 'admin-property-detail',
           component: () => import('../views/admin/AdminPropertyDetailView.vue'),
@@ -114,6 +120,12 @@ export const router = createRouter({
           name: 'admin-profiles',
           component: () => import('../views/admin/AdminSectionPlaceholder.vue'),
           meta: { title: 'Profils' },
+        },
+        {
+          path: 'location',
+          name: 'admin-location',
+          component: () => import('../views/admin/AdminLocationView.vue'),
+          meta: { title: 'Pays et villes', requiresRole: ['admin'] },
         },
       ],
     },

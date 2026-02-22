@@ -40,6 +40,7 @@ export class ProfileController {
     command.company = body.company;
     command.emergency_contact = body.emergency_contact;
     command.preferred_zone = body.preferred_zone;
+    command.preferred_zones = body.preferred_zones;
     command.budget_min = body.budget_min;
     command.budget_max = body.budget_max;
     return this.commandBus.execute(command);

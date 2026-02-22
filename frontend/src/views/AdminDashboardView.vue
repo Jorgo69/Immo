@@ -8,12 +8,13 @@ import {
   searchProperties,
   getPropertyById,
   createProperty,
-  createRoom,
+  createUnit,
   type PropertyDetailDto,
   type PropertyListItemDto,
-  type CreateRoomPayload,
 } from '../services/property.service'
+import { getCountries, getCities } from '../services/location.service'
 import { getApiErrorMessage } from '../services/http'
+import { toast } from 'vue-sonner'
 import { LayoutDashboard, MapPin, Building2, ShieldCheck, Plus } from 'lucide-vue-next'
 import { AppButton, AppCard, AppTitle, AppParagraph, AppInput, StatCard } from '../components/ui'
 
@@ -46,6 +47,7 @@ const form = ref({
   status: 'available' as (typeof PROPERTY_STATUSES)[number],
 })
 const rooms = ref<Array<{ name: string; type: string; price_monthly: string | number; surface_m2: string | number; floor: string | number }>>([])
+const defaultCityId = ref<string | null>(null)
 
 const userId = computed(() => appStore.userId)
 const role = computed(() => appStore.userRole)
@@ -67,10 +69,10 @@ const managedDetails = computed(() =>
     .filter((d): d is PropertyDetailDto => !!d),
 )
 const totalRoomsOwned = computed(() =>
-  ownedDetails.value.reduce((acc, d) => acc + (d.rooms?.length ?? 0), 0),
+  ownedDetails.value.reduce((acc, d) => acc + (d.units?.length ?? d.rooms?.length ?? 0), 0),
 )
 const totalManagedRooms = computed(() =>
-  managedDetails.value.reduce((acc, d) => acc + (d.rooms?.length ?? 0), 0),
+  managedDetails.value.reduce((acc, d) => acc + (d.units?.length ?? d.rooms?.length ?? 0), 0),
 )
 const totalRooms = computed(() => totalRoomsOwned.value + totalManagedRooms.value)
 
@@ -93,8 +95,17 @@ async function load() {
       acc[d.id] = d
       return acc
     }, {})
+    if (!defaultCityId.value) {
+      const countries = await getCountries()
+      if (countries.length) {
+        const cities = await getCities(countries[0].id)
+        if (cities.length) defaultCityId.value = cities[0].id
+      }
+    }
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erreur'
+    const msg = getApiErrorMessage(e)
+    toast.error(msg)
+    error.value = msg
   } finally {
     loading.value = false
   }
@@ -109,7 +120,7 @@ function openAddForm() {
   formStep.value = 1
   formError.value = ''
   form.value = {
-    title: '',
+    title: 'Sans nom',
     city: '',
     district: '',
     address_details: '',
@@ -168,37 +179,33 @@ async function submitCreate() {
     goToStep2()
     return
   }
-  if (!validateStep1()) return
+  if (!validateStep1() || !defaultCityId.value) return
   creating.value = true
   formError.value = ''
   try {
-    const price = Number(form.value.price_monthly)
     const lat = form.value.latitude !== '' ? Number(form.value.latitude) : undefined
     const lng = form.value.longitude !== '' ? Number(form.value.longitude) : undefined
     const created = await createProperty({
-      owner_id: userId.value,
-      title: form.value.title.trim(),
-      city: form.value.city.trim(),
-      district: form.value.district?.trim() || undefined,
-      address_details: form.value.address_details?.trim() || undefined,
-      price_monthly: price,
-      ...(typeof lat === 'number' && !Number.isNaN(lat) && { latitude: lat }),
-      ...(typeof lng === 'number' && !Number.isNaN(lng) && { longitude: lng }),
+      name: form.value.title.trim(),
+      building_type: 'villa',
+      address: form.value.address_details?.trim() || form.value.city.trim() || '',
+      city_id: defaultCityId.value,
+      ...(typeof lat === 'number' && !Number.isNaN(lat) && { gps_latitude: lat }),
+      ...(typeof lng === 'number' && !Number.isNaN(lng) && { gps_longitude: lng }),
       status: form.value.status,
     })
     for (const r of rooms.value) {
       if (!r.name?.trim()) continue
-      const priceVal = r.price_monthly !== '' ? Number(r.price_monthly) : undefined
+      const priceVal = r.price_monthly !== '' ? Number(r.price_monthly) : 0
       const surfaceVal = r.surface_m2 !== '' ? Number(r.surface_m2) : undefined
       const floorVal = r.floor !== '' ? Number(r.floor) : undefined
-      const payload: CreateRoomPayload = {
+      await createUnit(created.id, {
         name: r.name.trim(),
-        type: r.type || undefined,
-        ...(typeof priceVal === 'number' && !Number.isNaN(priceVal) && priceVal >= 0 && { price_monthly: priceVal }),
-        ...(typeof surfaceVal === 'number' && !Number.isNaN(surfaceVal) && surfaceVal >= 0 && { surface_m2: surfaceVal }),
-        ...(typeof floorVal === 'number' && !Number.isNaN(floorVal) && floorVal >= 0 && { floor: floorVal }),
-      }
-      await createRoom(created.id, payload)
+        type: r.type || 'studio',
+        price: typeof priceVal === 'number' && !Number.isNaN(priceVal) ? priceVal : 0,
+        ...(typeof surfaceVal === 'number' && surfaceVal >= 0 && { surface_m2: surfaceVal }),
+        ...(typeof floorVal === 'number' && floorVal >= 0 && { floor: floorVal }),
+      })
     }
     notifications.add({
       type: 'success',
@@ -233,12 +240,44 @@ onMounted(load)
           <ShieldCheck class="w-4 h-4 text-[var(--color-accent)]" />
           <span>{{ t('admin.hint') }}</span>
         </div>
-        <AppButton v-if="!showAddForm" variant="primary" size="sm" @click="openAddForm">
+        <template v-if="role === 'landlord'">
+          <AppButton variant="outline" size="sm" @click="router.push('/admin/landlord/properties')">
+            <Building2 class="w-4 h-4" />
+            {{ t('landlord.myProperties') }}
+          </AppButton>
+          <AppButton variant="primary" size="sm" @click="router.push('/admin/landlord/properties?openAdd=property')">
+            <Plus class="w-4 h-4" />
+            {{ t('landlord.addProperty') }}
+          </AppButton>
+        </template>
+        <AppButton v-else-if="!showAddForm" variant="primary" size="sm" @click="openAddForm">
           <Plus class="w-4 h-4" />
           {{ t('admin.addProperty') }}
         </AppButton>
       </div>
     </header>
+
+    <!-- Raccourci propriétaire : Mes biens + Ajouter un bien -->
+    <AppCard v-if="role === 'landlord' && !loading" class="mb-6 p-4">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-semibold text-[var(--color-text)] flex items-center gap-2">
+            <Building2 class="w-5 h-5 text-[var(--color-accent)]" />
+            {{ t('landlord.myProperties') }}
+          </h2>
+          <p class="text-sm text-[var(--color-muted)] mt-1">{{ t('landlord.myPropertiesSubtitle') }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <AppButton variant="outline" size="sm" @click="router.push('/admin/landlord/properties')">
+            {{ t('landlord.myProperties') }}
+          </AppButton>
+          <AppButton variant="primary" size="sm" @click="router.push('/admin/landlord/properties?openAdd=property')">
+            <Plus class="w-4 h-4" />
+            {{ t('landlord.addProperty') }}
+          </AppButton>
+        </div>
+      </div>
+    </AppCard>
 
     <p v-if="error" class="text-sm text-red-600 mb-4">{{ error }}</p>
     <p v-else-if="loading" class="text-[var(--color-muted)]">
@@ -343,14 +382,14 @@ onMounted(load)
             @click="router.push(`/property/${p.id}`)"
           >
             <div class="min-w-0">
-              <p class="font-medium text-[var(--color-text)] truncate">{{ p.title }}</p>
+              <p class="font-medium text-[var(--color-text)] truncate">{{ p.name ?? p.title }}</p>
               <p class="flex items-center gap-1 text-[var(--color-muted)] text-xs mt-1">
                 <MapPin class="w-3 h-3 shrink-0" />
-                <span class="truncate">{{ p.city }}</span>
+                <span class="truncate">{{ typeof p.city === 'string' ? p.city : p.city?.name }}</span>
               </p>
             </div>
             <p class="text-[var(--color-accent)] font-semibold text-xs sm:text-sm">
-              {{ formatPrice(p.price_monthly) }}
+              {{ formatPrice((p.price_monthly ?? p.units?.[0]?.price) ?? '0') }}
             </p>
           </li>
         </ul>
@@ -373,14 +412,14 @@ onMounted(load)
             @click="router.push(`/property/${p.id}`)"
           >
             <div class="min-w-0">
-              <p class="font-medium text-[var(--color-text)] truncate">{{ p.title }}</p>
+              <p class="font-medium text-[var(--color-text)] truncate">{{ p.name ?? p.title }}</p>
               <p class="flex items-center gap-1 text-[var(--color-muted)] text-xs mt-1">
                 <MapPin class="w-3 h-3 shrink-0" />
-                <span class="truncate">{{ p.city }}</span>
+                <span class="truncate">{{ typeof p.city === 'string' ? p.city : p.city?.name }}</span>
               </p>
             </div>
             <p class="text-[var(--color-accent)] font-semibold text-xs sm:text-sm">
-              {{ formatPrice(p.price_monthly) }}
+              {{ formatPrice((p.price_monthly ?? p.units?.[0]?.price) ?? '0') }}
             </p>
           </li>
         </ul>

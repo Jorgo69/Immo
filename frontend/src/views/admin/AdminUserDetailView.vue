@@ -14,6 +14,8 @@ import {
   type UserDetailResultDto,
   type PaginatedTransactionsResult,
 } from '../../services/user.service'
+import { getApiErrorMessage } from '../../services/http'
+import { toast } from 'vue-sonner'
 import { AppTitle, AppButton, AppCard } from '../../components/ui'
 import AppLink from '../../components/ui/AppLink.vue'
 
@@ -64,7 +66,9 @@ async function fetchDetail() {
       transactions.value = null
     }
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : t('admin.userDetail.errorLoad')
+    const msg = getApiErrorMessage(e)
+    toast.error(msg)
+    error.value = msg || t('admin.userDetail.errorLoad')
   } finally {
     loading.value = false
     transactionsLoading.value = false

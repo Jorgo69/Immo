@@ -15,17 +15,22 @@ export class SearchPropertiesHandler implements IQueryHandler<SearchPropertiesQu
 
     const qb = this.dataSource.getRepository(PropertyEntity).createQueryBuilder('p');
     qb.leftJoinAndSelect('p.media', 'media');
+    qb.leftJoin('p.city', 'city');
     if (query.q?.trim()) {
       const term = `%${query.q.trim().replace(/%/g, '\\%')}%`;
       qb.andWhere(
-        '(p.title ILIKE :term OR p.city ILIKE :term OR p.district ILIKE :term OR CAST(p.description_translations AS TEXT) ILIKE :term OR CAST(p.title_translations AS TEXT) ILIKE :term)',
+        '(p.name ILIKE :term OR p.address ILIKE :term OR city.name ILIKE :term)',
         { term },
       );
     }
-    if (query.city) qb.andWhere('p.city = :city', { city: query.city });
+    if (query.city) qb.andWhere('city.name = :city', { city: query.city });
     if (query.status) qb.andWhere('p.status = :status', { status: query.status });
-    if (query.min_price != null) qb.andWhere('p.price_monthly >= :min_price', { min_price: String(query.min_price) });
-    if (query.max_price != null) qb.andWhere('p.price_monthly <= :max_price', { max_price: String(query.max_price) });
+    if (query.min_price != null) {
+      qb.andWhere('EXISTS (SELECT 1 FROM units u WHERE u.property_id = p.id AND (u.deleted_at IS NULL) AND u.price >= :min_price)', { min_price: String(query.min_price) });
+    }
+    if (query.max_price != null) {
+      qb.andWhere('EXISTS (SELECT 1 FROM units u WHERE u.property_id = p.id AND (u.deleted_at IS NULL) AND u.price <= :max_price)', { max_price: String(query.max_price) });
+    }
     qb.orderBy('p.created_at', 'DESC');
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();

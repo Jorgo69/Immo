@@ -13,6 +13,7 @@ export interface GetProfileByUserResult {
   company_masked: string | null;
   emergency_contact_masked: string | null;
   preferred_zone: string | null;
+  preferred_zones: string[] | null;
   kyc_status: string;
 }
 
@@ -36,6 +37,7 @@ export class GetProfileByUserHandler implements IQueryHandler<GetProfileByUserQu
       company_masked: profile.company_enc ? MASKED_PLACEHOLDER : null,
       emergency_contact_masked: profile.emergency_contact_enc ? MASKED_PLACEHOLDER : null,
       preferred_zone: profile.preferred_zone,
+      preferred_zones: profile.preferred_zones ?? (profile.preferred_zone ? [profile.preferred_zone] : null),
       kyc_status: profile.kyc_status,
     };
   }

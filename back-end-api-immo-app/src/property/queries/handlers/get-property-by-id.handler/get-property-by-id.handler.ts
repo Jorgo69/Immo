@@ -11,7 +11,7 @@ export class GetPropertyByIdHandler implements IQueryHandler<GetPropertyByIdQuer
   async execute(query: GetPropertyByIdQuery): Promise<PropertyEntity> {
     const property = await this.dataSource.getRepository(PropertyEntity).findOne({
       where: { id: query.id },
-      relations: ['media', 'rooms'],
+      relations: ['media', 'units', 'city'],
     });
     if (!property) throw new NotFoundException('Property not found');
     return property;

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateProfileCommand {
   userId: string; // from JWT
@@ -10,6 +10,11 @@ export class UpdateProfileCommand {
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(200) company?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(100) emergency_contact?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(100) preferred_zone?: string;
+  @ApiProperty({ required: false, type: [String], description: 'Plusieurs zones (sélection multiple)' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  preferred_zones?: string[];
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(50) budget_min?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(50) budget_max?: string;
 }

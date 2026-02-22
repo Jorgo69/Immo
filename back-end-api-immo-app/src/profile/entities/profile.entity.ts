@@ -47,6 +47,10 @@ export class ProfileEntity {
   @Column({ type: 'varchar', length: 100, nullable: true, name: 'preferred_zone' })
   preferred_zone: string | null;
 
+  /** Plusieurs zones (ex. quartiers) — comme sujets d’intérêt, sélection multiple. */
+  @Column({ type: 'jsonb', nullable: true, name: 'preferred_zones' })
+  preferred_zones: string[] | null;
+
   @Column({ type: 'text', nullable: true, name: 'budget_min_enc' })
   budget_min_enc: string | null;
 

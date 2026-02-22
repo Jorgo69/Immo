@@ -1,0 +1,20 @@
+/**
+ * Query : liste des biens d'un propriétaire (owner_id), avec filtres et pagination.
+ * Utilisée par GET /property/owner/me (owner_id = req.user.id).
+ */
+import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsOptional, IsString, IsNumber, IsEnum, Min, Max, IsInt, IsUUID } from 'class-validator';
+import { PropertyStatus } from '../../../entities/property.entity';
+import { PAGINATION_DEFAULT_LIMIT, PAGINATION_MAX_LIMIT } from '../../../../common/dto/pagination.dto';
+
+export class GetPropertiesByOwnerQuery {
+  @ApiProperty() @IsUUID() owner_id: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() city?: string;
+  @ApiProperty({ required: false, enum: PropertyStatus }) @IsOptional() @IsEnum(PropertyStatus) status?: PropertyStatus;
+  @ApiProperty({ required: false }) @IsOptional() @IsNumber() @Min(0) min_price?: number;
+  @ApiProperty({ required: false }) @IsOptional() @IsNumber() @Min(0) max_price?: number;
+  @ApiProperty({ required: false, default: 1 }) @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number = 1;
+  @ApiProperty({ required: false, default: PAGINATION_DEFAULT_LIMIT, maximum: PAGINATION_MAX_LIMIT })
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(PAGINATION_MAX_LIMIT) limit?: number = PAGINATION_DEFAULT_LIMIT;
+}

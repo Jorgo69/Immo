@@ -1,10 +1,12 @@
 <script setup lang="ts">
 /**
  * Carte bien : mini-carrousel d'images (3–4 max), bouton Favoris (cœur), hover scale. Cliquable vers détail.
+ * Les URLs d'images sont résolues via getUploadUrl (ARCHITECTURE §9).
  */
 import { ref, computed } from 'vue'
 import { MapPin, Heart } from 'lucide-vue-next'
 import { useAppStore } from '../stores/app'
+import { getUploadUrl } from '../config/api'
 
 const props = withDefaults(
   defineProps<{
@@ -27,9 +29,9 @@ const currentImageIndex = ref(0)
 
 const images = computed(() => {
   if (props.media?.length) {
-    return props.media.slice(0, 4).map((m) => m.url)
+    return props.media.slice(0, 4).map((m) => getUploadUrl(m.url))
   }
-  if (props.imageUrl) return [props.imageUrl]
+  if (props.imageUrl) return [getUploadUrl(props.imageUrl)]
   return []
 })
 
