@@ -7,14 +7,15 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Building2, Plus, MapPin, Settings2, MoreVertical, TrendingUp, PieChart, Home, AlertCircle, Clock } from 'lucide-vue-next'
+import { Building2, Plus, MapPin, Settings2, MoreVertical, TrendingUp, PieChart, Home, Clock } from 'lucide-vue-next'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
 import { useProperty } from '../../composables/useProperty'
 import { useViewMode } from '../../composables/useViewMode'
 import type { PropertyListItemDto, PropertyDetailDto, UnitDto } from '../../services/property.service'
 import { deleteProperty } from '../../services/property.service'
-import { AppCard, AppButton, AppTitle, AppParagraph, AppInput, ViewSwitcher, ConfirmModal } from '../../components/ui'
+import { getCities } from '../../services/location.service'
+import { AppButton, AppTitle, AppParagraph, AppInput, ViewSwitcher, ConfirmModal, StatCard } from '../../components/ui'
 import PropertyCardImage from '../../components/landlord/PropertyCardImage.vue'
 import PropertyTable from './PropertyTable.vue'
 import PropertyDetailsDrawer from './PropertyDetailsDrawer.vue'
@@ -49,9 +50,19 @@ const deletingProperty = ref(false)
 const searchQuery = ref('')
 const filterCityId = ref('')
 const filterVacanciesOnly = ref(false)
+/** Référentiel villes (id → nom) pour afficher les noms au lieu des IDs. */
+const cityNamesById = ref<Record<string, string>>({})
 
-onMounted(() => {
+onMounted(async () => {
   fetchList().catch(() => {})
+  try {
+    const cities = await getCities()
+    const map: Record<string, string> = {}
+    for (const c of cities) map[c.id] = c.name ?? c.id
+    cityNamesById.value = map
+  } catch {
+    // Ignorer : on garde les noms venant de p.city?.name
+  }
   if (route.query.openAdd === 'property') {
     showAddPropertyModal.value = true
     router.replace({ path: route.path, query: {} })
@@ -80,17 +91,29 @@ watch(gridActionsOpenId, (id) => {
 
 onBeforeUnmount(() => document.removeEventListener('click', onDocClickGrid))
 
+/** Retourne la chaîne du nom pour recherche (jamais d’ID brut). */
+function getPropertyNameForSearch(p: PropertyListItemDto): string {
+  const n = p.name
+  if (typeof n === 'object' && n !== null) {
+    const o = n as unknown as Record<string, string>
+    return [o.fr, o.en].filter(Boolean).join(' ')
+  }
+  return typeof n === 'string' ? n : ''
+}
+
 const cityOptions = computed(() => {
   const seen = new Set<string>()
-  const names: { id: string; name: string }[] = []
+  const options: { id: string; name: string }[] = []
+  const namesById = cityNamesById.value
   for (const p of properties.value) {
-    if (p.city_id && p.city?.name && !seen.has(p.city_id)) {
-      seen.add(p.city_id)
-      names.push({ id: p.city_id, name: p.city.name })
-    }
+    const cid = p.city_id ?? ''
+    if (!cid || seen.has(cid)) continue
+    seen.add(cid)
+    const name = p.city?.name ?? namesById[cid] ?? t('landlord.city')
+    options.push({ id: cid, name: typeof name === 'string' ? name : t('landlord.city') })
   }
-  names.sort((a, b) => a.name.localeCompare(b.name))
-  return [{ id: '', name: t('landlord.filterCityAll') }, ...names]
+  options.sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+  return [{ id: '', name: t('landlord.filterCityAll') }, ...options]
 })
 
 const filteredProperties = computed(() => {
@@ -99,12 +122,15 @@ const filteredProperties = computed(() => {
   if (q) {
     list = list.filter(
       (p) =>
-        (p.name?.toLowerCase().includes(q)) ||
+        getPropertyNameForSearch(p).toLowerCase().includes(q) ||
         (p.city?.name?.toLowerCase().includes(q)) ||
         (p.address?.toLowerCase().includes(q))
     )
   }
-  if (filterCityId.value) list = list.filter((p) => p.city_id === filterCityId.value)
+  const cityFilter = filterCityId.value
+  if (cityFilter != null && String(cityFilter).trim() !== '') {
+    list = list.filter((p) => (p.city_id ?? '') === cityFilter)
+  }
   if (filterVacanciesOnly.value) {
     list = list.filter((p) => {
       const units = p.units ?? []
@@ -387,27 +413,21 @@ watch(
         </div>
       </header>
 
-      <!-- KPI Header (Frijo style) -->
+      <!-- KPI Header (StatCard) -->
       <section v-if="properties.length" class="col-span-12 grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="rounded-2xl border border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-ui-surface-dark shadow-soft p-4 flex items-center gap-3">
-          <div class="shrink-0 w-10 h-10 rounded-xl bg-primary-emerald/10 flex items-center justify-center text-primary-emerald">
-            <TrendingUp class="w-5 h-5" />
-          </div>
-          <div class="min-w-0">
-            <p class="text-xs text-ui-muted dark:text-gray-400">{{ t('landlord.kpi.monthlyRevenue') }}</p>
-            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
-              {{ new Intl.NumberFormat('fr-FR').format(kpiMonthlyRevenue) }} FCFA
-            </p>
-          </div>
-        </div>
-        <div class="rounded-2xl border border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-ui-surface-dark shadow-soft p-4 flex items-center gap-3">
-          <div class="shrink-0 w-10 h-10 rounded-xl bg-primary-emerald/10 flex items-center justify-center text-primary-emerald">
-            <PieChart class="w-5 h-5" />
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-xs text-ui-muted dark:text-gray-400">{{ t('landlord.kpi.occupancyRate') }}</p>
-            <div class="flex items-center gap-2">
-              <div class="flex-1 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+        <StatCard
+          :label="t('landlord.kpi.monthlyRevenue')"
+          :value="new Intl.NumberFormat('fr-FR').format(kpiMonthlyRevenue) + ' FCFA'"
+          :icon="TrendingUp"
+        />
+        <StatCard
+          :label="t('landlord.kpi.occupancyRate')"
+          :value="kpiOccupancyRate + '%'"
+          :icon="PieChart"
+        >
+          <template #value>
+            <div class="flex items-center gap-2 min-w-0">
+              <div class="flex-1 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden min-w-0">
                 <div
                   class="h-full rounded-full bg-primary-emerald transition-all duration-300"
                   :style="{ width: String(kpiOccupancyRate) + '%' }"
@@ -415,38 +435,19 @@ watch(
               </div>
               <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 shrink-0">{{ kpiOccupancyRate }}%</span>
             </div>
-          </div>
-        </div>
-        <div
-          class="rounded-2xl border shadow-soft p-4 flex items-center gap-3 transition-colors"
-          :class="kpiVacantUnits > 0
-            ? 'border-warning-orange/50 dark:border-warning-orange/50 bg-warning-orange-light/30 dark:bg-warning-orange/10'
-            : 'border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-ui-surface-dark'"
-        >
-          <div
-            class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
-            :class="kpiVacantUnits > 0 ? 'bg-warning-orange/20 text-warning-orange' : 'bg-primary-emerald/10 text-primary-emerald'"
-          >
-            <Home class="w-5 h-5" />
-          </div>
-          <div class="min-w-0">
-            <p class="text-xs text-ui-muted dark:text-gray-400">{{ t('landlord.kpi.vacantUnits') }}</p>
-            <p class="text-lg font-semibold" :class="kpiVacantUnits > 0 ? 'text-warning-orange' : 'text-gray-900 dark:text-gray-100'">
-              {{ kpiVacantUnits }}
-            </p>
-          </div>
-        </div>
-        <div class="rounded-2xl border border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-ui-surface-dark shadow-soft p-4 flex items-center gap-3">
-          <div class="shrink-0 w-10 h-10 rounded-xl bg-primary-emerald/10 flex items-center justify-center text-primary-emerald">
-            <Clock class="w-5 h-5" />
-          </div>
-          <div class="min-w-0">
-            <p class="text-xs text-ui-muted dark:text-gray-400">{{ t('landlord.kpi.pendingPayments') }}</p>
-            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {{ kpiPendingPayments }}
-            </p>
-          </div>
-        </div>
+          </template>
+        </StatCard>
+        <StatCard
+          :label="t('landlord.kpi.vacantUnits')"
+          :value="String(kpiVacantUnits)"
+          :icon="Home"
+          :alert="kpiVacantUnits > 0"
+        />
+        <StatCard
+          :label="t('landlord.kpi.pendingPayments')"
+          :value="String(kpiPendingPayments)"
+          :icon="Clock"
+        />
       </section>
 
       <!-- Filtres -->
