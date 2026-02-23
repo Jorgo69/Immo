@@ -19,6 +19,7 @@ export default {
         'ui-muted': '#6B7280',
         'ui-border': '#e5e7eb',
         'ui-border-dark': '#374151',
+        'ui-border-hover': '#d1d5db',
         // Compatibilité existante
         immo: {
           bg: '#F9FAFB',
@@ -35,6 +36,7 @@ export default {
       backgroundColor: {
         'ui-surface-dark': '#1f2937',
         'sidebar-dark': '#0f1419',
+        'overlay': 'rgba(0, 0, 0, 0.5)',
       },
       boxShadow: {
         'soft': '0 2px 8px rgba(0, 0, 0, 0.06)',
@@ -75,6 +77,7 @@ export default {
         'screen-90': '90vh',
       },
       borderRadius: {
+        '2xl': '1rem',
         'card': '1rem',
         'card-lg': '1.25rem',
       },

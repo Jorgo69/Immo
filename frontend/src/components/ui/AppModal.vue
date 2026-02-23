@@ -25,7 +25,7 @@ const emit = defineEmits<{ (e: 'close'): void }>()
     >
       <div
         v-if="show"
-        class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-modal"
+        class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-overlay backdrop-blur-modal"
         role="dialog"
         aria-modal="true"
         :aria-labelledby="'modal-title-' + title"
@@ -41,15 +41,15 @@ const emit = defineEmits<{ (e: 'close'): void }>()
         >
           <div
             v-if="show"
-            class="bg-ui-surface dark:bg-gray-800 rounded-2xl shadow-soft-lg w-full max-w-modal-lg max-h-screen-90 flex flex-col border border-ui-border dark:border-gray-700"
+            class="bg-ui-surface dark:bg-ui-surface-dark rounded-2xl shadow-soft-lg w-full max-w-modal-lg max-h-screen-90 flex flex-col border border-ui-border dark:border-ui-border-dark"
             @click.stop
           >
-            <header class="flex items-center justify-between p-4 border-b border-ui-border dark:border-gray-700 shrink-0">
+            <header class="flex items-center justify-between p-4 border-b border-ui-border dark:border-ui-border-dark shrink-0">
               <h2 :id="'modal-title-' + title" class="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {{ title }}
               </h2>
               <AppButton type="button" variant="ghost" size="sm" :aria-label="$t('common.cancel')" @click="emit('close')">
-                <X class="w-5 h-5" />
+                <X :size="20" class="shrink-0 text-ui-muted" />
               </AppButton>
             </header>
             <div class="flex-1 overflow-y-auto p-4">

@@ -34,17 +34,33 @@ Chaque module doit suivre cette hiérarchie :
 
 ### Atomic Design & Réutilisabilité
 - **Composants UI :** Interdiction de coder des styles complexes en dur. Utiliser ou créer des composants dans `@/components/ui`.
+- **Composants de base (AppButton, AppInput, AppCard, AppModal, StatCard, ConfirmModal) :** Aucune valeur en dur (ex: `#ffffff`, `12px`, `red-600`) dans les fichiers `.vue`. Couleurs, bordures et fonds doivent être mappés sur les tokens du `tailwind.config.js` (ex: `bg-ui-surface`, `border-ui-border`, `text-danger-red`, `dark:bg-ui-surface-dark`, `dark:border-ui-border-dark`). Backdrop des modals : token `bg-overlay`.
 - **Tokens Tailwind :** Utiliser EXCLUSIVEMENT les classes définies dans `tailwind.config.js` (ex: `text-primary-emerald`, `bg-ui-surface`). Pas de valeurs HEX arbitraires.
 - **Composables :** La logique d'API, le state management et les calculs complexes doivent résider dans `@/composables`.
 - **Responsive "Desktop-First Optimization" :** Bien que Mobile-First, chaque page doit exploiter l'espace horizontal sur Desktop via des Grids (`grid-cols-12`) et des Sidebars.
 
 ### Thème global (Light / Dark)
 - **Un seul état à la fois :** Si le mode **light** est actif, toute l’interface est en thème clair (sidebar, header, contenu, cartes). Si le mode **dark** est actif, toute l’interface est en thème sombre. Aucune zone ne doit rester fixée en clair ou en sombre indépendamment du choix utilisateur.
-- **Stratégie technique :** La classe `.dark` est appliquée sur `<html>` (voir `useTheme`). Tous les composants doivent fournir des variantes `dark:` pour fond, texte et bordures (ex: `bg-ui-surface dark:bg-gray-800`, `text-gray-900 dark:text-gray-100`).
+- **Stratégie technique :** La classe `.dark` est appliquée sur `<html>` (voir `useTheme`). Tous les composants doivent fournir des variantes `dark:` en utilisant les **tokens dark** du thème : `dark:bg-ui-surface-dark`, `dark:border-ui-border-dark`, `dark:text-gray-100` (éviter `dark:bg-gray-800` en faveur de `dark:bg-ui-surface-dark`).
 
-### Design Landlord (Espace pro — Frijo / MallOS)
+### Règles visuelles strictes (Zéro arbitraire, MallOS)
+Lors de toute modification de vues ou de composants UI (en particulier en taguant `ARCHITECTURE.md` ou les vues Landlord) :
+
+- **Zéro classe arbitraire, 100 % tokens thème :** Aucune valeur en dur dans les classes Tailwind (`text-[#xxx]`, `p-[12px]`, `min-w-[160px]`, etc.). Tout doit être mappé dans `tailwind.config.js` sous un nom sémantique (couleurs, `spacing`, `borderRadius`, `boxShadow`, `maxWidth`). Si un besoin nouveau apparaît (ombre, espacement), l’ajouter d’abord dans la config puis l’utiliser.
+- **Cartes (grilles, listes) :** Utiliser le composant `AppCard` avec la prop `padding="none"` lorsque le contenu gère son propre padding. Classes obligatoires pour l’enveloppe : `bg-ui-surface`, `border-ui-border`, `rounded-2xl`, `shadow-soft` et variantes dark : `dark:bg-ui-surface-dark`, `dark:border-ui-border-dark`.
+- **Densité MallOS :** Cartes denses, pas de vide inutile. Typographie : `text-sm` pour les détails/secondaire, `text-xs` pour les badges et libellés courts.
+- **Badges (intelligence métier) :**
+  - **Nombre de ménages :** Calcul dynamique du nombre d’unités rattachées au bien ; affichage avec le libellé i18n `landlord.kpi.households`.
+  - **Accès véhicule :** Affichage du badge (icône Lucide `Car`) si le **bien** ou **au moins une de ses unités** possède un équipement de type « Parking » ou « Accès véhicule » (référentiel / `features`).
+- **Barre de remplissage (occupation) :** Fond de la barre : `bg-ui-border` / `dark:bg-ui-border-dark` ; remplissage : `bg-primary-emerald`. Pas de couleurs arbitraires.
+- **Icônes (Lucide-Vue-Next uniquement) :**
+  - **Bibliothèque exclusive :** Toutes les icônes de l’interface proviennent de `lucide-vue-next`. Aucune autre librairie d’icônes ni emojis pour les indicateurs métier (ménages, accès véhicule, etc.).
+  - **Équivalents sémantiques :** Utiliser les composants Lucide adaptés au sens (ex: `Users` pour les ménages, `Car` pour l’accès véhicule, `Home` pour les biens, `Building2` pour le patrimoine, `MapPin` pour la localisation).
+  - **Tailles standard (densité MallOS) :** Dans les **cartes** (grille, compact) : `size="18"` ou `size="20"` ; dans les **KPI** (StatCard et blocs chiffrés) : `size="24"`. Pour les badges très denses (overlay sur image) : `size="14"` acceptable.
+  - **Couleurs thème :** Toujours passer par les classes Tailwind du thème (ex: `text-primary-emerald`, `text-ui-muted`, `text-danger-red`, `text-white` sur fond sombre). Pas de couleur en dur sur l’icône ; utiliser `text-current` lorsque l’icône doit hériter de la couleur du parent (ex: dans StatCard).
+  - **Cohérence :** Préférer la prop `size` (nombre en pixels) plutôt que `class="w-x h-x"` pour uniformiser les dimensions.
 - **Sidebar :** Fine, icônes minimalistes, **thème-aware** (claire en light, sombre en dark) ; état **collapse** persisté en `localStorage` ; sous-menus **flottants** au survol en mode réduit, **accordéon** en mode étendu pour Biens et Finances.
-- **Dashboard / Properties :** En-tête **KPI** (Revenu mensuel, Taux d'occupation avec barre de progression, Unités vacantes avec alerte si > 0, Paiements en attente). Cartes biens **data-dense**, `rounded-2xl`, bordures fines, `shadow-soft` ; sur chaque carte : nombre de ménages, badge « Accès véhicule » si pertinent, barre de progression de remplissage.
+- **Dashboard / Properties :** En-tête **KPI** (Revenu mensuel, Taux d'occupation avec barre de progression, Unités vacantes avec alerte si > 0, Paiements en attente). Cartes biens **data-dense**, `rounded-2xl`, bordures fines, `shadow-soft` ; sur chaque carte : icône `Users` + nombre de ménages, icône `Car` + badge « Accès véhicule » si pertinent, barre de progression de remplissage. Icônes Lucide exclusives, tailles 18/20 dans les cartes et 24 dans les KPI.
 - **Modals :** Largeur généreuse (`max-w-modal-lg`), centrées, **backdrop blur** ; transitions douces.
 - **Toasts (vue-sonner) :** Stylés selon la charte (couleurs sémantiques, ombres du thème).
 

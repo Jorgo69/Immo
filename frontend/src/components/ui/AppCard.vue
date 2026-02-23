@@ -15,7 +15,7 @@ withDefaults(
 <template>
   <div
     :class="[
-      'rounded-2xl border border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-gray-800 shadow-soft',
+      'rounded-2xl border border-ui-border dark:border-ui-border-dark bg-ui-surface dark:bg-ui-surface-dark shadow-soft',
       padding === 'none' && 'p-0',
       padding === 'sm' && 'p-3',
       padding === 'md' && 'p-4',

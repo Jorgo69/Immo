@@ -32,7 +32,7 @@ const { t } = useI18n()
     >
       <div
         v-if="show"
-        class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50"
+        class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-overlay"
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
@@ -48,21 +48,21 @@ const { t } = useI18n()
         >
           <div
             v-if="show"
-            class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+            class="bg-ui-surface dark:bg-ui-surface-dark rounded-2xl shadow-soft-lg w-full max-w-modal overflow-hidden border border-ui-border dark:border-ui-border-dark"
             @click.stop
           >
             <div class="p-6 text-center">
-              <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 mb-4">
-                <AlertTriangle class="w-6 h-6" />
+              <div class="mx-auto flex w-12 h-12 items-center justify-center rounded-full bg-danger-red/10 text-danger-red mb-4">
+                <AlertTriangle :size="24" class="shrink-0 text-danger-red" />
               </div>
-              <h2 id="confirm-title" class="text-lg font-semibold text-[var(--color-text)] mb-2">
+              <h2 id="confirm-title" class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 {{ title }}
               </h2>
-              <p class="text-sm text-[var(--color-muted)]">
+              <p class="text-sm text-ui-muted">
                 {{ message }}
               </p>
             </div>
-            <div class="flex gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+            <div class="flex gap-3 p-4 border-t border-ui-border dark:border-ui-border-dark bg-ui-background/50 dark:bg-ui-surface-dark/50">
               <AppButton variant="ghost" class="flex-1" :disabled="loading" @click="emit('close')">
                 {{ t('common.cancel') }}
               </AppButton>

@@ -51,7 +51,7 @@ watch(() => props.modelValue, (v) => { if (props.storageKey) persist(v) })
 
 <template>
   <div
-    class="inline-flex rounded-lg border border-gray-200 dark:border-gray-600 p-0.5 bg-gray-50 dark:bg-gray-800/50"
+    class="inline-flex rounded-lg border border-ui-border dark:border-ui-border-dark p-0.5 bg-ui-background dark:bg-ui-surface-dark/50"
     role="group"
     aria-label="Mode d'affichage"
   >
@@ -60,39 +60,39 @@ watch(() => props.modelValue, (v) => { if (props.storageKey) persist(v) })
       :class="[
         'p-2 rounded-md transition-colors',
         props.modelValue === 'grid'
-          ? 'bg-white dark:bg-gray-700 shadow-sm text-[var(--color-accent)]'
-          : 'text-[var(--color-muted)] hover:text-[var(--color-text)]',
+          ? 'bg-ui-surface dark:bg-ui-surface-dark shadow-soft-sm text-primary-emerald'
+          : 'text-ui-muted hover:text-gray-900 dark:hover:text-gray-100',
       ]"
       :aria-label="t('common.viewGrid')"
       @click="select('grid')"
     >
-      <LayoutGrid class="w-4 h-4" />
+      <LayoutGrid :size="18" class="shrink-0 text-current" />
     </button>
     <button
       type="button"
       :class="[
         'p-2 rounded-md transition-colors',
         props.modelValue === 'table'
-          ? 'bg-white dark:bg-gray-700 shadow-sm text-[var(--color-accent)]'
-          : 'text-[var(--color-muted)] hover:text-[var(--color-text)]',
+          ? 'bg-ui-surface dark:bg-ui-surface-dark shadow-soft-sm text-primary-emerald'
+          : 'text-ui-muted hover:text-gray-900 dark:hover:text-gray-100',
       ]"
       :aria-label="t('common.viewTable')"
       @click="select('table')"
     >
-      <List class="w-4 h-4" />
+      <List :size="18" class="shrink-0 text-current" />
     </button>
     <button
       type="button"
       :class="[
         'p-2 rounded-md transition-colors',
         props.modelValue === 'compact'
-          ? 'bg-white dark:bg-gray-700 shadow-sm text-[var(--color-accent)]'
-          : 'text-[var(--color-muted)] hover:text-[var(--color-text)]',
+          ? 'bg-ui-surface dark:bg-ui-surface-dark shadow-soft-sm text-primary-emerald'
+          : 'text-ui-muted hover:text-gray-900 dark:hover:text-gray-100',
       ]"
       :aria-label="t('common.viewCompact')"
       @click="select('compact')"
     >
-      <Layout class="w-4 h-4" />
+      <Layout :size="18" class="shrink-0 text-current" />
     </button>
   </div>
 </template>

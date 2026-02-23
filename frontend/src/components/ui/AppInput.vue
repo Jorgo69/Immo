@@ -31,14 +31,14 @@ function onInput(e: Event) {
 
 <template>
   <div class="flex flex-col gap-1">
-    <label v-if="label" class="text-sm font-medium text-[var(--color-text)]">
+    <label v-if="label" class="text-sm font-medium text-gray-900 dark:text-gray-100">
       {{ label }}
     </label>
     <div
-      class="flex rounded-lg border bg-white dark:bg-gray-800 transition-colors focus-within:ring-2 focus-within:ring-[var(--color-accent)] focus-within:border-transparent"
-      :class="error ? 'border-red-500' : 'border-gray-200 dark:border-gray-600'"
+      class="flex rounded-lg border bg-ui-surface dark:bg-ui-surface-dark transition-colors focus-within:ring-2 focus-within:ring-primary-emerald focus-within:border-transparent"
+      :class="error ? 'border-danger-red' : 'border-ui-border dark:border-ui-border-dark'"
     >
-      <span v-if="$slots.prefix" class="inline-flex items-center pl-3 text-[var(--color-muted)]">
+      <span v-if="$slots.prefix" class="inline-flex items-center pl-3 text-ui-muted">
         <slot name="prefix" />
       </span>
       <input
@@ -49,14 +49,14 @@ function onInput(e: Event) {
         :min="min"
         :max="max"
         :step="step"
-        class="w-full min-w-0 px-3 py-2 rounded-lg text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:outline-none disabled:opacity-50 bg-transparent"
+        class="w-full min-w-0 px-3 py-2 rounded-lg text-gray-900 dark:text-gray-100 placeholder:text-ui-muted focus:outline-none disabled:opacity-50 bg-transparent"
         :class="[$slots.prefix ? 'pl-1' : '', $slots.suffix ? 'pr-1' : '']"
         @input="onInput"
       />
-      <span v-if="$slots.suffix" class="inline-flex items-center pr-3 text-[var(--color-muted)]">
+      <span v-if="$slots.suffix" class="inline-flex items-center pr-3 text-ui-muted">
         <slot name="suffix" />
       </span>
     </div>
-    <p v-if="error" class="text-xs text-red-600">{{ error }}</p>
+    <p v-if="error" class="text-xs text-danger-red">{{ error }}</p>
   </div>
 </template>

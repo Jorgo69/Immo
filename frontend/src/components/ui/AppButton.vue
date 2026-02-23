@@ -22,16 +22,16 @@ withDefaults(
     :disabled="disabled || loading"
     :aria-busy="loading"
     :class="[
-      'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed',
+      'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-primary-emerald disabled:opacity-50 disabled:cursor-not-allowed',
       block ? 'w-full' : '',
       size === 'sm' && 'px-3 py-1.5 text-xs',
       size === 'md' && 'px-4 py-2 text-sm',
       size === 'lg' && 'px-5 py-2.5 text-base',
-      variant === 'primary' && 'bg-[var(--color-accent)] text-white hover:opacity-90',
-      variant === 'secondary' && 'bg-gray-100 text-[var(--color-text)] hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600',
-      variant === 'outline' && 'border border-gray-200 bg-white text-[var(--color-text)] hover:border-[var(--color-accent)] dark:border-gray-600 dark:bg-gray-800 dark:hover:border-[var(--color-accent)]',
-      variant === 'danger' && 'bg-red-600 text-white hover:bg-red-700',
-      variant === 'ghost' && 'text-[var(--color-muted)] hover:bg-gray-100 hover:text-[var(--color-text)] dark:hover:bg-gray-800',
+      variant === 'primary' && 'bg-primary-emerald text-white hover:opacity-90',
+      variant === 'secondary' && 'bg-ui-border text-gray-900 hover:bg-ui-border-hover dark:bg-ui-border-dark dark:text-gray-100 dark:hover:opacity-90',
+      variant === 'outline' && 'border border-ui-border bg-ui-surface text-gray-900 hover:border-primary-emerald dark:border-ui-border-dark dark:bg-ui-surface-dark dark:text-gray-100 dark:hover:border-primary-emerald',
+      variant === 'danger' && 'bg-danger-red text-white hover:opacity-90',
+      variant === 'ghost' && 'text-ui-muted hover:bg-ui-background hover:text-gray-900 dark:hover:bg-ui-border-dark dark:hover:text-gray-100',
     ]"
   >
     <span v-if="loading" class="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />

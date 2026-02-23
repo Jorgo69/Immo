@@ -23,19 +23,19 @@ withDefaults(
     class="rounded-2xl border shadow-soft p-4 flex items-center gap-3 transition-colors"
     :class="alert
       ? 'border-warning-orange/50 dark:border-warning-orange/50 bg-warning-orange-light/30 dark:bg-warning-orange/10'
-      : 'border-ui-border dark:border-gray-600 bg-ui-surface dark:bg-gray-800'"
+      : 'border-ui-border dark:border-ui-border-dark bg-ui-surface dark:bg-ui-surface-dark'"
   >
     <div
       v-if="icon"
-      class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+      class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-primary-emerald"
       :class="alert
         ? 'bg-warning-orange/20 text-warning-orange'
         : 'bg-primary-emerald/10 text-primary-emerald'"
     >
-      <component :is="icon" class="w-5 h-5" />
+      <component :is="icon" :size="24" class="shrink-0 text-current" />
     </div>
     <div class="min-w-0 flex-1">
-      <p class="text-xs text-ui-muted dark:text-gray-400 uppercase tracking-wide">
+      <p class="text-xs text-ui-muted dark:text-ui-muted uppercase tracking-wide">
         <slot name="label">{{ label }}</slot>
       </p>
       <p
