@@ -24,7 +24,6 @@ import {
   Globe,
 } from 'lucide-vue-next'
 import { useAppStore } from '../stores/app'
-import { getMe } from '../services/auth.service'
 import AppLink from '../components/ui/AppLink.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import { LanguageSwitcher, ThemeToggle, CurrencySwitcher } from '../components/ui'
@@ -123,18 +122,9 @@ function closeSidebarOnMobile() {
   if (typeof window !== 'undefined' && window.innerWidth < 768) sidebarOpen.value = false
 }
 
-onMounted(async () => {
-  if (appStore.token) {
-    try {
-      const user = await getMe()
-      appStore.setUser(user.id, user.role, undefined, {
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-      })
-    } catch {
-      // Token invalide ou expiré
-    }
+onMounted(() => {
+  if (appStore.token && !appStore.currentUser) {
+    appStore.refreshMe().catch(() => {})
   }
 })
 

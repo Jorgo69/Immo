@@ -20,7 +20,6 @@ import {
   Plus,
 } from 'lucide-vue-next'
 import gsap from 'gsap'
-import { getMe } from '../services/auth.service'
 import { getMyWallet, getMyTransactions } from '../services/wallet.service'
 import { getMyPaymentMethods } from '../services/profile.service'
 import { useAppStore } from '../stores/app'
@@ -99,17 +98,12 @@ async function load() {
   loading.value = true
   try {
     const [me, walletData, txRes, methods] = await Promise.all([
-      getMe(),
+      appStore.refreshMe(),
       getMyWallet().catch(() => null),
       getMyTransactions(1, 10).catch(() => ({ data: [], total: 0, page: 1, limit: 10, totalPages: 0 })),
       getMyPaymentMethods().catch(() => []),
     ])
-    user.value = me
-    appStore.setUser(me.id, me.role, undefined, {
-      first_name: me.first_name,
-      last_name: me.last_name,
-      email: me.email,
-    })
+    user.value = me ?? null
     wallet.value = walletData ?? null
     transactions.value = txRes?.data ?? []
     paymentMethods.value = Array.isArray(methods) ? methods : []

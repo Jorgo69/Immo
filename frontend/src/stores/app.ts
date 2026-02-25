@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import type { AuthUserDto } from '../services/auth.service'
 
 export const useAppStore = defineStore('app', () => {
   const token = ref<string | null>(localStorage.getItem('immo_token'))
@@ -13,6 +14,12 @@ export const useAppStore = defineStore('app', () => {
   const isProfileComplete = ref<boolean>(
     localStorage.getItem('immo_is_profile_complete') === 'true',
   )
+
+  /** Cache utilisateur courant (KYC, is_verified). Source de vérité = backend ; ce cache évite les getMe() à chaque vérification. */
+  const currentUser = ref<AuthUserDto | null>(null)
+
+  const isVerified = computed(() => currentUser.value?.is_verified === true)
+  const kycStatus = computed(() => currentUser.value?.profile?.kyc_status ?? 'pending')
 
   /** Nom d'affichage : Prénom + Nom, ou Email si vide, jamais de placeholder générique si une donnée existe. */
   function displayName(): string {
@@ -30,7 +37,36 @@ export const useAppStore = defineStore('app', () => {
       localStorage.setItem('immo_token', value)
     } else {
       localStorage.removeItem('immo_token')
+      currentUser.value = null
       setUser(null, null, false)
+    }
+  }
+
+  /** Met à jour le cache utilisateur (après login ou refresh). Backend = source de vérité. */
+  function setCurrentUser(user: AuthUserDto | null) {
+    currentUser.value = user
+    if (!user) {
+      setUser(null, null, false)
+      return
+    }
+    setUser(user.id, user.role, user.is_profile_complete, {
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+    })
+  }
+
+  /** Rafraîchit le cache depuis l’API (un seul getMe). À appeler au chargement de l’app si token, ou après mise à jour profil/KYC. */
+  async function refreshMe(): Promise<AuthUserDto | null> {
+    if (!token.value) return null
+    try {
+      const { getMe } = await import('../services/auth.service')
+      const me = await getMe()
+      setCurrentUser(me)
+      return me
+    } catch {
+      setCurrentUser(null)
+      return null
     }
   }
 
@@ -92,10 +128,15 @@ export const useAppStore = defineStore('app', () => {
     userLastName,
     userEmail,
     isProfileComplete,
+    currentUser,
+    isVerified,
+    kycStatus,
     displayName,
     setToken,
     setLocale,
     setCurrency,
     setUser,
+    setCurrentUser,
+    refreshMe,
   }
 })

@@ -25,7 +25,6 @@ import {
 import { getUploadUrl } from '../config/api'
 import { getPropertyById, type PropertyDetailDto, type UnitDto } from '../services/property.service'
 import { createRentalRequest } from '../services/rental.service'
-import { getMe } from '../services/auth.service'
 import { getApiErrorMessage } from '../services/http'
 import { toast } from 'vue-sonner'
 import { useAppStore } from '../stores/app'
@@ -68,20 +67,15 @@ const appStore = useAppStore()
 
 const showMapModal = ref(false)
 
-async function openRequestModal(unit: UnitDto) {
+function openRequestModal(unit: UnitDto) {
   if (!appStore.token) {
     toast.info(t('rental.loginRequired'))
     router.push({ name: 'auth', query: { redirect: route.fullPath } })
     return
   }
   requestModalUnit.value = unit
+  userVerified.value = appStore.isVerified
   showRequestModal.value = true
-  try {
-    const me = await getMe()
-    userVerified.value = me.is_verified === true
-  } catch {
-    userVerified.value = false
-  }
 }
 
 function closeRequestModal() {

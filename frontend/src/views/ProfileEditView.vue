@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { ArrowLeft, User, Upload, CreditCard, Pencil } from 'lucide-vue-next'
 import { getMyProfile, updateMyProfile, getMyPaymentMethods } from '../services/profile.service'
-import { getMe, updateUser, uploadAvatar, uploadIdCard } from '../services/auth.service'
+import { updateUser, uploadAvatar, uploadIdCard } from '../services/auth.service'
 import { useAppStore } from '../stores/app'
 import { getApiErrorMessage } from '../services/http'
 import { AppTitle, AppCard, AppButton, AppInput, AppUpload, LanguageSwitcher, CurrencySwitcher } from '../components/ui'
@@ -73,21 +73,16 @@ async function fetchData() {
   try {
     const [profileData, me, methods] = await Promise.all([
       getMyProfile(),
-      getMe().catch(() => null),
+      appStore.refreshMe(),
       getMyPaymentMethods().catch(() => []),
     ])
     if (profileData) profile.value = profileData
-    user.value = me
+    user.value = me ?? null
     paymentMethods.value = Array.isArray(methods) ? methods : []
     if (me) {
       firstName.value = me.first_name ?? ''
       lastName.value = me.last_name ?? ''
       email.value = me.email ?? ''
-      appStore.setUser(me.id, me.role, undefined, {
-        first_name: me.first_name,
-        last_name: me.last_name,
-        email: me.email,
-      })
     }
   } finally {
     loading.value = false
@@ -152,16 +147,9 @@ async function onAvatarFileChange(e: Event) {
   avatarUploading.value = true
   try {
     const { url } = await uploadAvatar(file)
-    const me = await getMe()
+    const me = await appStore.refreshMe()
     if (user.value) user.value = { ...user.value, avatar_url: url }
-    else user.value = me
-    if (me) {
-      appStore.setUser(me.id, me.role, undefined, {
-        first_name: me.first_name,
-        last_name: me.last_name,
-        email: me.email,
-      })
-    }
+    else user.value = me ?? null
     toast.success(t('profile.updateSuccess'))
   } catch (err) {
     toast.error(getApiErrorMessage(err))

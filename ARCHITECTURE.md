@@ -159,6 +159,11 @@ RÈGLE : Interdiction d'utiliser le terme 'Owner'. Dans le code (URLs, variables
 - Utilise **Pinia** pour les états globaux (User, Auth, Config).
 - Utilise des états locaux réactifs (`ref`, `reactive`) dans les composables pour les formulaires éphémères.
 
+### Utilisateur courant & KYC (cache front, backend = source de vérité)
+- **Source de vérité :** Le backend reste la référence absolue pour l’auth, le KYC (`is_verified`, `profile.kyc_status`) et les guards. Toute action sensible (création de demande de location, accès admin, etc.) est re-vérifiée côté API.
+- **Cache front (Pinia) :** Le store `app` expose `currentUser`, `isVerified`, `kycStatus` et `refreshMe()`. Après login, on appelle `setCurrentUser(user)`. Au chargement de l’app (MainLayout, AdminLayout), si un token existe et que `currentUser` est vide, on appelle `refreshMe()` une fois pour hydrater le cache. Les vues utilisent le store pour afficher le statut (ex. modale « Je suis intéressé ») sans refaire un `getMe()` à chaque fois.
+- **Rafraîchissement :** Après mise à jour profil/KYC (ProfileEdit, onboarding), appeler `refreshMe()` pour resynchroniser le cache. Ainsi l’app reste fluide (moins de requêtes) tout en restant cohérente avec le backend.
+
 ### Centralisation des Endpoints
 - Ne tape jamais d'URL en dur. Utilise une configuration centrale ou des constantes.
 

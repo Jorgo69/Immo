@@ -18,6 +18,9 @@ function updateOnline() {
 onMounted(() => {
   window.addEventListener('online', updateOnline)
   window.addEventListener('offline', updateOnline)
+  if (appStore.token && !appStore.currentUser) {
+    appStore.refreshMe().catch(() => {})
+  }
 })
 onUnmounted(() => {
   window.removeEventListener('online', updateOnline)
