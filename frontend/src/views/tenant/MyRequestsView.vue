@@ -8,7 +8,7 @@ import { FileText, Home, Clock, CheckCircle, XCircle } from 'lucide-vue-next'
 import { getRentalRequestsForTenant, type RentalRequestDto } from '../../services/rental.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
-import { AppButton, AppCard, AppTitle } from '../../components/ui'
+import { AppButton, AppCard, AppTitle, AppContent } from '../../components/ui'
 import { useRouter } from 'vue-router'
 
 const { t } = useI18n()
@@ -57,6 +57,7 @@ onMounted(fetchRequests)
 </script>
 
 <template>
+  <AppContent variant="standard">
   <div class="space-y-6">
     <div>
       <AppTitle :level="2" class="flex items-center gap-2">
@@ -126,4 +127,5 @@ onMounted(fetchRequests)
       </AppCard>
     </div>
   </div>
+  </AppContent>
 </template>

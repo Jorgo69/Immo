@@ -23,9 +23,9 @@ const emit = defineEmits<{ (e: 'close'): void }>()
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
-      <div
-        v-if="show"
-        class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-overlay backdrop-blur-modal"
+    <div
+      v-if="show"
+      class="fixed inset-0 z-modal flex items-center justify-center p-4 bg-overlay backdrop-blur-modal"
         role="dialog"
         aria-modal="true"
         :aria-labelledby="'modal-title-' + title"

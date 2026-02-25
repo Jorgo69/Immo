@@ -125,10 +125,15 @@ export async function searchProperties(
   if (filters.q?.trim()) params.set('q', filters.q.trim())
   if (filters.city) params.set('city', filters.city)
   if (filters.status) params.set('status', filters.status)
-  if (filters.min_price) params.set('min_price', filters.min_price)
-  if (filters.max_price) params.set('max_price', filters.max_price)
+  const minPrice = filters.min_price != null && filters.min_price !== '' ? Number(filters.min_price) : NaN
+  const maxPrice = filters.max_price != null && filters.max_price !== '' ? Number(filters.max_price) : NaN
+  if (!Number.isNaN(minPrice) && minPrice >= 0) params.set('min_price', String(minPrice))
+  if (!Number.isNaN(maxPrice) && maxPrice >= 0) params.set('max_price', String(maxPrice))
   if (filters.page != null) params.set('page', String(filters.page))
-  if (filters.limit != null) params.set('limit', String(filters.limit))
+  if (filters.limit != null) {
+    const limit = Math.min(100, Math.max(1, Number(filters.limit) || 10))
+    params.set('limit', String(limit))
+  }
   const endpoint = filters.q?.trim() ? '/property/search' : '/property'
   const { data } = await http.get<PaginatedResultDto<PropertyListItemDto>>(`${endpoint}?${params.toString()}`)
   return data

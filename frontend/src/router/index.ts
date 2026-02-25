@@ -43,6 +43,12 @@ export const router = createRouter({
           meta: { title: 'Biens disponibles' },
         },
         {
+          path: 'explore',
+          name: 'explore',
+          component: () => import('../views/tenant/Explore.vue'),
+          meta: { title: 'Explorer les annonces' },
+        },
+        {
           path: 'reels',
           name: 'reels',
           component: () => import('../views/ReelsView.vue'),

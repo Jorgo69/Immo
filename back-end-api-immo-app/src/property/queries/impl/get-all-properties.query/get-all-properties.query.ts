@@ -10,8 +10,8 @@ import { PAGINATION_DEFAULT_LIMIT, PAGINATION_MAX_LIMIT } from '../../../../comm
 export class GetAllPropertiesQuery {
   @ApiProperty({ required: false }) @IsOptional() @IsString() city?: string;
   @ApiProperty({ required: false, enum: PropertyStatus }) @IsOptional() @IsEnum(PropertyStatus) status?: PropertyStatus;
-  @ApiProperty({ required: false }) @IsOptional() @IsNumber() @Min(0) min_price?: number;
-  @ApiProperty({ required: false }) @IsOptional() @IsNumber() @Min(0) max_price?: number;
+  @ApiProperty({ required: false }) @IsOptional() @Type(() => Number) @IsNumber() @Min(0) min_price?: number;
+  @ApiProperty({ required: false }) @IsOptional() @Type(() => Number) @IsNumber() @Min(0) max_price?: number;
   @ApiProperty({ required: false, default: 1 }) @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number = 1;
   @ApiProperty({ required: false, default: PAGINATION_DEFAULT_LIMIT, maximum: PAGINATION_MAX_LIMIT })
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(PAGINATION_MAX_LIMIT) limit?: number = PAGINATION_DEFAULT_LIMIT;

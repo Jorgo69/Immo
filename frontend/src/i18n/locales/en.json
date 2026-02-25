@@ -228,15 +228,16 @@
     "search": "Search",
     "reels": "Discover",
     "dashboard": "Dashboard",
-    "admin": "Pro space",
-    "profile": "My profile",
+    "admin": "Dashboard",
+    "profile": "My account",
     "explorer": "Explore",
     "favorites": "Favorites",
     "map": "Map",
     "ai": "AI",
     "logout": "Log out",
     "themeLight": "Switch to light mode",
-    "themeDark": "Switch to dark mode"
+    "themeDark": "Switch to dark mode",
+    "devenirLandlord": "Become a Landlord"
   },
   "auth": {
     "phone": "Phone number",
@@ -504,9 +505,13 @@
     "situatedIn": "This unit is located in",
     "buildingAdvantages": "Building advantages",
     "whatsappCta": "Contact via WhatsApp",
+    "callCta": "Call",
     "whatsappMessage": "I want to rent the unit {unitName} in the property {propertyName}",
     "whatsappMessagePropertyOnly": "I'm interested in the property {propertyName}",
     "locationTitle": "Location",
+    "locationApproximate": "Location is approximate",
+    "mapModalTitle": "Listing location",
+    "mapDone": "Done",
     "bookingHint": "Online booking is coming soon. For now, contact the agent or owner via WhatsApp or phone.",
     "bookingCta": "I’m interested"
   },
@@ -534,6 +539,28 @@
     "tenant": "Tenant",
     "unitName": "Unit",
     "profileNotVerifiedWarning": "Your profile is not verified; this may reduce your chances of acceptance."
+  },
+  "tenant": {
+    "explore": {
+      "filters": "Filters",
+      "searchLabel": "Search",
+      "searchPlaceholder": "Room, area, city…",
+      "typeLabel": "Property type",
+      "typeAll": "All types",
+      "budgetLabel": "Budget (monthly rent)",
+      "quartiersLabel": "Area / City",
+      "quartiersPlaceholder": "e.g. Cotonou, Calavi…",
+      "search": "Search",
+      "mapTitle": "Map",
+      "mapShow": "Show map",
+      "mapHide": "Hide map",
+      "resultsCount": "{count} listing(s)",
+      "loading": "Loading…",
+      "noResults": "No listings",
+      "noResultsHint": "Try changing filters or widening your budget.",
+      "perMonth": "month",
+      "totalEntry": "Total entry cost"
+    }
   },
   "admin": {
     "title": "Pro space",

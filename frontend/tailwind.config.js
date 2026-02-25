@@ -72,9 +72,19 @@ export default {
       minHeight: {
         'card-body': '8.75rem',
         'card-title': '3rem',
+        'screen-nav': 'calc(100vh - 64px)',
       },
       maxHeight: {
         'screen-90': '90vh',
+      },
+      height: {
+        'screen-nav': 'calc(100vh - 64px)',
+      },
+      blur: {
+        gallery: '40px',
+      },
+      brightness: {
+        gallery: '0.7',
       },
       borderRadius: {
         '2xl': '1rem',
@@ -83,6 +93,12 @@ export default {
       },
       backdropBlur: {
         'modal': '4px',
+        'gallery': '20px',
+      },
+      zIndex: {
+        'map': '1',
+        'navbar': '40',
+        'modal': '70',
       },
     },
   },

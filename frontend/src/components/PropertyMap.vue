@@ -68,5 +68,7 @@ watch(() => props.properties, updateMarkers, { deep: true })
 </script>
 
 <template>
-  <div ref="mapContainer" class="w-full h-[400px] rounded-xl overflow-hidden border border-gray-200 bg-gray-100" />
+  <div class="relative z-map w-full h-full min-h-[260px] rounded-xl overflow-hidden border border-ui-border bg-ui-background dark:border-ui-border-dark dark:bg-ui-surface-dark">
+    <div ref="mapContainer" class="w-full h-full min-h-[260px]" />
+  </div>
 </template>

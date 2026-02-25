@@ -1,6 +1,6 @@
 {
   "app": { "name": "Immo Bénin", "tagline": "Location sereine, paiement en toute confiance", "offline": "Vous êtes hors ligne. Certaines fonctionnalités peuvent être limitées." },
-  "nav": { "home": "Accueil", "homePro": "Accueil", "auth": "Connexion", "search": "Recherche", "reels": "Découvrir", "dashboard": "Tableau de bord", "admin": "Espace pro", "profile": "Mon profil", "logout": "Déconnexion", "themeLight": "Passer en mode clair", "themeDark": "Passer en mode sombre", "explorer": "Explorer", "favorites": "Favoris", "map": "Carte", "ai": "IA" },
+  "nav": { "home": "Accueil", "homePro": "Accueil", "auth": "Connexion", "search": "Recherche", "reels": "Découvrir", "dashboard": "Tableau de bord", "admin": "Dashboard", "profile": "Mon compte", "logout": "Déconnexion", "themeLight": "Passer en mode clair", "themeDark": "Passer en mode sombre", "explorer": "Explorer", "favorites": "Favoris", "map": "Carte", "ai": "IA", "devenirLandlord": "Devenir Landlord" },
   "common": {
     "cancel": "Annuler",
     "collapse": "Réduire la barre latérale",
@@ -475,6 +475,9 @@
     "conditionsTitle": "Conditions d'entrée",
     "noDescription": "Aucune description.",
     "locationTitle": "Localisation",
+    "locationApproximate": "La localisation est approximative",
+    "mapModalTitle": "Emplacement de la location",
+    "mapDone": "Terminé",
     "bookingHint": "La réservation en ligne arrive bientôt. Pour l’instant, contactez l’agent ou le propriétaire via WhatsApp ou téléphone.",
     "bookingCta": "Je suis intéressé(e)",
     "loadError": "Erreur lors du chargement du bien : {message}",
@@ -482,6 +485,7 @@
     "situatedIn": "Cette chambre se situe dans",
     "buildingAdvantages": "Avantages du bâtiment",
     "whatsappCta": "Contacter par WhatsApp",
+    "callCta": "Appeler",
     "whatsappMessage": "Je veux louer l'unité {unitName} dans le bien {propertyName}",
     "whatsappMessagePropertyOnly": "Je suis intéressé par le bien {propertyName}"
   },
@@ -509,6 +513,28 @@
     "tenant": "Locataire",
     "unitName": "Unité",
     "profileNotVerifiedWarning": "Votre profil n'est pas vérifié, cela pourrait réduire vos chances d'acceptation."
+  },
+  "tenant": {
+    "explore": {
+      "filters": "Filtres",
+      "searchLabel": "Recherche",
+      "searchPlaceholder": "Chambre, quartier, ville…",
+      "typeLabel": "Type de bien",
+      "typeAll": "Tous les types",
+      "budgetLabel": "Budget (loyer mensuel)",
+      "quartiersLabel": "Quartier / Ville",
+      "quartiersPlaceholder": "Ex. Cotonou, Calavi…",
+      "search": "Rechercher",
+      "mapTitle": "Carte",
+      "mapShow": "Afficher la carte",
+      "mapHide": "Masquer la carte",
+      "resultsCount": "{count} annonce(s)",
+      "loading": "Chargement…",
+      "noResults": "Aucune annonce",
+      "noResultsHint": "Modifiez les filtres ou élargissez le budget.",
+      "perMonth": "mois",
+      "totalEntry": "Prix total d'entrée"
+    }
   },
   "admin": {
     "title": "Espace pro",

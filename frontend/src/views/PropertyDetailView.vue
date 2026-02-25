@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * Page détail bien — UX centrée sur l'UNITÉ (chambre/appart).
- * Chaque unité = fiche produit complète avec CTA dédié.
- * Bloc flottant à droite mis à jour au scroll (unité en vue).
+ * Page détail bien — Galerie immersive type Marketplace (70% écran) + colonne détails sticky (30%).
+ * Galerie : fond flou (image cover) + image nette au centre (object-contain) + flèches + thumbnails cliquables.
+ * Carte en flux normal avec z-map ; modal carte sans chevauchement. CTA WhatsApp + Appeler visibles au scroll.
  */
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -16,6 +16,11 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageCircle,
+  Phone,
+  Car,
+  Users,
+  Zap,
+  Wifi,
 } from 'lucide-vue-next'
 import { getUploadUrl } from '../config/api'
 import { getPropertyById, type PropertyDetailDto, type UnitDto } from '../services/property.service'
@@ -25,7 +30,8 @@ import { getApiErrorMessage } from '../services/http'
 import { toast } from 'vue-sonner'
 import { useAppStore } from '../stores/app'
 import PropertyMap, { type PropertyForMap } from '../components/PropertyMap.vue'
-import { AppButton, AppCard, AppModal } from '../components/ui'
+import PropertyMapSnippet from '../components/PropertyMapSnippet.vue'
+import { AppButton, AppCard, AppModal, AppContent } from '../components/ui'
 import RentalRequestForm from '../components/rental/RentalRequestForm.vue'
 import { gsap } from '../composables/useAnimations'
 
@@ -35,6 +41,7 @@ type PropertyDetailWithCoords = PropertyDetailDto & {
 }
 
 const WHATSAPP_NUMBER = (import.meta.env.VITE_WHATSAPP_NUMBER ?? '22990123456').replace(/\D/g, '')
+const PHONE_E164 = WHATSAPP_NUMBER.startsWith('229') ? `+${WHATSAPP_NUMBER}` : `+229${WHATSAPP_NUMBER}`
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -45,21 +52,21 @@ const property = ref<PropertyDetailWithCoords | null>(null)
 const loading = ref(true)
 const error = ref('')
 
+const selectedUnitId = ref<string | null>(null)
+const carouselIndex = ref(0)
+
 const isLightboxOpen = ref(false)
 const lightboxIndex = ref(0)
 const lightboxImageRef = ref<HTMLImageElement | null>(null)
 const lightboxImages = ref<Array<{ url: string }>>([])
 
-/** Unité actuellement en vue (pour le bloc flottant). */
-const activeUnitId = ref<string | null>(null)
-const unitSectionRefs = ref<Map<string, HTMLElement>>(new Map())
-
-/** Modal fiche de candidature (Je suis intéressé). */
 const showRequestModal = ref(false)
 const requestModalUnit = ref<UnitDto | null>(null)
 const submittingRequest = ref(false)
 const userVerified = ref(true)
 const appStore = useAppStore()
+
+const showMapModal = ref(false)
 
 async function openRequestModal(unit: UnitDto) {
   if (!appStore.token) {
@@ -102,8 +109,8 @@ async function fetchDetail() {
   error.value = ''
   try {
     property.value = await getPropertyById(id.value)
-    const firstUnit = property.value?.units?.[0] ?? property.value?.rooms?.[0]
-    if (firstUnit) activeUnitId.value = firstUnit.id
+    const first = property.value?.units?.[0] ?? property.value?.rooms?.[0]
+    if (first) selectedUnitId.value = first.id
   } catch (e) {
     const msg = getApiErrorMessage(e)
     toast.error(t('property.loadError', { message: msg }))
@@ -114,8 +121,16 @@ async function fetchDetail() {
 }
 
 const propertyName = computed(() => property.value?.name ?? property.value?.title ?? '—')
-
 const units = computed(() => property.value?.units ?? property.value?.rooms ?? [])
+
+const selectedUnit = computed(() => {
+  if (!units.value.length) return null
+  if (selectedUnitId.value) {
+    const u = units.value.find((x) => x.id === selectedUnitId.value)
+    if (u) return u
+  }
+  return units.value[0]
+})
 
 const mapProperties = computed<PropertyForMap[]>(() => {
   if (!property.value) return []
@@ -127,21 +142,20 @@ const mapProperties = computed<PropertyForMap[]>(() => {
       id: property.value.id,
       title: propertyName.value,
       city: typeof property.value.city === 'string' ? property.value.city : (property.value.city?.name ?? ''),
-      price_monthly: units.value[0]?.price ?? '0',
+      price_monthly: selectedUnit.value?.price ?? '0',
       latitude: lat,
       longitude: lng,
     },
   ]
 })
 
-/** Unité active pour le bloc flottant (celle en vue ou la première). */
-const activeUnit = computed(() => {
-  if (!units.value.length) return null
-  if (activeUnitId.value) {
-    const u = units.value.find((x) => x.id === activeUnitId.value)
-    if (u) return u
-  }
-  return units.value[0]
+const mapSnippetCoords = computed(() => {
+  const list = mapProperties.value
+  if (!list.length) return null
+  const lat = Number(list[0].latitude)
+  const lng = Number(list[0].longitude)
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return null
+  return { latitude: lat, longitude: lng }
 })
 
 function formatPrice(value: string | null | undefined): string {
@@ -174,6 +188,15 @@ function getUnitFeatures(room: UnitDto): string[] {
   return []
 }
 
+/** Icône Lucide pour un équipement (Car, Wifi, Zap, Users). */
+function featureIcon(feat: string): 'car' | 'wifi' | 'zap' | 'users' | null {
+  const lower = feat.toLowerCase()
+  if (lower.includes('parking') || lower.includes('véhicule') || lower.includes('vehicle') || lower.includes('voiture') || lower.includes('car')) return 'car'
+  if (lower.includes('wifi') || lower.includes('wi-fi') || lower.includes('internet')) return 'wifi'
+  if (lower.includes('compteur') || lower.includes('électricité') || lower.includes('electricity') || lower.includes('prepaid') || lower.includes('prepay')) return 'zap'
+  return null
+}
+
 function getUnitMoveInTotal(room: UnitDto): { rent: number; caution: number; avance: number; fees: number; total: number } {
   const rent = Number(room.price) || 0
   const cautionMonths = room.caution_months ?? 0
@@ -193,7 +216,6 @@ function hasUnitConditions(room: UnitDto): boolean {
   return rent > 0 || hasCaution || hasAvance || hasFees
 }
 
-/** Libellé du type d'unité (ref_type ou legacy type). */
 function unitTypeLabel(room: UnitDto): string {
   if (room.ref_type) return locale.value === 'fr' ? room.ref_type.label_fr : (room.ref_type.label_en || room.ref_type.label_fr)
   return (room as { type?: string }).type ?? '—'
@@ -203,7 +225,6 @@ function unitIsAvailable(room: UnitDto): boolean {
   return room.unit_status === 'available' || room.is_available === true
 }
 
-/** Images d'une unité (unit.images ou fallback property.media). */
 function getUnitImages(room: UnitDto): Array<{ url: string }> {
   const imgs = room.images
   if (Array.isArray(imgs) && imgs.length > 0) {
@@ -225,30 +246,6 @@ function getPropertyOnlyWhatsAppUrl(): string {
     propertyName: propertyName.value,
   })
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`
-}
-
-function setUnitSectionRef(id: string, el: unknown) {
-  if (el instanceof HTMLElement) unitSectionRefs.value.set(id, el)
-  else unitSectionRefs.value.delete(id)
-}
-
-let observer: IntersectionObserver | null = null
-
-function setupScrollObserver() {
-  if (observer) return
-  observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue
-        const id = (entry.target as HTMLElement).dataset.unitId
-        if (id) activeUnitId.value = id
-      }
-    },
-    { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
-  )
-  nextTick(() => {
-    unitSectionRefs.value.forEach((el) => observer?.observe(el))
-  })
 }
 
 function openLightbox(images: Array<{ url: string }>, index: number) {
@@ -279,6 +276,26 @@ function animateLightbox() {
   gsap.fromTo(lightboxImageRef.value, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'power2.out' })
 }
 
+function carouselPrev() {
+  const imgs = selectedUnit.value ? getUnitImages(selectedUnit.value) : []
+  if (!imgs.length) return
+  carouselIndex.value = (carouselIndex.value - 1 + imgs.length) % imgs.length
+}
+
+function carouselNext() {
+  const imgs = selectedUnit.value ? getUnitImages(selectedUnit.value) : []
+  if (!imgs.length) return
+  carouselIndex.value = (carouselIndex.value + 1) % imgs.length
+}
+
+function setCarouselIndex(i: number) {
+  carouselIndex.value = i
+}
+
+watch(selectedUnitId, () => {
+  carouselIndex.value = 0
+})
+
 async function onShare() {
   if (typeof window === 'undefined') return
   const url = window.location.href
@@ -298,10 +315,9 @@ async function onShare() {
 }
 
 function onBack() {
-  router.push('/property')
+  router.push('/explore')
 }
 
-/** Description du bâtiment (avantages communs). */
 const buildingDescription = computed(() => {
   const p = property.value
   if (!p) return ''
@@ -309,28 +325,22 @@ const buildingDescription = computed(() => {
   return desc ?? ''
 })
 
-watch(
-  units,
-  () => {
-    observer?.disconnect()
-    observer = null
-    nextTick(() => nextTick(setupScrollObserver))
-  },
-  { flush: 'post' }
-)
+const carouselImages = computed(() => (selectedUnit.value ? getUnitImages(selectedUnit.value) : []))
+
+const carouselCurrentUrl = computed(() => {
+  const list = carouselImages.value
+  if (!list.length) return ''
+  const idx = carouselIndex.value % list.length
+  return getUploadUrl(list[idx]?.url ?? '')
+})
 
 onMounted(() => {
   fetchDetail()
 })
-
-onUnmounted(() => {
-  observer?.disconnect()
-  observer = null
-})
 </script>
 
 <template>
-  <main class="max-w-layout mx-auto px-4 py-6 md:px-8 md:py-10">
+  <AppContent tag="main" variant="immersive">
     <div class="mb-4 flex items-center justify-between gap-2">
       <AppButton variant="ghost" size="sm" @click="onBack">
         <ArrowLeft class="h-5 w-5 shrink-0" />
@@ -348,210 +358,143 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
-    <p v-else-if="loading" class="text-sm text-[var(--color-muted)]">
+    <p v-if="error" class="text-sm text-danger-red">{{ error }}</p>
+    <p v-else-if="loading" class="text-sm text-ui-muted">
       {{ t('profile.loading') }}
     </p>
 
     <template v-else-if="property">
-      <!-- En-tête compact : bien + ville -->
-      <header class="mb-6">
-        <p class="text-sm text-[var(--color-muted)] flex items-center gap-1">
-          <MapPin class="h-4 w-4 shrink-0" />
-          {{ (typeof property.city === 'string' ? property.city : property.city?.name) || '—' }}{{ property.district ? ` · ${property.district}` : '' }}
-        </p>
-        <h1 class="text-xl font-semibold text-[var(--color-text)] mt-0.5">
-          {{ propertyName }}
-        </h1>
-      </header>
-
-      <section class="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <!-- Colonne gauche : une fiche produit par unité -->
-        <div class="space-y-12 lg:col-span-2">
-          <template v-if="units.length">
-            <article
-              v-for="(room, index) in units"
-              :key="room.id"
-              :ref="(el) => setUnitSectionRef(room.id, el)"
-              :data-unit-id="room.id"
-              class="scroll-mt-32 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden shadow-sm"
-            >
-              <!-- Titre unité -->
-              <div class="p-4 md:p-5 border-b border-gray-100 dark:border-gray-700">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <h2 class="text-lg font-bold text-[var(--color-text)]">
-                    {{ room.name ?? `Unité ${index + 1}` }}
-                  </h2>
-                  <span
-                    class="rounded-full px-3 py-1 text-xs font-medium"
-                    :class="unitIsAvailable(room) ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'"
-                  >
-                    {{ unitIsAvailable(room) ? t('property.roomAvailable') : t('property.roomUnavailable') }}
-                  </span>
-                </div>
-                <p v-if="unitTypeLabel(room)" class="text-sm text-[var(--color-muted)] mt-0.5">{{ unitTypeLabel(room) }}</p>
-              </div>
-
-              <!-- Photos unité (ou bien) -->
-              <div v-if="getUnitImages(room).length" class="aspect-[16/10] bg-gray-100 dark:bg-gray-800">
-                <div class="flex h-full overflow-x-auto snap-x snap-mandatory">
-                  <button
-                    v-for="(img, i) in getUnitImages(room)"
-                    :key="i"
-                    type="button"
-                    class="relative h-full min-w-full flex-1 snap-start overflow-hidden"
-                    @click="openLightbox(getUnitImages(room), i)"
-                  >
-                    <img
-                      :src="getUploadUrl(img.url)"
-                      :alt="room.name"
-                      class="h-full w-full object-cover transition hover:brightness-95"
-                      loading="lazy"
-                    />
-                  </button>
-                </div>
-              </div>
-
-              <!-- Description + Équipements (propres à l'unité) -->
-              <div class="p-4 md:p-5 space-y-4">
-                <p v-if="getUnitDescription(room)" class="text-sm text-[var(--color-text)]">
-                  {{ getUnitDescription(room) }}
-                </p>
-                <div v-if="getUnitFeatures(room).length">
-                  <h4 class="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wide mb-2">
-                    {{ t('property.unitFeatures') }}
-                  </h4>
-                  <ul class="flex flex-wrap gap-2">
-                    <li
-                      v-for="(feat, idx) in getUnitFeatures(room)"
-                      :key="idx"
-                      class="rounded-full bg-gray-100 dark:bg-gray-700 px-3 py-1 text-sm text-[var(--color-text)]"
-                    >
-                      {{ feat }}
-                    </li>
-                  </ul>
-                </div>
-
-                <!-- Conditions d'entrée (détail) -->
-                <div v-if="hasUnitConditions(room)" class="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                  <h4 class="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wide">
-                    {{ t('property.conditionsTitle') }}
-                  </h4>
-                  <div class="space-y-1 text-sm text-[var(--color-text)]">
-                    <div v-if="getUnitMoveInTotal(room).rent > 0" class="flex justify-between">
-                      <span>{{ t('property.rent') }}</span>
-                      <span>{{ formatPrice(room.price) }}</span>
-                    </div>
-                    <div v-if="(room.caution_months ?? 0) > 0" class="flex justify-between">
-                      <span>{{ t('property.cautionMonths', { months: room.caution_months }) }}</span>
-                      <span>{{ formatPrice(String(getUnitMoveInTotal(room).caution)) }}</span>
-                    </div>
-                    <div v-if="(room.avance_months ?? 0) > 0" class="flex justify-between">
-                      <span>{{ t('property.avanceMonths', { months: room.avance_months }) }}</span>
-                      <span>{{ formatPrice(String(getUnitMoveInTotal(room).avance)) }}</span>
-                    </div>
-                    <div v-if="room.frais_dossier != null && Number(room.frais_dossier) > 0" class="flex justify-between">
-                      <span>{{ t('property.fees') }}</span>
-                      <span>{{ formatPrice(room.frais_dossier) }}</span>
-                    </div>
-                  </div>
-                  <!-- Total à payer pour intégrer — ultra visible -->
-                  <div class="mt-4 rounded-xl bg-[var(--color-accent)]/10 dark:bg-[var(--color-accent)]/20 p-4">
-                    <p class="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wide">
-                      {{ t('property.totalToPayLabel') }}
-                    </p>
-                    <p class="text-2xl font-bold text-[var(--color-accent)] mt-0.5">
-                      {{ formatPrice(String(getUnitMoveInTotal(room).total)) }}
-                    </p>
-                  </div>
-                </div>
-
-                <!-- Bloc preuve sociale : situé dans + avantages bâtiment -->
-                <div class="rounded-xl border border-gray-200 dark:border-gray-600 p-4 bg-gray-50/50 dark:bg-gray-800/50">
-                  <p class="text-sm font-semibold text-[var(--color-text)]">
-                    {{ t('property.situatedIn') }} <strong>{{ propertyName }}</strong>
-                  </p>
-                  <p v-if="buildingDescription" class="mt-2 text-sm text-[var(--color-muted)]">
-                    {{ buildingDescription }}
-                  </p>
-                </div>
-
-                <!-- CTA unité : Je suis intéressé + WhatsApp -->
-                <div v-if="unitIsAvailable(room)" class="pt-2 space-y-2">
-                  <AppButton
-                    variant="primary"
-                    block
-                    class="w-full"
-                    @click="openRequestModal(room)"
-                  >
-                    {{ t('property.bookingCta') }}
-                  </AppButton>
-                  <a
-                    :href="getWhatsAppUrl(room)"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-[#25D366] px-4 py-3 text-white font-semibold hover:opacity-90 transition"
-                  >
-                    <MessageCircle class="h-5 w-5" />
-                    {{ t('property.whatsappCta') }} — {{ room.name }}
-                  </a>
-                </div>
-              </div>
-            </article>
-          </template>
-
-          <!-- Fallback : aucun unité (bien seul) -->
-          <article v-else class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
-            <p class="text-[var(--color-muted)]">{{ t('property.noDescription') }}</p>
-            <a
-              v-if="property"
-              :href="getPropertyOnlyWhatsAppUrl()"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-white font-semibold hover:opacity-90"
-            >
-              <MessageCircle class="h-5 w-5" />
-              {{ t('property.whatsappCta') }}
-            </a>
-          </article>
-
-          <!-- Carte (une fois pour le bien) -->
-          <div v-if="mapProperties.length" class="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
-            <h3 class="p-4 text-base font-semibold text-[var(--color-text)]">
-              {{ t('property.locationTitle') }}
-            </h3>
-            <PropertyMap :properties="mapProperties" @select="() => {}" />
+      <!-- Layout fullscreen-ish : galerie h-screen-nav (100vh - navbar), détails à droite scrollables -->
+      <section class="grid grid-cols-1 gap-6 lg:grid-cols-10 lg:gap-8 lg:min-h-screen-nav">
+        <!-- Gauche : galerie immersive, toute la hauteur disponible -->
+        <div class="lg:col-span-7 lg:h-screen-nav min-h-[50vh] lg:min-h-0">
+          <div
+            v-if="carouselImages.length"
+            class="relative h-full w-full overflow-hidden rounded-2xl border border-ui-border bg-ui-background dark:border-ui-border-dark dark:bg-ui-surface-dark"
+          >
+            <!-- Effet miroir (background) : cover + flou 40px + assombrissement pour faire ressortir l'image -->
+            <div class="absolute inset-0 w-full h-full">
+              <img
+                v-if="carouselCurrentUrl"
+                :src="carouselCurrentUrl"
+                alt=""
+                class="absolute inset-0 w-full h-full object-cover blur-gallery brightness-gallery scale-110"
+                aria-hidden="true"
+              />
+            </div>
+            <!-- Image principale (foreground) : relative, h-full w-full object-contain, jamais rognée -->
+            <div class="relative h-full w-full flex items-center justify-center px-16 py-4">
+              <button
+                type="button"
+                class="absolute left-3 top-1/2 z-10 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white shadow-soft border border-white/20 hover:bg-black/55 focus:outline-none focus:ring-2 focus:ring-primary-emerald dark:bg-black/50 dark:hover:bg-black/65"
+                aria-label="Photo précédente"
+                @click="carouselPrev"
+              >
+                <ChevronLeft class="h-7 w-7" />
+              </button>
+              <button
+                type="button"
+                class="absolute right-3 top-1/2 z-10 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white shadow-soft border border-white/20 hover:bg-black/55 focus:outline-none focus:ring-2 focus:ring-primary-emerald dark:bg-black/50 dark:hover:bg-black/65"
+                aria-label="Photo suivante"
+                @click="carouselNext"
+              >
+                <ChevronRight class="h-7 w-7" />
+              </button>
+              <button
+                type="button"
+                class="h-full w-full flex items-center justify-center"
+                @click="openLightbox(carouselImages, carouselIndex)"
+              >
+                <img
+                  :src="carouselCurrentUrl"
+                  :alt="selectedUnit?.name ?? propertyName"
+                  class="max-h-full max-w-full w-full h-full object-contain rounded-xl shadow-soft"
+                  loading="eager"
+                />
+              </button>
+            </div>
+            <!-- Thumbnails : overlay en bas, sans réduire la zone de l'image principale -->
+            <div class="absolute bottom-0 left-0 right-0 flex justify-center gap-2 border-t border-ui-border/80 bg-ui-surface/90 dark:border-ui-border-dark dark:bg-ui-surface-dark/90 p-3">
+              <button
+                v-for="(img, i) in carouselImages"
+                :key="i"
+                type="button"
+                class="h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:ring-primary-emerald"
+                :class="i === carouselIndex ? 'border-primary-emerald ring-2 ring-primary-emerald/30' : 'border-ui-border dark:border-ui-border-dark hover:border-ui-border-hover'"
+                @click="setCarouselIndex(i)"
+              >
+                <img
+                  :src="getUploadUrl(img.url)"
+                  :alt="`Photo ${i + 1}`"
+                  class="h-full w-full object-cover"
+                />
+              </button>
+            </div>
+          </div>
+          <div
+            v-else
+            class="h-full min-h-[50vh] lg:min-h-screen-nav rounded-2xl border border-ui-border bg-ui-background dark:border-ui-border-dark flex items-center justify-center text-ui-muted"
+          >
+            {{ t('property.noImage') }}
           </div>
         </div>
 
-        <!-- Colonne droite : bloc flottant (unité en vue) -->
-        <aside class="lg:col-span-1">
-          <AppCard
-            v-if="activeUnit"
-            class="sticky top-28 space-y-4"
-          >
-            <p class="text-sm font-medium text-[var(--color-muted)]">
-              {{ activeUnit.name }}
+        <!-- Droite : détails dans le flux (relative), colonne scrollable -->
+        <div class="lg:col-span-3 lg:min-h-screen-nav lg:overflow-y-auto lg:sticky lg:top-0 space-y-4 relative">
+          <header>
+            <p class="text-sm text-ui-muted flex items-center gap-1">
+              <MapPin class="h-4 w-4 shrink-0" />
+              {{ (typeof property.city === 'string' ? property.city : property.city?.name) || '—' }}{{ property.district ? ` · ${property.district}` : '' }}
             </p>
-            <p class="text-xl font-bold text-[var(--color-text)]">
-              {{ formatPrice(activeUnit.price) }}
-              <span class="text-sm font-normal text-[var(--color-muted)]"> / {{ t('property.perMonth') }}</span>
-            </p>
-            <div v-if="hasUnitConditions(activeUnit)" class="rounded-lg bg-[var(--color-accent)]/10 dark:bg-[var(--color-accent)]/20 p-3">
-              <p class="text-xs font-medium text-[var(--color-muted)]">{{ t('property.totalToPayLabel') }}</p>
-              <p class="text-lg font-bold text-[var(--color-accent)]">
-                {{ formatPrice(String(getUnitMoveInTotal(activeUnit).total)) }}
-              </p>
+            <h1 class="text-xl font-semibold text-[var(--color-text)] mt-0.5">
+              {{ propertyName }}
+            </h1>
+          </header>
+
+          <template v-if="selectedUnit">
+            <div v-if="units.length > 1" class="flex flex-wrap gap-2">
+              <button
+                v-for="(u, idx) in units"
+                :key="u.id"
+                type="button"
+                class="rounded-xl border px-3 py-2 text-sm font-medium transition"
+                :class="u.id === selectedUnitId ? 'border-primary-emerald bg-primary-emerald-light text-primary-emerald dark:bg-primary-emerald/20 dark:text-primary-emerald' : 'border-ui-border bg-ui-surface text-ui-muted hover:border-ui-border-hover dark:border-ui-border-dark dark:bg-ui-surface-dark dark:hover:border-ui-muted'"
+                @click="selectedUnitId = u.id"
+              >
+                {{ u.name ?? `Unité ${idx + 1}` }}
+              </button>
             </div>
-            <p class="text-xs text-[var(--color-muted)]">
-              {{ t('property.bookingHint') }}
-            </p>
-            <template v-if="unitIsAvailable(activeUnit)">
-              <AppButton variant="primary" block class="w-full" @click="openRequestModal(activeUnit)">
+
+            <!-- Bloc Prix : loyer en gros + total à payer -->
+            <AppCard class="space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <span
+                  class="rounded-full px-3 py-1 text-xs font-medium"
+                  :class="unitIsAvailable(selectedUnit) ? 'bg-status-open-green/15 text-status-open-green dark:bg-status-open-green/25' : 'bg-ui-muted/20 text-ui-muted dark:bg-ui-muted/30'"
+                >
+                  {{ unitIsAvailable(selectedUnit) ? t('property.roomAvailable') : t('property.roomUnavailable') }}
+                </span>
+                <span class="text-sm text-ui-muted">{{ unitTypeLabel(selectedUnit) }}</span>
+              </div>
+              <p class="text-2xl font-bold text-[var(--color-text)]">
+                {{ formatPrice(selectedUnit.price) }}
+                <span class="text-base font-normal text-ui-muted"> / {{ t('property.perMonth') }}</span>
+              </p>
+              <div v-if="hasUnitConditions(selectedUnit)" class="rounded-xl bg-primary-emerald/10 dark:bg-primary-emerald/20 p-3">
+                <p class="text-xs font-medium text-ui-muted uppercase tracking-wide">{{ t('property.totalToPayLabel') }}</p>
+                <p class="text-lg font-bold text-primary-emerald">
+                  {{ formatPrice(String(getUnitMoveInTotal(selectedUnit).total)) }}
+                </p>
+              </div>
+            </AppCard>
+
+            <!-- CTA principaux : Je suis intéressé + WhatsApp + Appeler (visibles au scroll) -->
+            <div v-if="unitIsAvailable(selectedUnit)" class="space-y-2">
+              <AppButton variant="primary" block class="w-full" @click="openRequestModal(selectedUnit)">
                 {{ t('property.bookingCta') }}
               </AppButton>
               <a
-                :href="getWhatsAppUrl(activeUnit)"
+                :href="getWhatsAppUrl(selectedUnit)"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="flex items-center justify-center gap-2 w-full rounded-xl bg-[#25D366] px-4 py-3 text-white font-semibold hover:opacity-90 transition"
@@ -559,14 +502,119 @@ onUnmounted(() => {
                 <MessageCircle class="h-5 w-5" />
                 {{ t('property.whatsappCta') }}
               </a>
-            </template>
-          </AppCard>
-        </aside>
+              <a
+                :href="`tel:${PHONE_E164}`"
+                class="flex items-center justify-center gap-2 w-full rounded-xl border border-ui-border bg-ui-surface px-4 py-3 text-[var(--color-text)] font-medium hover:bg-ui-background dark:border-ui-border-dark dark:bg-ui-surface-dark dark:hover:bg-ui-surface-dark/80 transition"
+              >
+                <Phone class="h-5 w-5" />
+                {{ t('property.callCta') }}
+              </a>
+            </div>
+
+            <!-- Localisation : carte statique dans le flux (z-map sur le snippet) -->
+            <div v-if="mapSnippetCoords" class="space-y-2">
+              <h3 class="text-sm font-semibold text-[var(--color-text)]">
+                {{ t('property.locationTitle') }}
+              </h3>
+              <PropertyMapSnippet
+                :latitude="mapSnippetCoords.latitude"
+                :longitude="mapSnippetCoords.longitude"
+                :radius-meters="500"
+                @click="showMapModal = true"
+              />
+              <p class="text-xs text-ui-muted">
+                {{ (typeof property.city === 'string' ? property.city : property.city?.name) || '' }}
+                · {{ t('property.locationApproximate') }}
+              </p>
+            </div>
+
+            <!-- Conditions d'entrée -->
+            <div v-if="hasUnitConditions(selectedUnit)" class="rounded-2xl border border-ui-border bg-ui-surface dark:border-ui-border-dark dark:bg-ui-surface-dark p-4 space-y-2">
+              <h3 class="text-sm font-semibold text-ui-muted uppercase tracking-wide">{{ t('property.conditionsTitle') }}</h3>
+              <div class="space-y-1 text-sm text-[var(--color-text)]">
+                <div v-if="getUnitMoveInTotal(selectedUnit).rent > 0" class="flex justify-between">
+                  <span>{{ t('property.rent') }}</span>
+                  <span>{{ formatPrice(selectedUnit.price) }}</span>
+                </div>
+                <div v-if="(selectedUnit.caution_months ?? 0) > 0" class="flex justify-between">
+                  <span>{{ t('property.cautionMonths', { months: selectedUnit.caution_months }) }}</span>
+                  <span>{{ formatPrice(String(getUnitMoveInTotal(selectedUnit).caution)) }}</span>
+                </div>
+                <div v-if="(selectedUnit.avance_months ?? 0) > 0" class="flex justify-between">
+                  <span>{{ t('property.avanceMonths', { months: selectedUnit.avance_months }) }}</span>
+                  <span>{{ formatPrice(String(getUnitMoveInTotal(selectedUnit).avance)) }}</span>
+                </div>
+                <div v-if="selectedUnit.frais_dossier != null && Number(selectedUnit.frais_dossier) > 0" class="flex justify-between">
+                  <span>{{ t('property.fees') }}</span>
+                  <span>{{ formatPrice(selectedUnit.frais_dossier) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Équipements avec icônes Lucide (Car, Wifi, Zap, Users) -->
+            <div v-if="getUnitFeatures(selectedUnit).length || units.length" class="space-y-2">
+              <h3 class="text-sm font-semibold text-[var(--color-text)]">{{ t('property.unitFeatures') }}</h3>
+              <ul class="flex flex-wrap gap-2">
+                <li
+                  v-for="(feat, idx) in getUnitFeatures(selectedUnit)"
+                  :key="idx"
+                  class="inline-flex items-center gap-2 rounded-full border border-ui-border bg-ui-surface px-3 py-1.5 text-sm text-[var(--color-text)] dark:border-ui-border-dark dark:bg-ui-surface-dark"
+                >
+                  <Car v-if="featureIcon(feat) === 'car'" class="h-4 w-4 shrink-0 text-primary-emerald" />
+                  <Wifi v-else-if="featureIcon(feat) === 'wifi'" class="h-4 w-4 shrink-0 text-primary-emerald" />
+                  <Zap v-else-if="featureIcon(feat) === 'zap'" class="h-4 w-4 shrink-0 text-primary-emerald" />
+                  <span>{{ feat }}</span>
+                </li>
+              </ul>
+              <p v-if="units.length" class="flex items-center gap-2 text-sm text-ui-muted">
+                <Users class="h-4 w-4 shrink-0" />
+                {{ units.length }} {{ t('landlord.kpi.households') }}
+              </p>
+            </div>
+
+            <!-- Description -->
+            <div v-if="getUnitDescription(selectedUnit)" class="space-y-1">
+              <h3 class="text-sm font-semibold text-[var(--color-text)]">{{ t('property.descriptionTitle') }}</h3>
+              <p class="text-sm text-ui-muted">{{ getUnitDescription(selectedUnit) }}</p>
+            </div>
+
+            <!-- Bâtiment -->
+            <div class="rounded-2xl border border-ui-border bg-ui-background p-4 dark:border-ui-border-dark dark:bg-ui-surface-dark">
+              <p class="text-sm font-semibold text-[var(--color-text)]">
+                {{ t('property.situatedIn') }} <strong>{{ propertyName }}</strong>
+              </p>
+              <p v-if="buildingDescription" class="mt-2 text-sm text-ui-muted">
+                {{ buildingDescription }}
+              </p>
+            </div>
+          </template>
+
+          <template v-else>
+            <AppCard>
+              <p class="text-ui-muted">{{ t('property.noDescription') }}</p>
+              <a
+                :href="getPropertyOnlyWhatsAppUrl()"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="mt-4 flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-white font-semibold hover:opacity-90"
+              >
+                <MessageCircle class="h-5 w-5" />
+                {{ t('property.whatsappCta') }}
+              </a>
+              <a
+                :href="`tel:${PHONE_E164}`"
+                class="mt-2 flex items-center justify-center gap-2 rounded-xl border border-ui-border bg-ui-surface px-4 py-3 text-[var(--color-text)] font-medium dark:border-ui-border-dark dark:bg-ui-surface-dark"
+              >
+                <Phone class="h-5 w-5" />
+                {{ t('property.callCta') }}
+              </a>
+            </AppCard>
+          </template>
+        </div>
       </section>
     </template>
-  </main>
+  </AppContent>
 
-  <!-- Modal fiche de candidature -->
   <AppModal
     :show="showRequestModal"
     :title="t('property.bookingCta')"
@@ -584,11 +632,25 @@ onUnmounted(() => {
     />
   </AppModal>
 
-  <!-- Lightbox -->
+  <AppModal
+    :show="showMapModal"
+    :title="t('property.mapModalTitle')"
+    @close="showMapModal = false"
+  >
+    <div class="space-y-4">
+      <div v-if="mapProperties.length" class="relative z-map h-[400px] w-full rounded-xl overflow-hidden border border-ui-border dark:border-ui-border-dark">
+        <PropertyMap :properties="mapProperties" @select="() => {}" />
+      </div>
+      <AppButton variant="primary" block @click="showMapModal = false">
+        {{ t('property.mapDone') }}
+      </AppButton>
+    </div>
+  </AppModal>
+
   <teleport to="body">
     <div
       v-if="isLightboxOpen && lightboxImages.length"
-      class="fixed inset-0 z-50 flex flex-col bg-black/90"
+      class="fixed inset-0 z-modal flex flex-col bg-overlay"
     >
       <div class="flex items-center justify-between px-4 py-3 text-sm text-white">
         <span>{{ lightboxIndex + 1 }} / {{ lightboxImages.length }}</span>
@@ -611,7 +673,7 @@ onUnmounted(() => {
         <img
           ref="lightboxImageRef"
           :src="getUploadUrl(lightboxImages[lightboxIndex]?.url)"
-          :alt="activeUnit?.name ?? ''"
+          :alt="selectedUnit?.name ?? ''"
           class="max-h-full max-w-full rounded-2xl object-contain"
         />
         <button

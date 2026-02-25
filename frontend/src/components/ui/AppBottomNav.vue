@@ -38,8 +38,8 @@ const navItems = computed<NavItem[]>(() => {
 
   const base: NavItem[] = [
     { key: 'home', icon: Home, path: '/' },
-    { key: 'explorer', icon: Search, path: '/property' },
-    { key: 'ai', icon: Sparkles, path: '/property', query: { view: 'ai' }, isCenter: true },
+    { key: 'explorer', icon: Search, path: '/explore' },
+    { key: 'ai', icon: Sparkles, path: '/explore', query: { view: 'ai' }, isCenter: true },
     { key: 'reels', icon: Play, path: '/reels' },
     loggedIn
       ? { key: 'profile', icon: User, path: '/profile' }
@@ -54,12 +54,10 @@ function isItemActive(item: NavItem): boolean {
     return route.name === 'home' || route.path === '/'
   }
   if (item.key === 'explorer') {
-    if (!route.path.startsWith('/property')) return false
-    // Vue liste / carte / favoris gérés dans la page elle-même
-    return route.name === 'property-list' || route.path === '/property'
+    return route.name === 'explore' || route.path === '/explore'
   }
   if (item.key === 'ai') {
-    return route.path.startsWith('/property') && route.query.view === 'ai'
+    return route.path.startsWith('/explore') && route.query.view === 'ai'
   }
   if (item.key === 'reels') {
     return route.name === 'reels'
@@ -82,8 +80,8 @@ const activeIndex = computed(() => {
   for (let i = 0; i < items.length; i++) {
     if (isItemActive(items[i])) return i
   }
-  // Fallback : si on est sur une page propriété, on met Explorer actif
-  if (route.path.startsWith('/property')) return 1
+  // Fallback : si on est sur explore, on met Explorer actif
+  if (route.path.startsWith('/explore')) return 1
   return 0
 })
 

@@ -64,6 +64,20 @@ Lors de toute modification de vues ou de composants UI (en particulier en taguan
 - **Modals :** Largeur généreuse (`max-w-modal-lg`), centrées, **backdrop blur** ; transitions douces.
 - **Toasts (vue-sonner) :** Stylés selon la charte (couleurs sémantiques, ombres du thème).
 
+### Vue Tenant (Recherche publique — Explore)
+- **Page :** `src/views/tenant/Explore.vue` ; route `/explore`. Style MallOS, tokens strict, mode sombre pris en charge.
+- **Filtres dynamiques :** Type (référentiel `unitTypes`), Budget (range slider min/max), Quartiers (autocomplete via `/location/cities`). Recherche texte optionnelle.
+- **Affichage Split-View :** Grille 12 colonnes ; sur desktop carte 5/12 à gauche, liste résultats 7/12 à droite, avec **toggle Carte on/off** (`showMap`) pour éviter de prendre tout l'écran si l'utilisateur préfère se concentrer sur la liste. Carte = `PropertyMap` avec tokens (`border-ui-border`, `bg-ui-background`, dark).
+- **Résultats :** Un flux par **unité disponible** (annonce = bien + unité). Composant `AppCard` avec `padding="none"`. Même intelligence métier que Landlord : badges Lucide `Users` (nombre de ménages du bien), `Car` (accès véhicule). Affichage du **Prix total d'entrée** (loyer + caution + frais de dossier) calculé via `useListingDisplay.totalEntryPrice`.
+- **Réutilisation :** `getPrimaryImageUrlForProperty`, `hasVehicleAccess`, `totalEntryPrice` dans `@/composables/useListingDisplay.ts`. Pas de duplication de logique Landlord.
+- **Navbar publique :** Logo, lien « Explorer » vers `/explore`, CTA « Devenir Landlord » (vers `/auth` si non connecté), lien **Dashboard** (vers `/admin` si connecté, contenu adapté au rôle — admin, landlord, agent, tenant). Icônes Lucide `size="20"`, couleurs thème. Menu volontairement aéré (3 entrées centrales max + actions à droite).
+
+### Page détail bien (Vue Tenant — après clic sur une annonce)
+- **Vue :** `src/views/PropertyDetailView.vue` ; route détail bien (ex. `/property/:id`). Layout **split** type Marketplace : gauche = carousel, droite = toutes les infos.
+- **Carousel :** Fond = image courante en arrière-plan avec **flou** (`blur-2xl`) et overlay sombre (`bg-overlay`) ; **image nette** au premier plan (centrée, cliquable pour lightbox). **Boutons prev/next très visibles** (Lucide `ChevronLeft` / `ChevronRight`, `rounded-full`, `bg-ui-surface/90`, `shadow-soft`, bordures thème). Indicateurs de position (points) en bas. Une unité à la fois ; sélecteur d’unité en haut à droite si plusieurs.
+- **Panneau droit :** Titre, ville/quartier, prix, **CTA principal « Je suis intéressé(e) »** (ouvre la modale de candidature / `RentalRequestForm`), WhatsApp secondaire. Puis **localisation** : **carte statique** (composant `PropertyMapSnippet`) — pas de scroll ni zoom sur la page ; affichage **figé** avec **cercle** de localisation approximative (rayon configurable). **Au clic** sur la carte → ouverture d’un **modal** contenant la **carte interactive** (`PropertyMap`) avec zoom/pan et bouton « Terminé » pour fermer. Texte sous la carte : ville + « La localisation est approximative » (i18n `property.locationApproximate`). Ensuite : description, équipements, conditions d’entrée (total à payer), avantages du bâtiment. Tokens strict (`border-ui-border`, `bg-ui-surface`, `text-primary-emerald`, etc.).
+- **Composants :** `PropertyMapSnippet.vue` pour la carte statique (Leaflet avec `dragging: false`, `scrollWheelZoom: false`, cercle `L.circle` ; émet `click` pour ouvrir le modal). Réutilisation de `PropertyMap` dans le modal carte.
+
 ---
 
 ## 📝 3. DOCUMENTATION & CLEAN CODE

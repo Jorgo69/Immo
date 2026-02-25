@@ -26,46 +26,59 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-[100dvh] flex flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
-    <!-- Header desktop : masqué sur mobile (Bottom Nav), visible à partir de lg. Contraste et ordre clairs. -->
-    <header class="hidden border-b border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900 lg:block">
+  <div class="min-h-[100dvh] flex flex-col bg-ui-background text-gray-900 dark:bg-ui-surface-dark dark:text-gray-100">
+    <header class="hidden border-b border-ui-border bg-ui-surface shadow-soft-sm dark:border-ui-border-dark dark:bg-ui-surface-dark lg:block">
       <div class="max-w-layout mx-auto flex h-14 items-center justify-between gap-6 px-6 md:px-8">
         <AppLink
           to="/"
-          class="shrink-0 text-base font-semibold text-gray-800 dark:text-gray-100"
+          class="shrink-0 text-base font-semibold text-gray-900 dark:text-gray-100"
         >
           {{ t('app.name') }}
         </AppLink>
         <nav class="flex items-center gap-1 md:gap-2" aria-label="Navigation principale">
           <AppLink
             to="/"
-            class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-[var(--color-accent)] dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-[var(--color-accent)]"
+            class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-ui-muted hover:bg-ui-background hover:text-primary-emerald dark:hover:bg-ui-border-dark"
           >
-            <Home class="h-5 w-5 shrink-0" />
+            <Home :size="20" class="shrink-0 text-current" />
             <span class="hidden xl:inline">{{ t('nav.home') }}</span>
           </AppLink>
           <AppLink
-            to="/property"
-            class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-[var(--color-accent)] dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-[var(--color-accent)]"
+            to="/explore"
+            class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-ui-muted hover:bg-ui-background hover:text-primary-emerald dark:hover:bg-ui-border-dark"
           >
-            <Search class="h-5 w-5 shrink-0" />
-            <span class="hidden xl:inline">{{ t('nav.search') }}</span>
+            <Search :size="20" class="shrink-0 text-current" />
+            <span class="hidden xl:inline">{{ t('nav.explorer') }}</span>
           </AppLink>
           <AppLink
             to="/reels"
-            class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-[var(--color-accent)] dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-[var(--color-accent)]"
+            class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-ui-muted hover:bg-ui-background hover:text-primary-emerald dark:hover:bg-ui-border-dark"
           >
-            <Play class="h-5 w-5 shrink-0" />
+            <Play :size="20" class="shrink-0 text-current" />
             <span class="hidden xl:inline">{{ t('nav.reels') }}</span>
           </AppLink>
         </nav>
         <div class="flex items-center gap-2 shrink-0">
-          <LanguageSwitcher />
-          <CurrencySwitcher />
-          <ThemeToggle />
+          <AppLink
+            v-if="appStore.token"
+            to="/admin"
+            class="hidden rounded-lg px-3 py-2 text-sm font-medium text-ui-muted hover:bg-ui-background hover:text-primary-emerald md:inline-flex dark:hover:bg-ui-border-dark"
+          >
+            {{ t('nav.dashboard') }}
+          </AppLink>
+          <AppLink
+            v-else
+            to="/auth"
+            class="rounded-lg px-3 py-2 text-sm font-medium text-primary-emerald hover:bg-primary-emerald/10"
+          >
+            {{ t('nav.devenirLandlord') }}
+          </AppLink>
           <template v-if="appStore.token">
             <NotificationBell />
           </template>
+          <LanguageSwitcher />
+          <CurrencySwitcher />
+          <ThemeToggle />
           <UserMenu />
         </div>
       </div>
