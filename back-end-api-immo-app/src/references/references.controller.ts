@@ -27,6 +27,18 @@ export class ReferencesController {
     return this.referencesService.getCategories();
   }
 
+  @Get('property-types')
+  @ApiOperation({ summary: 'Types de bâtiments (Villa, Immeuble, Maison de ville, ...)' })
+  async getPropertyTypes() {
+    return this.referencesService.getPropertyTypes();
+  }
+
+  @Get('unit-types')
+  @ApiOperation({ summary: 'Types d’unités (Studio, Chambre-Salon, ...)' })
+  async getUnitTypes() {
+    return this.referencesService.getUnitTypes();
+  }
+
   @Get('types')
   @ApiOperation({ summary: 'Liste des types (optionnel: categoryId pour filtrer)' })
   async getTypes(@Query('categoryId') categoryId?: string) {
@@ -64,6 +76,33 @@ export class ReferencesController {
     await this.referencesService.deleteCategory(id);
   }
 
+  @Post('admin/property-types')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Créer un type de bâtiment (Admin)' })
+  async createPropertyType(@Body() body: { code: string; label_fr: string; label_en?: string; sort_order?: number }) {
+    return this.referencesService.createPropertyType(body);
+  }
+
+  @Put('admin/property-types/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Modifier un type de bâtiment (Admin)' })
+  async updatePropertyType(
+    @Param('id') id: string,
+    @Body() body: { code?: string; label_fr?: string; label_en?: string; sort_order?: number },
+  ) {
+    return this.referencesService.updatePropertyType(id, body);
+  }
+
+  @Delete('admin/property-types/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Supprimer un type de bâtiment (Admin)' })
+  async deletePropertyType(@Param('id') id: string) {
+    await this.referencesService.deletePropertyType(id);
+  }
+
   @Post('admin/types')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -86,6 +125,33 @@ export class ReferencesController {
   @ApiOperation({ summary: 'Supprimer un type (Admin)' })
   async deleteType(@Param('id') id: string) {
     await this.referencesService.deleteType(id);
+  }
+
+  @Post('admin/unit-types')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Créer un type d’unité (Admin)' })
+  async createUnitType(@Body() body: { code: string; label_fr: string; label_en?: string; sort_order?: number; property_type_id?: string }) {
+    return this.referencesService.createUnitType(body);
+  }
+
+  @Put('admin/unit-types/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Modifier un type d’unité (Admin)' })
+  async updateUnitType(
+    @Param('id') id: string,
+    @Body() body: { code?: string; label_fr?: string; label_en?: string; sort_order?: number; property_type_id?: string | null },
+  ) {
+    return this.referencesService.updateUnitType(id, body);
+  }
+
+  @Delete('admin/unit-types/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Supprimer un type d’unité (Admin)' })
+  async deleteUnitType(@Param('id') id: string) {
+    await this.referencesService.deleteUnitType(id);
   }
 
   @Post('admin/features')

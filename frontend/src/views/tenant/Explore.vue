@@ -36,6 +36,7 @@ const properties = ref<PropertyListItemDto[]>([])
 const loading = ref(false)
 const searchQuery = ref('')
 const filterCityId = ref('')
+const filterPropertyTypeCode = ref('')
 const filterTypeId = ref('')
 const budgetMin = ref(0)
 const budgetMax = ref(500000)
@@ -45,9 +46,9 @@ const citySearch = ref('')
 const showCityDropdown = ref(false)
 const showMap = ref(true)
 
-type GridDensity = '2' | '3' | '4'
+type GridDensity = '3' | '4' | '6'
 const GRID_DENSITY_KEY = 'tenant_explore_grid_density'
-const GRID_OPTIONS: GridDensity[] = ['2', '3', '4']
+const GRID_OPTIONS: GridDensity[] = ['3', '4', '6']
 const gridDensity = ref<GridDensity>('3')
 
 interface ListingItem {
@@ -68,27 +69,31 @@ const listings = computed<ListingItem[]>(() => {
 })
 
 const filteredListings = computed(() => {
-  let list = listings.value
-  if (filterTypeId.value) {
-    list = list.filter((l) => l.unit.ref_type_id === filterTypeId.value || l.unit.ref_type?.id === filterTypeId.value)
-  }
-  const min = budgetMin.value
-  const max = budgetMax.value
-  list = list.filter((l) => {
-    const price = Number(l.unit.price ?? 0)
-    return price >= min && price <= max
-  })
-  return list
+  // Le filtrage principal est désormais fait par le backend via doSearch.
+  // On garde ici uniquement le filtrage budgétaire réactif si on veut une fluidité immédiate sans rechargement,
+  // ou on laisse doSearch tout gérer. Pour l'instant, simplifions en faisant tout via le backend pour la cohérence.
+  return listings.value
+})
+
+// Types d'unités proposés dans le filtre — dépendent du type de bâtiment sélectionné.
+const unitTypesForFilter = computed(() => {
+  if (!filterPropertyTypeCode.value) return []
+
+  const selectedBuildingType = refStore.propertyTypes.find(pt => pt.code === filterPropertyTypeCode.value)
+  if (!selectedBuildingType) return []
+
+  // On filtre le référentiel unitTypes par property_type_id
+  return refStore.unitTypes.filter(ut => ut.property_type_id === selectedBuildingType.id)
 })
 
 const gridClass = computed(() => {
-  if (gridDensity.value === '2') {
-    return 'grid grid-cols-1 gap-3 sm:grid-cols-2'
-  }
   if (gridDensity.value === '4') {
     return 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'
   }
-  // Par défaut : densité « standard » (proche du comportement actuel)
+  if (gridDensity.value === '6') {
+    return 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'
+  }
+  // Par défaut : densité « 3 » (proche du comportement actuel)
   return 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3'
 })
 
@@ -114,9 +119,20 @@ function displayPropertyName(p: PropertyListItemDto): string {
 }
 
 function unitTypeLabel(unit: UnitDto): string {
-  const rt = unit.ref_type
-  if (rt) return rt.label_fr ?? rt.label_en ?? unit.name
-  return unit.name
+  const u = unit as UnitDto & { type?: string }
+  // 1) Référentiel déjà chargé sur l'unité
+  if (u.ref_type) {
+    return u.ref_type.label_fr ?? u.ref_type.label_en ?? (u.name || '')
+  }
+  // 2) On reconstruit le label via refStore à partir de ref_type_id
+  if (u.ref_type_id) {
+    const rt = refStore.unitTypes.find((t) => t.id === u.ref_type_id)
+    if (rt) return rt.label_fr ?? rt.label_en ?? (u.name || '')
+  }
+  // 3) Legacy : champ type (string) saisi en clair
+  if (u.type && typeof u.type === 'string' && u.type.trim()) return u.type.trim()
+  // 4) Fallback : nom de l'unité
+  return u.name || ''
 }
 
 function unitCount(p: PropertyListItemDto): number {
@@ -140,6 +156,8 @@ async function doSearch() {
     const result = await searchProperties({
       q: searchQuery.value.trim() || undefined,
       city: filterCityId.value ? (citySearch.value?.trim() || undefined) : undefined,
+      building_type: filterPropertyTypeCode.value || undefined,
+      unit_type_id: filterTypeId.value || undefined,
       min_price: String(min),
       max_price: String(max),
       limit: 100,
@@ -182,12 +200,23 @@ const cityFilteredOptions = computed(() => {
   return cityOptions.value.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 20)
 })
 
-onMounted(() => {
+onMounted(async () => {
   const saved = localStorage.getItem(GRID_DENSITY_KEY) as GridDensity | null
   if (saved && GRID_OPTIONS.includes(saved)) {
     gridDensity.value = saved
   }
-  refStore.fetch().catch(() => {})
+  try {
+    await refStore.fetch()
+  } catch {
+    // ignore erreur référentiels ici, les filtres seront simplement vides
+  }
+  // Si aucun type de bâtiment n'est choisi, on peut pré-sélectionner "maison_de_ville" pour exposer les unités les plus courantes.
+  if (!filterPropertyTypeCode.value) {
+    const defaultBuilding = refStore.propertyTypes.find((pt) => pt.code === 'maison_de_ville')
+    if (defaultBuilding) {
+      filterPropertyTypeCode.value = defaultBuilding.code
+    }
+  }
   loadCities()
   doSearch()
 })
@@ -196,7 +225,18 @@ watch(gridDensity, (val) => {
   localStorage.setItem(GRID_DENSITY_KEY, val)
 })
 
-watch([searchQuery, filterCityId], () => {
+watch(filterPropertyTypeCode, () => {
+  // Si le type d'unité sélectionné n'est plus dans la liste disponible, on le réinitialise.
+  const allowed = new Set(unitTypesForFilter.value.map((t) => t.id))
+  if (filterTypeId.value && !allowed.has(filterTypeId.value)) {
+    filterTypeId.value = ''
+  }
+  doSearch() // Déclencher la recherche quand le type de bâtiment change
+})
+
+watch(filterTypeId, doSearch)
+
+watch([searchQuery, filterCityId, budgetMin, budgetMax], () => {
   doSearch()
 })
 </script>
@@ -224,13 +264,27 @@ watch([searchQuery, filterCityId], () => {
         </div>
 
         <div class="space-y-1">
+          <label class="text-xs font-medium text-ui-muted">{{ t('tenant.explore.buildingTypeLabel') }}</label>
+          <select
+            v-model="filterPropertyTypeCode"
+            class="w-full rounded-lg border border-ui-border bg-ui-surface px-3 py-2 text-sm text-gray-900 focus:border-primary-emerald focus:outline-none dark:border-ui-border-dark dark:bg-ui-surface-dark dark:text-gray-100"
+          >
+            <option value="">{{ t('tenant.explore.buildingTypeAll') }}</option>
+            <option v-for="pt in refStore.propertyTypes" :key="pt.id" :value="pt.code">
+              {{ pt.label_fr ?? pt.label_en }}
+            </option>
+          </select>
+        </div>
+
+        <div class="space-y-1">
           <label class="text-xs font-medium text-ui-muted">{{ t('tenant.explore.typeLabel') }}</label>
           <select
             v-model="filterTypeId"
-            class="w-full rounded-lg border border-ui-border bg-ui-surface px-3 py-2 text-sm text-gray-900 focus:border-primary-emerald focus:outline-none dark:border-ui-border-dark dark:bg-ui-surface-dark dark:text-gray-100"
+            class="w-full rounded-lg border border-ui-border bg-ui-surface px-3 py-2 text-sm text-gray-900 focus:border-primary-emerald focus:outline-none dark:border-ui-border-dark dark:bg-ui-surface-dark dark:text-gray-100 disabled:bg-ui-background disabled:text-ui-muted disabled:cursor-not-allowed"
+            :disabled="!filterPropertyTypeCode"
           >
             <option value="">{{ t('tenant.explore.typeAll') }}</option>
-            <option v-for="ut in refStore.unitTypes" :key="ut.id" :value="ut.id">
+            <option v-for="ut in unitTypesForFilter" :key="ut.id" :value="ut.id">
               {{ ut.label_fr ?? ut.label_en }}
             </option>
           </select>
@@ -402,7 +456,14 @@ watch([searchQuery, filterCityId], () => {
             </div>
             <div class="p-2.5">
               <p class="font-medium text-sm text-gray-900 dark:text-gray-100 line-clamp-1">
-                {{ unitTypeLabel(listing.unit) }} — {{ displayPropertyName(listing.property) }}
+                {{ displayPropertyName(listing.property) }}
+              </p>
+              <p class="mt-0.5 flex items-center gap-1 text-xs">
+                <span
+                  class="inline-flex items-center rounded-full bg-primary-emerald-light px-2 py-0.5 font-medium text-primary-emerald"
+                >
+                  {{ unitTypeLabel(listing.unit) }}
+                </span>
               </p>
               <p class="mt-0.5 flex items-center gap-1 text-xs text-ui-muted">
                 <MapPin :size="14" class="shrink-0 text-ui-muted" />

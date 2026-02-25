@@ -121,6 +121,15 @@ export class ReferencesService implements OnModuleInit {
     return list.map((r) => this.toRefDto(r));
   }
 
+  /** Types d’unités (Studio, Chambre-Salon, ...) */
+  async getUnitTypes(): Promise<(RefDto & { property_type_id: string | null })[]> {
+    const list = await this.unitTypeRepo.find({
+      order: { sort_order: 'ASC' },
+      relations: ['property_type'],
+    });
+    return list.map((r) => ({ ...this.toRefDto(r), property_type_id: r.property_type_id }));
+  }
+
   /** Types par catégorie (ou tous si categoryId absent). */
   async getTypes(categoryId?: string): Promise<(RefDto & { ref_category_id: string })[]> {
     const where = categoryId ? { ref_category_id: categoryId } : {};
@@ -186,6 +195,51 @@ export class ReferencesService implements OnModuleInit {
     await this.refFeatureRepo.delete(id);
   }
 
+  // ——— PropertyTypes (types de bâtiments) ———
+
+  async getPropertyTypes(): Promise<RefDto[]> {
+    const list = await this.propertyTypeRepo.find({ order: { sort_order: 'ASC' } });
+    return list.map((r) => this.toRefDto(r));
+  }
+
+  async createPropertyType(dto: { code: string; label_fr: string; label_en?: string; sort_order?: number }): Promise<PropertyTypeEntity> {
+    return this.propertyTypeRepo.save(dto);
+  }
+
+  async updatePropertyType(
+    id: string,
+    dto: Partial<{ code: string; label_fr: string; label_en: string; sort_order: number }>,
+  ): Promise<PropertyTypeEntity> {
+    await this.propertyTypeRepo.update(id, dto as Record<string, unknown>);
+    const one = await this.propertyTypeRepo.findOne({ where: { id } });
+    if (!one) throw new Error('Property type not found');
+    return one;
+  }
+
+  async deletePropertyType(id: string): Promise<void> {
+    await this.propertyTypeRepo.delete(id);
+  }
+
+  // ——— UnitTypes (types d'unités) ———
+
+  async createUnitType(dto: { code: string; label_fr: string; label_en?: string; sort_order?: number; property_type_id?: string }): Promise<UnitTypeEntity> {
+    return this.unitTypeRepo.save(dto);
+  }
+
+  async updateUnitType(
+    id: string,
+    dto: Partial<{ code: string; label_fr: string; label_en: string; sort_order: number; property_type_id: string | null }>,
+  ): Promise<UnitTypeEntity> {
+    await this.unitTypeRepo.update(id, dto as Record<string, unknown>);
+    const one = await this.unitTypeRepo.findOne({ where: { id } });
+    if (!one) throw new Error('Unit type not found');
+    return one;
+  }
+
+  async deleteUnitType(id: string): Promise<void> {
+    await this.unitTypeRepo.delete(id);
+  }
+
   /**
    * Renvoie tous les référentiels en un seul appel pour optimiser le chargement Front.
    */
@@ -193,7 +247,10 @@ export class ReferencesService implements OnModuleInit {
     const [propertyTypes, propertyStatuses, unitTypes, unitFeatures] = await Promise.all([
       this.propertyTypeRepo.find({ order: { sort_order: 'ASC' } }),
       this.propertyStatusRepo.find({ order: { sort_order: 'ASC' } }),
-      this.unitTypeRepo.find({ order: { sort_order: 'ASC' } }),
+      this.unitTypeRepo.find({
+        order: { sort_order: 'ASC' },
+        relations: ['property_type'],
+      }),
       this.unitFeatureRepo.find({ order: { sort_order: 'ASC' } }),
     ]);
 
@@ -203,7 +260,10 @@ export class ReferencesService implements OnModuleInit {
         ...this.toRefDto(r),
         color: r.color ?? undefined,
       })),
-      unitTypes: unitTypes.map((r) => this.toRefDto(r)),
+      unitTypes: unitTypes.map((r) => ({
+        ...this.toRefDto(r),
+        property_type_id: r.property_type_id,
+      })),
       unitFeatures: unitFeatures.map((r) => this.toRefDto(r)),
     };
   }

@@ -5,12 +5,12 @@
  */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getRefAll, type RefDto } from '../services/references.service'
+import { getRefAll, type RefDto, type UnitTypeDto } from '../services/references.service'
 
 export const useReferenceStore = defineStore('references', () => {
   const propertyTypes = ref<RefDto[]>([])
   const propertyStatuses = ref<RefDto[]>([])
-  const unitTypes = ref<RefDto[]>([])
+  const unitTypes = ref<UnitTypeDto[]>([])
   const unitFeatures = ref<RefDto[]>([])
 
   const loaded = ref(false)

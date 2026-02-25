@@ -17,6 +17,8 @@ export interface PropertyListItemDto {
   agent_id: string | null
   created_at?: string
   address?: string
+  /** Type de bâtiment (référentiel propertyTypes.code : villa, immeuble, bureau, etc.). */
+  building_type?: string
   city_id?: string
   city?: { id: string; name: string }
   gps_latitude?: string | null
@@ -106,6 +108,8 @@ export interface PropertySearchFilters {
   status?: string
   min_price?: string
   max_price?: string
+  building_type?: string
+  unit_type_id?: string
   page?: number
   limit?: number
 }
@@ -129,6 +133,8 @@ export async function searchProperties(
   const maxPrice = filters.max_price != null && filters.max_price !== '' ? Number(filters.max_price) : NaN
   if (!Number.isNaN(minPrice) && minPrice >= 0) params.set('min_price', String(minPrice))
   if (!Number.isNaN(maxPrice) && maxPrice >= 0) params.set('max_price', String(maxPrice))
+  if (filters.building_type) params.set('building_type', filters.building_type)
+  if (filters.unit_type_id) params.set('unit_type_id', filters.unit_type_id)
   if (filters.page != null) params.set('page', String(filters.page))
   if (filters.limit != null) {
     const limit = Math.min(100, Math.max(1, Number(filters.limit) || 10))

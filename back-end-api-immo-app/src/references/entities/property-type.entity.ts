@@ -2,7 +2,8 @@
  * Référentiel des types de biens (Villa, Immeuble, Bureau, etc.).
  * Géré par l'Admin, consommé par le Front pour les selects.
  */
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { UnitTypeEntity } from './unit-type.entity';
 
 @Entity('property_types')
 export class PropertyTypeEntity {
@@ -20,4 +21,7 @@ export class PropertyTypeEntity {
 
   @Column({ type: 'int', name: 'sort_order', default: 0 })
   sort_order: number;
+
+  @OneToMany(() => UnitTypeEntity, (u) => u.property_type)
+  unit_types: UnitTypeEntity[];
 }

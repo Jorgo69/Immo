@@ -395,49 +395,54 @@ onMounted(() => {
               />
             </div>
             <!-- Image principale (foreground) : relative, h-full w-full object-contain, jamais rognée -->
-            <div class="relative h-full w-full flex items-center justify-center px-16 py-4">
+            <div class="relative h-full w-full flex items-center justify-center px-4 py-4 sm:px-12 lg:px-20">
+              <!-- Boutons de navigation style Facebook : très visibles, arrondis, fond contrasté -->
               <button
                 type="button"
-                class="absolute left-3 top-1/2 z-10 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white shadow-soft border border-white/20 hover:bg-black/55 focus:outline-none focus:ring-2 focus:ring-primary-emerald dark:bg-black/50 dark:hover:bg-black/65"
+                class="absolute left-4 top-1/2 z-20 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white shadow-soft-lg border border-white/30 backdrop-blur-md transition-all hover:bg-black/80 hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary-emerald"
                 aria-label="Photo précédente"
                 @click="carouselPrev"
               >
-                <ChevronLeft class="h-7 w-7" />
+                <ChevronLeft :size="32" class="shrink-0" />
               </button>
+
               <button
                 type="button"
-                class="absolute right-3 top-1/2 z-10 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white shadow-soft border border-white/20 hover:bg-black/55 focus:outline-none focus:ring-2 focus:ring-primary-emerald dark:bg-black/50 dark:hover:bg-black/65"
+                class="absolute right-4 top-1/2 z-20 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white shadow-soft-lg border border-white/30 backdrop-blur-md transition-all hover:bg-black/80 hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary-emerald"
                 aria-label="Photo suivante"
                 @click="carouselNext"
               >
-                <ChevronRight class="h-7 w-7" />
+                <ChevronRight :size="32" class="shrink-0" />
               </button>
-              <button
-                type="button"
-                class="h-full w-full flex items-center justify-center"
+
+              <!-- Zone d'affichage central -->
+              <div
+                class="relative h-full w-full cursor-zoom-in flex items-center justify-center"
                 @click="openLightbox(carouselImages, carouselIndex)"
               >
                 <img
                   :src="carouselCurrentUrl"
                   :alt="selectedUnit?.name ?? propertyName"
-                  class="max-h-full max-w-full w-full h-full object-contain rounded-xl shadow-soft"
+                  class="max-h-full max-w-full rounded-xl shadow-soft-lg transition-transform duration-300 pointer-events-none"
                   loading="eager"
                 />
-              </button>
+              </div>
             </div>
-            <!-- Thumbnails : overlay en bas, sans réduire la zone de l'image principale -->
-            <div class="absolute bottom-0 left-0 right-0 flex justify-center gap-2 border-t border-ui-border/80 bg-ui-surface/90 dark:border-ui-border-dark dark:bg-ui-surface-dark/90 p-3">
+
+            <!-- Thumbnails : overlay discret en bas pour la navigation visuelle -->
+            <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 z-10 transition-opacity hover:opacity-100 opacity-60">
               <button
                 v-for="(img, i) in carouselImages"
                 :key="i"
                 type="button"
-                class="h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:ring-primary-emerald"
-                :class="i === carouselIndex ? 'border-primary-emerald ring-2 ring-primary-emerald/30' : 'border-ui-border dark:border-ui-border-dark hover:border-ui-border-hover'"
+                class="h-10 w-10 shrink-0 overflow-hidden rounded-lg border-2 transition-all hover:scale-105 active:scale-90"
+                :class="i === carouselIndex ? 'border-primary-emerald scale-110' : 'border-white/20 hover:border-white/50'"
                 @click="setCarouselIndex(i)"
+                :title="`Photo ${i + 1}`"
               >
                 <img
                   :src="getUploadUrl(img.url)"
-                  :alt="`Photo ${i + 1}`"
+                  alt=""
                   class="h-full w-full object-cover"
                 />
               </button>
@@ -684,38 +689,48 @@ onMounted(() => {
   <teleport to="body">
     <div
       v-if="isLightboxOpen && lightboxImages.length"
-      class="fixed inset-0 z-modal flex flex-col bg-overlay"
+      class="fixed inset-0 z-modal flex flex-col bg-black/90 backdrop-blur-2xl transition-all duration-300"
+      @click.self="closeLightbox"
     >
-      <div class="flex items-center justify-between px-4 py-3 text-sm text-white">
-        <span>{{ lightboxIndex + 1 }} / {{ lightboxImages.length }}</span>
+      <!-- Header de la Lightbox : Compteur + Fermer -->
+      <div class="flex items-center justify-between px-6 py-4 text-white z-20">
+        <span class="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-medium backdrop-blur-md">
+          {{ lightboxIndex + 1 }} / {{ lightboxImages.length }}
+        </span>
         <button
           type="button"
-          class="inline-flex items-center justify-center rounded-full bg-white/10 p-1.5 text-white hover:bg-white/20"
+          class="inline-flex items-center justify-center rounded-full bg-white/10 p-2 text-white transition-all hover:bg-white/20 hover:scale-110 active:scale-95 backdrop-blur-md border border-white/20"
           @click="closeLightbox"
         >
-          <X class="h-4 w-4" />
+          <X :size="20" />
         </button>
       </div>
-      <div class="relative flex flex-1 items-center justify-center px-4 pb-6">
+
+      <!-- Zone d'image avec navigation flottante -->
+      <div class="relative flex flex-1 items-center justify-center px-4 pb-12 overflow-hidden" @click.self="closeLightbox">
+        <!-- Boutons de navigation haute visibilité (style Facebook) -->
         <button
           type="button"
-          class="absolute left-4 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 sm:inline-flex"
+          class="absolute left-6 top-1/2 z-30 flex h-16 w-16 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white shadow-soft-lg border border-white/30 backdrop-blur-md transition-all hover:bg-black/80 hover:scale-110 active:scale-95 focus:outline-none"
           @click="prevImage"
         >
-          <ChevronLeft class="h-5 w-5" />
+          <ChevronLeft :size="36" />
         </button>
+
         <img
           ref="lightboxImageRef"
           :src="getUploadUrl(lightboxImages[lightboxIndex]?.url)"
           :alt="selectedUnit?.name ?? ''"
-          class="max-h-full max-w-full rounded-2xl object-contain"
+          class="max-h-full max-w-full rounded-2xl object-contain shadow-soft-2xl select-none"
+          @click.stop
         />
+
         <button
           type="button"
-          class="absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 sm:inline-flex"
+          class="absolute right-6 top-1/2 z-30 flex h-16 w-16 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white shadow-soft-lg border border-white/30 backdrop-blur-md transition-all hover:bg-black/80 hover:scale-110 active:scale-95 focus:outline-none"
           @click="nextImage"
         >
-          <ChevronRight class="h-5 w-5" />
+          <ChevronRight :size="36" />
         </button>
       </div>
     </div>

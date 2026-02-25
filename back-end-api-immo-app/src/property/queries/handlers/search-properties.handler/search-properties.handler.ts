@@ -35,6 +35,10 @@ export class SearchPropertiesHandler implements IQueryHandler<SearchPropertiesQu
     }
     if (query.city) qb.andWhere('city.name = :city', { city: query.city });
     if (query.status) qb.andWhere('p.status = :status', { status: query.status });
+    if (query.building_type) qb.andWhere('p.building_type = :building_type', { building_type: query.building_type });
+    if (query.unit_type_id) {
+      qb.andWhere('EXISTS (SELECT 1 FROM units u WHERE u.property_id = p.id AND (u.deleted_at IS NULL) AND u.ref_type_id = :unit_type_id)', { unit_type_id: query.unit_type_id });
+    }
     if (query.min_price != null) {
       qb.andWhere('EXISTS (SELECT 1 FROM units u WHERE u.property_id = p.id AND (u.deleted_at IS NULL) AND u.price >= :min_price)', { min_price: String(query.min_price) });
     }
@@ -58,11 +62,17 @@ export class SearchPropertiesHandler implements IQueryHandler<SearchPropertiesQu
       );
     }
     if (query.city) unitQb.andWhere('city.name = :city', { city: query.city });
+    if (query.unit_type_id) unitQb.andWhere('u.ref_type_id = :unit_type_id', { unit_type_id: query.unit_type_id });
     if (query.min_price != null) unitQb.andWhere('u.price >= :min_price', { min_price: String(query.min_price) });
     if (query.max_price != null) unitQb.andWhere('u.price <= :max_price', { max_price: String(query.max_price) });
     unitQb.orderBy('u.created_at', 'DESC');
 
-    const standaloneUnits = await unitQb.getMany();
+    let standaloneUnits = await unitQb.getMany();
+
+    // Filtre building_type pour les unités virtuelles (elles sont toutes considérées comme des 'villa' par défaut pour l'instant)
+    if (query.building_type && query.building_type.toLowerCase() !== 'villa') {
+      standaloneUnits = [];
+    }
 
     const virtualItems: VirtualListItem[] = standaloneUnits.map((unit) => {
       const mainImage = unit.images?.[0]?.url ?? null;

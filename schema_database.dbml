@@ -2,10 +2,22 @@
 Table users {
   id uuid [pk]
   phone_number varchar [unique, note: 'Identifiant principal']
+  first_name varchar
+  last_name varchar
+  email varchar [unique]
+  avatar_url text
+  is_profile_complete boolean [default: false]
+  is_verified boolean [default: false]
+  id_card_url text
+  phone_verified boolean [default: false]
+  metadata jsonb
+  encryption_salt varchar [length: 64]
   preferred_lang varchar [default: 'fr']
   role enum [note: 'tenant, landlord, agent, admin']
   is_active boolean [default: true]
   created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
 }
 
 Table profiles {
@@ -13,35 +25,15 @@ Table profiles {
   user_id uuid [ref: - users.id]
   full_name_enc text
   id_card_enc text
+  profession_enc text
+  company_enc text
+  emergency_contact_enc text
+  preferred_zone varchar
+  preferred_zones jsonb
+  budget_min_enc text
+  budget_max_enc text
   kyc_status enum [default: 'pending']
-}
-
-// === IMMOBILIER ===
-Table properties {
-  id uuid [pk]
-  owner_id uuid [ref: > users.id]
-  agent_id uuid [ref: > users.id]
-  title varchar
-  // Champs multi-langues (Format JSONB: {"fr": "...", "en": "..."})
-  title_translations jsonb 
-  description_translations jsonb
-
-  description_vector vector // IA: pgvector
-  price_monthly decimal
-  // Localisation
-  city varchar
-  district varchar // Ex: Fidjrossè
-  address_details text
-  geo_location point // GPS (lat, long)
-  status enum [note: 'available, occupied, maintenance, coming_soon']
-  available_date date
-}
-
-Table media {
-  id uuid [pk]
-  property_id uuid [ref: > properties.id]
-  url text
-  type enum [note: 'image, video_360, video_short']
+  deleted_at timestamp
 }
 
 // === FINANCES ===
@@ -49,7 +41,9 @@ Table wallets {
   id uuid [pk]
   user_id uuid [ref: - users.id]
   balance_total decimal [default: 0]
-  balance_savings decimal [default: 0, note: 'Tirelire']
+  balance_savings decimal [default: 0]
+  created_at timestamp
+  deleted_at timestamp
 }
 
 Table transactions {
@@ -57,9 +51,137 @@ Table transactions {
   wallet_id uuid [ref: > wallets.id]
   amount decimal
   type enum [note: 'rent, saving, commission, withdrawal']
-  status enum
+  status enum [default: 'pending']
   gateway_ref varchar
   created_at timestamp
+  deleted_at timestamp
+}
+
+// === IMMOBILIER ===
+Table properties {
+  id uuid [pk]
+  owner_id uuid [ref: > users.id]
+  agent_id uuid [ref: > users.id]
+  created_by uuid [ref: > users.id]
+  name varchar [default: 'Sans nom']
+  building_type enum [note: 'villa, immeuble, bureau, boutique, magasin, terrain, maison_de_ville']
+  address text
+  city_id uuid [ref: > cities.id]
+  gps_latitude decimal
+  gps_longitude decimal
+  main_image varchar
+  gallery jsonb
+  description jsonb [note: 'i18n: {fr, en}']
+  title_deed_enc text
+  status enum [note: 'available, occupied, maintenance, coming_soon']
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table units {
+  id uuid [pk]
+  property_id uuid [ref: > properties.id, note: 'Null si unité autonome']
+  owner_id uuid [ref: > users.id]
+  ref_type_id uuid [ref: > ref_types.id]
+  created_by uuid [ref: > users.id]
+  name varchar
+  price decimal
+  description jsonb [note: 'i18n: {fr, en}']
+  features jsonb [note: 'Codes des ref_features']
+  images jsonb
+  management_docs_enc text
+  unit_status enum [note: 'available, occupied, notice_given']
+  available_from date
+  address text
+  city_id uuid [ref: > cities.id]
+  gps_latitude decimal
+  gps_longitude decimal
+  surface_m2 int
+  floor int
+  caution_months int
+  avance_months int
+  frais_dossier decimal
+  prepaid_electricity boolean [default: false]
+  water_included boolean [default: false]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table media {
+  id uuid [pk]
+  property_id uuid [ref: > properties.id]
+  url text
+  rank int
+  is_primary boolean
+  description jsonb
+}
+
+// === RÉFÉRENTIELS (MOTEUR) ===
+Table ref_categories {
+  id uuid [pk]
+  code varchar [unique]
+  label_fr varchar
+  label_en varchar
+  sort_order int
+}
+
+Table ref_types {
+  id uuid [pk]
+  ref_category_id uuid [ref: > ref_categories.id]
+  code varchar
+  label_fr varchar
+  label_en varchar
+  sort_order int
+}
+
+Table ref_features {
+  id uuid [pk]
+  ref_type_id uuid [ref: > ref_types.id]
+  code varchar
+  label_fr varchar
+  label_en varchar
+  sort_order int
+}
+
+Table property_types {
+  id uuid [pk]
+  code varchar [unique]
+  label_fr varchar
+  label_en varchar
+  sort_order int
+}
+
+Table unit_types {
+  id uuid [pk]
+  property_type_id uuid [ref: > property_types.id]
+  code varchar [unique]
+  label_fr varchar
+  label_en varchar
+  sort_order int
+}
+
+Table property_statuses {
+  id uuid [pk]
+  code varchar [unique]
+  label_fr varchar
+  label_en varchar
+  color varchar
+  sort_order int
+}
+
+// === LOCALISATION ===
+Table countries {
+  id uuid [pk]
+  code varchar [unique]
+  name varchar
+}
+
+Table cities {
+  id uuid [pk]
+  country_id uuid [ref: > countries.id]
+  name varchar
 }
 
 // === SERVICES & NOTIFS ===
@@ -69,13 +191,4 @@ Table notifications {
   channel enum [note: 'whatsapp, sms, push, in_app']
   content text
   sent_at timestamp
-}
-
-Table meter_readings {
-  id uuid [pk]
-  property_id uuid [ref: > properties.id]
-  type enum [note: 'sbee, soneb']
-  reading_value float
-  photo_url_enc text
-  created_at timestamp
 }
