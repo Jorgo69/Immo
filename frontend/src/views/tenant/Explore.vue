@@ -45,6 +45,11 @@ const citySearch = ref('')
 const showCityDropdown = ref(false)
 const showMap = ref(true)
 
+type GridDensity = '2' | '3' | '4'
+const GRID_DENSITY_KEY = 'tenant_explore_grid_density'
+const GRID_OPTIONS: GridDensity[] = ['2', '3', '4']
+const gridDensity = ref<GridDensity>('3')
+
 interface ListingItem {
   property: PropertyListItemDto
   unit: UnitDto
@@ -74,6 +79,17 @@ const filteredListings = computed(() => {
     return price >= min && price <= max
   })
   return list
+})
+
+const gridClass = computed(() => {
+  if (gridDensity.value === '2') {
+    return 'grid grid-cols-1 gap-3 sm:grid-cols-2'
+  }
+  if (gridDensity.value === '4') {
+    return 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'
+  }
+  // Par défaut : densité « standard » (proche du comportement actuel)
+  return 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3'
 })
 
 const mapProperties = computed(() =>
@@ -142,7 +158,11 @@ function onMapSelect(id: string) {
 }
 
 function goToListing(listing: ListingItem) {
-  router.push({ name: 'property-detail', params: { id: listing.property.id } })
+  router.push({
+    name: 'property-detail',
+    params: { id: listing.property.id },
+    query: { unit: listing.unit.id },
+  })
 }
 
 let cityDropdownBlurTimer: ReturnType<typeof setTimeout> | null = null
@@ -163,9 +183,17 @@ const cityFilteredOptions = computed(() => {
 })
 
 onMounted(() => {
+  const saved = localStorage.getItem(GRID_DENSITY_KEY) as GridDensity | null
+  if (saved && GRID_OPTIONS.includes(saved)) {
+    gridDensity.value = saved
+  }
   refStore.fetch().catch(() => {})
   loadCities()
   doSearch()
+})
+
+watch(gridDensity, (val) => {
+  localStorage.setItem(GRID_DENSITY_KEY, val)
 })
 
 watch([searchQuery, filterCityId], () => {
@@ -305,16 +333,32 @@ watch([searchQuery, filterCityId], () => {
           <AppParagraph muted class="text-sm">
             {{ t('tenant.explore.resultsCount', { count: filteredListings.length }) }}
           </AppParagraph>
-          <AppButton
-            variant="ghost"
-            size="sm"
-            class="hidden items-center gap-1.5 text-xs text-ui-muted hover:text-gray-900 dark:hover:text-gray-100 lg:inline-flex"
-            @click="showMap = !showMap"
-          >
-            <Map :size="16" class="shrink-0 text-ui-muted" />
-            <span v-if="showMap">{{ t('tenant.explore.mapHide') }}</span>
-            <span v-else>{{ t('tenant.explore.mapShow') }}</span>
-          </AppButton>
+          <div class="flex items-center gap-2">
+            <div
+              class="hidden sm:inline-flex items-center gap-1 rounded-lg border border-ui-border bg-ui-surface px-1 py-0.5 text-xs dark:border-ui-border-dark dark:bg-ui-surface-dark"
+            >
+              <button
+                v-for="opt in GRID_OPTIONS"
+                :key="opt"
+                type="button"
+                class="inline-flex items-center justify-center rounded-md px-2 py-1 font-medium transition-colors"
+                :class="gridDensity === opt ? 'bg-primary-emerald text-white' : 'text-ui-muted hover:bg-ui-background dark:hover:bg-ui-border-dark'"
+                @click="gridDensity = opt"
+              >
+                {{ opt }}
+              </button>
+            </div>
+            <AppButton
+              variant="ghost"
+              size="sm"
+              class="hidden items-center gap-1.5 text-xs text-ui-muted hover:text-gray-900 dark:hover:text-gray-100 lg:inline-flex"
+              @click="showMap = !showMap"
+            >
+              <Map :size="16" class="shrink-0 text-ui-muted" />
+              <span v-if="showMap">{{ t('tenant.explore.mapHide') }}</span>
+              <span v-else>{{ t('tenant.explore.mapShow') }}</span>
+            </AppButton>
+          </div>
         </div>
 
         <div v-if="loading" class="flex items-center justify-center py-12 text-sm text-ui-muted">
@@ -330,7 +374,7 @@ watch([searchQuery, filterCityId], () => {
           <AppParagraph muted class="text-center text-sm">{{ t('tenant.explore.noResultsHint') }}</AppParagraph>
         </div>
 
-        <div v-else class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div v-else :class="gridClass">
           <AppCard
             v-for="(listing, idx) in filteredListings"
             :key="listing.property.id + '-' + listing.unit.id + '-' + idx"

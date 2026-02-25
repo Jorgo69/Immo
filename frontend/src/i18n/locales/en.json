@@ -506,6 +506,7 @@
     "buildingAdvantages": "Building advantages",
     "whatsappCta": "Contact via WhatsApp",
     "callCta": "Call",
+    "otherUnitsTitle": "Other units in this building",
     "whatsappMessage": "I want to rent the unit {unitName} in the property {propertyName}",
     "whatsappMessagePropertyOnly": "I'm interested in the property {propertyName}",
     "locationTitle": "Location",

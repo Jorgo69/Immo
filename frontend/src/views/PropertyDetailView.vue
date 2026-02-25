@@ -103,8 +103,14 @@ async function fetchDetail() {
   error.value = ''
   try {
     property.value = await getPropertyById(id.value)
-    const first = property.value?.units?.[0] ?? property.value?.rooms?.[0]
-    if (first) selectedUnitId.value = first.id
+    const allUnits = property.value?.units ?? property.value?.rooms ?? []
+    const fromQuery = route.query.unit as string | undefined
+    const match = fromQuery ? allUnits.find((u) => u.id === fromQuery) : undefined
+    if (match) {
+      selectedUnitId.value = match.id
+    } else if (allUnits[0]) {
+      selectedUnitId.value = allUnits[0].id
+    }
   } catch (e) {
     const msg = getApiErrorMessage(e)
     toast.error(t('property.loadError', { message: msg }))
@@ -124,6 +130,11 @@ const selectedUnit = computed(() => {
     if (u) return u
   }
   return units.value[0]
+})
+
+const otherUnits = computed(() => {
+  if (!units.value.length || !selectedUnit.value) return []
+  return units.value.filter((u) => u.id !== selectedUnit.value!.id)
 })
 
 const mapProperties = computed<PropertyForMap[]>(() => {
@@ -312,6 +323,13 @@ function onBack() {
   router.push('/explore')
 }
 
+function selectUnitFromSuggestions(unit: UnitDto) {
+  selectedUnitId.value = unit.id
+  if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
 const buildingDescription = computed(() => {
   const p = property.value
   if (!p) return ''
@@ -446,19 +464,6 @@ onMounted(() => {
           </header>
 
           <template v-if="selectedUnit">
-            <div v-if="units.length > 1" class="flex flex-wrap gap-2">
-              <button
-                v-for="(u, idx) in units"
-                :key="u.id"
-                type="button"
-                class="rounded-xl border px-3 py-2 text-sm font-medium transition"
-                :class="u.id === selectedUnitId ? 'border-primary-emerald bg-primary-emerald-light text-primary-emerald dark:bg-primary-emerald/20 dark:text-primary-emerald' : 'border-ui-border bg-ui-surface text-ui-muted hover:border-ui-border-hover dark:border-ui-border-dark dark:bg-ui-surface-dark dark:hover:border-ui-muted'"
-                @click="selectedUnitId = u.id"
-              >
-                {{ u.name ?? `Unité ${idx + 1}` }}
-              </button>
-            </div>
-
             <!-- Bloc Prix : loyer en gros + total à payer -->
             <AppCard class="space-y-3">
               <div class="flex items-center justify-between gap-2">
@@ -604,6 +609,41 @@ onMounted(() => {
               </a>
             </AppCard>
           </template>
+        </div>
+      </section>
+
+      <!-- Suggestions : autres unités du même bien, affichées en bas de page -->
+      <section v-if="otherUnits.length" class="mt-10 space-y-3">
+        <h2 class="text-base font-semibold text-[var(--color-text)]">
+          {{ t('property.otherUnitsTitle') }}
+        </h2>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <AppCard
+            v-for="u in otherUnits"
+            :key="u.id"
+            class="cursor-pointer overflow-hidden transition-shadow hover:shadow-soft-lg"
+            padding="md"
+            @click="selectUnitFromSuggestions(u)"
+          >
+            <div class="space-y-1">
+              <p class="text-sm font-semibold text-[var(--color-text)]">
+                {{ u.name || unitTypeLabel(u) }}
+              </p>
+              <p class="text-xs text-ui-muted">
+                {{ unitTypeLabel(u) }}
+              </p>
+              <p class="text-sm font-semibold text-primary-emerald">
+                {{ formatPrice(u.price) }}
+                <span class="text-xs font-normal text-ui-muted"> / {{ t('property.perMonth') }}</span>
+              </p>
+              <p v-if="hasUnitConditions(u)" class="text-xs text-ui-muted">
+                {{ t('property.totalToPayLabel') }} :
+                <span class="font-medium text-[var(--color-text)]">
+                  {{ formatPrice(String(getUnitMoveInTotal(u).total)) }}
+                </span>
+              </p>
+            </div>
+          </AppCard>
         </div>
       </section>
     </template>
