@@ -698,7 +698,16 @@
       "featureCreated": "Équipement créé.",
       "updated": "Enregistré.",
       "deleted": "Supprimé.",
-      "confirmDelete": "Supprimer cet élément ?"
+      "confirmDelete": "Supprimer cet élément ?",
+      "propertyTypes": "Types de bâtiments",
+      "noPropertyTypes": "Aucun type de bâtiment.",
+      "propertyType": "Type de bâtiment",
+      "propertyTypeCreated": "Type de bâtiment créé.",
+      "propertyTypeOptional": "Type de bâtiment (Optionnel)",
+      "unitTypes": "Types d'unités",
+      "noUnitTypes": "Aucun type d'unité.",
+      "unitType": "Type d'unité",
+      "unitTypeCreated": "Type d'unité créé."
     },
     "users": {
       "title": "Utilisateurs",

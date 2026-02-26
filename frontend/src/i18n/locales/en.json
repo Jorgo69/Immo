@@ -691,7 +691,16 @@
       "featureCreated": "Feature created.",
       "updated": "Saved.",
       "deleted": "Deleted.",
-      "confirmDelete": "Delete this item?"
+      "confirmDelete": "Delete this item?",
+      "propertyTypes": "Building types",
+      "noPropertyTypes": "No building type.",
+      "propertyType": "Building type",
+      "propertyTypeCreated": "Building type created.",
+      "propertyTypeOptional": "Building type (Optional)",
+      "unitTypes": "Unit types",
+      "noUnitTypes": "No unit type.",
+      "unitType": "Unit type",
+      "unitTypeCreated": "Unit type created."
     },
     "users": {
       "title": "Users",
