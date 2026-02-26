@@ -60,6 +60,15 @@ export class ProfileEntity {
   @Column({ type: 'enum', enum: KycStatus, default: KycStatus.PENDING, name: 'kyc_status' })
   kyc_status: KycStatus;
 
+  @Column({ type: 'timestamp', nullable: true, name: 'kyc_submitted_at' })
+  kyc_submitted_at: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true, name: 'kyc_reviewed_at' })
+  kyc_reviewed_at: Date | null;
+
+  @Column({ type: 'text', nullable: true, name: 'kyc_rejection_reason' })
+  kyc_rejection_reason: string | null;
+
   @DeleteDateColumn({ name: 'deleted_at' })
   deleted_at: Date | null;
 }

@@ -21,7 +21,9 @@ import {
   Menu,
   Plus,
   FileText,
-  Globe,
+  MapPin,
+  BookOpen,
+  Banknote,
 } from 'lucide-vue-next'
 import { useAppStore } from '../stores/app'
 import AppLink from '../components/ui/AppLink.vue'
@@ -69,7 +71,7 @@ const navItems = computed(() => {
     return [
       { path: '/admin', label: t('admin.navHome'), icon: Home },
       { path: '/my-requests', label: t('admin.proMyRequests'), icon: FileText },
-      { path: '/admin/profile/edit', label: t('admin.navSettings'), icon: Settings2 },
+      { path: '/admin/profile/edit', label: t('nav.profile'), icon: User },
     ]
   }
   return [
@@ -105,12 +107,22 @@ const navItems = computed(() => {
         { path: '/admin/transactions', label: t('admin.navTransactions') },
       ],
     },
-    { path: '/admin/profile/edit', label: t('admin.navSettings'), icon: Settings2 },
-    ...(isAdmin.value ? [
-      { path: '/admin/users', label: t('admin.navUsers'), icon: Users },
-      { path: '/admin/location', label: t('admin.navLocation'), icon: Globe },
-      { path: '/admin/references', label: t('admin.navReferences'), icon: Settings2 },
-    ] : []),
+
+    // ── Paramètres système (Admin uniquement) ───────────────────────
+    ...(isAdmin.value ? [{
+      key: 'parametres',
+      label: t('admin.navSettings'),
+      icon: Settings2,
+      children: [
+        { path: '/admin/location', label: t('admin.navLocation'), icon: MapPin },
+        { path: '/admin/references', label: t('admin.navReferences'), icon: BookOpen },
+        { path: '/admin/currencies', label: 'Devises', icon: Banknote },
+        { path: '/admin/users', label: t('admin.navUsers'), icon: Users },
+      ],
+    }] : []),
+
+    // ── Profil utilisateur (visible par tous en bas) ───────────────
+    { path: '/admin/profile/edit', label: t('nav.profile'), icon: User },
   ]
 })
 

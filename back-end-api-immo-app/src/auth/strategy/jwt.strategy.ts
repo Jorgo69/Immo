@@ -41,6 +41,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         'is_profile_complete',
         'is_verified',
         'preferred_lang',
+        'preferred_currency',
+        'preferred_theme',
         'role',
         'is_active',
         'created_at',

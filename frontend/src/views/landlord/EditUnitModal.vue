@@ -10,10 +10,10 @@ import { useI18n } from 'vue-i18n'
 import { X, ChevronRight, ChevronLeft, CheckCircle2, Calendar, Info, Zap, Sparkles, Save } from 'lucide-vue-next'
 import { getUploadUrl } from '../../config/api'
 import { updateUnit, uploadPropertyImage, type UpdateUnitPayload, type UnitDto, type PropertyImageItemDto } from '../../services/property.service'
-import { getRefTypes, getRefFeaturesByTypeId, type RefTypeDto, type RefFeatureDto } from '../../services/references.service'
+import { getRefTypes, getRefFeaturesByTypeId, getUnitFeatures, type RefTypeDto, type RefFeatureDto, type UnitFeatureDto } from '../../services/references.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
-import { AppButton, AppInput, AppSelect, AppTitle, AppUpload } from '../../components/ui'
+import { AppButton, AppInput, AppSelect, AppTitle, AppUpload, FeatureIcon } from '../../components/ui'
 import ImageWithMeta from '../../components/landlord/ImageWithMeta.vue'
 
 const props = defineProps<{
@@ -32,6 +32,7 @@ const totalSteps = 4
 
 const refTypes = ref<RefTypeDto[]>([])
 const refFeatures = ref<RefFeatureDto[]>([])
+const unitFeatures = ref<UnitFeatureDto[]>([])
 
 const form = ref({
   name: '',
@@ -133,6 +134,10 @@ async function loadRefFeatures() {
   refFeatures.value = await getRefFeaturesByTypeId(form.value.ref_type_id)
 }
 
+async function loadUnitFeaturesList() {
+  unitFeatures.value = await getUnitFeatures()
+}
+
 watch(() => form.value.ref_type_id, loadRefFeatures)
 
 function toggleFeature(value: string) {
@@ -188,7 +193,7 @@ watch(
   async ([show, unit]) => {
     if (show) {
       currentStep.value = 1
-      await loadRefTypes()
+      await Promise.all([loadRefTypes(), loadUnitFeaturesList()])
       if (unit) {
         fillFromUnit(unit)
         await loadRefFeatures()
@@ -412,21 +417,60 @@ function back() {
 
             <!-- Step 2: Features -->
             <div v-if="currentStep === 2" class="space-y-8 animate-in slide-in-from-right-10 duration-500">
-               <div class="p-8 rounded-6xl bg-white/40 dark:bg-white/5 border border-white/10 shadow-glass">
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button 
-                      v-for="f in featureOptions" 
-                      :key="f.value"
-                      class="flex items-center gap-3 p-4 rounded-2xl border transition-all"
-                      :class="form.features.includes(f.value) ? 'bg-primary-emerald/10 border-primary-emerald/30 text-emerald-500' : 'bg-transparent border-white/5 text-slate-500'"
-                      @click="toggleFeature(f.value)"
-                    >
-                      <div class="w-5 h-5 rounded-md border flex items-center justify-center transition-all" :class="form.features.includes(f.value) ? 'bg-primary-emerald border-primary-emerald' : 'border-white/20'">
-                        <CheckCircle2 v-if="form.features.includes(f.value)" :size="12" class="text-white" />
-                      </div>
-                      <span class="text-xs font-black uppercase tracking-widest truncate">{{ f.label }}</span>
-                    </button>
+               <!-- Équipements admin (unit_features) -->
+               <div v-if="unitFeatures.length" class="space-y-4">
+                 <p class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Équipements — sélectionnez ce qui est disponible</p>
+                 <div class="p-6 rounded-5xl bg-white/40 dark:bg-white/5 border border-white/10 shadow-glass">
+                   <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                     <button
+                       v-for="f in unitFeatures"
+                       :key="f.code"
+                       type="button"
+                       class="flex items-center gap-3 p-4 rounded-2xl border transition-all text-left"
+                       :class="form.features.includes(f.code) ? 'bg-primary-emerald/10 border-primary-emerald/30 text-emerald-500' : 'bg-transparent border-white/5 text-slate-500'"
+                       @click="toggleFeature(f.code)"
+                     >
+                       <div class="w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0" :class="form.features.includes(f.code) ? 'bg-primary-emerald border-primary-emerald' : 'border-white/20'">
+                         <CheckCircle2 v-if="form.features.includes(f.code)" :size="12" class="text-white" />
+                       </div>
+                       <FeatureIcon
+                         :icon-lucide="f.icon_lucide"
+                         :icon-svg="f.icon_svg"
+                         :size="16"
+                         :class="form.features.includes(f.code) ? 'text-emerald-500' : 'text-slate-400'"
+                       />
+                       <span class="text-xs font-black uppercase tracking-widest truncate">
+                         {{ locale === 'fr' ? f.label_fr : (f.label_en || f.label_fr) }}
+                       </span>
+                     </button>
+                   </div>
                  </div>
+               </div>
+
+               <!-- Équipements moteur (ref_features) liés au type sélectionné, si différents -->
+               <div v-if="refFeatures.length" class="space-y-4">
+                 <p class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Caractéristiques spécifiques au type</p>
+                 <div class="p-6 rounded-5xl bg-white/40 dark:bg-white/5 border border-white/10 shadow-glass">
+                   <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                     <button
+                       v-for="f in featureOptions"
+                       :key="f.value"
+                       type="button"
+                       class="flex items-center gap-3 p-4 rounded-2xl border transition-all"
+                       :class="form.features.includes(f.value) ? 'bg-primary-emerald/10 border-primary-emerald/30 text-emerald-500' : 'bg-transparent border-white/5 text-slate-500'"
+                       @click="toggleFeature(f.value)"
+                     >
+                       <div class="w-5 h-5 rounded-md border flex items-center justify-center transition-all" :class="form.features.includes(f.value) ? 'bg-primary-emerald border-primary-emerald' : 'border-white/20'">
+                         <CheckCircle2 v-if="form.features.includes(f.value)" :size="12" class="text-white" />
+                       </div>
+                       <span class="text-xs font-black uppercase tracking-widest truncate">{{ f.label }}</span>
+                     </button>
+                   </div>
+                 </div>
+               </div>
+
+               <div v-if="!unitFeatures.length && !refFeatures.length" class="py-8 text-center text-slate-400 text-sm font-bold">
+                 Sélectionnez d'abord un type d'unité pour voir les caractéristiques disponibles.
                </div>
             </div>
 

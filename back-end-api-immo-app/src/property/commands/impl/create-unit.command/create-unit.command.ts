@@ -92,6 +92,12 @@ export class CreateUnitCommand {
   @IsString()
   address?: string | null;
 
+  @ApiPropertyOptional({ description: 'Quartier (ex: Cadjehoun, Gbegamey)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  neighborhood?: string | null;
+
   @ApiPropertyOptional({ description: 'Ville (unité autonome)' })
   @IsOptional()
   @IsUUID()

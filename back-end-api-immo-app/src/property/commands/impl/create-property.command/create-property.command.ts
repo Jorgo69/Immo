@@ -27,6 +27,7 @@ export class CreatePropertyCommand {
   @ApiPropertyOptional({ example: 'Villa Rose' }) @IsOptional() @IsString() @MaxLength(255) name?: string;
   @ApiPropertyOptional({ enum: PropertyBuildingType }) @IsOptional() @IsEnum(PropertyBuildingType) building_type?: PropertyBuildingType;
   @ApiProperty() @IsNotEmpty() @IsString() address: string;
+  @ApiPropertyOptional({ description: 'Quartier (ex: Cadjehoun, Gbegamey)' }) @IsOptional() @IsString() @MaxLength(150) neighborhood?: string | null;
   @ApiProperty() @IsNotEmpty() @IsUUID() city_id: string;
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsNumber() gps_latitude?: number;
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsNumber() gps_longitude?: number;

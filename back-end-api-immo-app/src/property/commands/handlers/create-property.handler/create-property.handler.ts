@@ -60,6 +60,7 @@ export class CreatePropertyHandler implements ICommandHandler<CreatePropertyComm
           name: (command.name?.trim() || 'Sans nom'),
           building_type: command.building_type ?? PropertyBuildingType.VILLA,
           address: command.address?.trim() ?? '',
+          neighborhood: command.neighborhood?.trim() || null,
           city_id: command.city_id,
           gps_latitude: command.gps_latitude != null ? String(command.gps_latitude) : null,
           gps_longitude: command.gps_longitude != null ? String(command.gps_longitude) : null,

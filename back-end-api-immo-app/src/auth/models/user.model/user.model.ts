@@ -62,6 +62,12 @@ export class UserModel {
   @Column({ type: 'varchar', default: 'fr', length: 5 })
   preferred_lang: string;
 
+  @Column({ type: 'varchar', default: 'XOF', length: 10 })
+  preferred_currency: string;
+
+  @Column({ type: 'varchar', default: 'dark', length: 10 })
+  preferred_theme: string;
+
   @Column({ type: 'enum', enum: UserRole, default: UserRole.TENANT })
   role: UserRole;
 

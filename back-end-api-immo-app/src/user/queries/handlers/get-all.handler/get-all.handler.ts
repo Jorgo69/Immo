@@ -5,6 +5,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetAllQuery } from '../../impl/get-all.query/get-all.query';
 import { DataSource } from 'typeorm';
 import { UserModel } from '../../../../auth/models/user.model/user.model';
+import { ProfileEntity } from '../../../../profile/entities/profile.entity';
 import { buildPaginatedResult, PaginatedResultDto, PAGINATION_MAX_LIMIT } from '../../../../common/dto/pagination.dto';
 
 @QueryHandler(GetAllQuery)
@@ -18,6 +19,7 @@ export class GetAllHandler implements IQueryHandler<GetAllQuery> {
     const repo = this.dataSource.getRepository(UserModel);
     const qb = repo
       .createQueryBuilder('u')
+      .leftJoinAndMapOne('u.profile', ProfileEntity, 'p', 'p.user_id = u.id')
       .select([
         'u.id',
         'u.phone_number',
@@ -32,6 +34,8 @@ export class GetAllHandler implements IQueryHandler<GetAllQuery> {
         'u.is_active',
         'u.created_at',
         'u.updated_at',
+        'p.id',
+        'p.kyc_status',
       ])
       .orderBy('u.created_at', 'DESC')
       .skip(skip)

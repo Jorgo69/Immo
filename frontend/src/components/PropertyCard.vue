@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCurrency } from '../composables/useCurrency'
 /**
  * Carte bien : mini-carrousel d'images (3–4 max), bouton Favoris (cœur), hover scale. Cliquable vers détail.
  * Les URLs d'images sont résolues via getUploadUrl (ARCHITECTURE §9).
@@ -42,12 +43,11 @@ function goToImage(index: number) {
   currentImageIndex.value = (index + images.value.length) % images.value.length
 }
 
-function formatPrice(value: string) {
-  const currency = appStore.currency
-  const num = Number(value)
-  if (currency === 'USD') return '$' + new Intl.NumberFormat('en-US').format(num)
-  if (currency === 'NGN') return '₦' + new Intl.NumberFormat('en-NG').format(num)
-  return new Intl.NumberFormat('fr-FR').format(num) + ' FCFA'
+const { formatPrice: formatPriceC } = useCurrency()
+function formatPrice(val: any) {
+  if (!val && val !== 0) return formatPriceC(0)
+  const v = Number(val)
+  return isNaN(v) ? formatPriceC(0) : formatPriceC(v)
 }
 
 function toggleFavorite(e: Event) {

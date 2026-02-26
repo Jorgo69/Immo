@@ -73,7 +73,7 @@ export const router = createRouter({
           path: 'properties',
           name: 'admin-properties',
           component: () => import('../views/admin/AdminPropertiesView.vue'),
-          meta: { title: 'Liste des biens' },
+          meta: { title: 'Liste des biens', requiresRole: ['admin'] },
         },
         {
           path: 'landlord/properties',
@@ -122,19 +122,25 @@ export const router = createRouter({
           path: 'properties/:id',
           name: 'admin-property-detail',
           component: () => import('../views/admin/AdminPropertyDetailView.vue'),
-          meta: { title: 'Détail du bien' },
+          meta: { title: 'Détail du bien', requiresRole: ['landlord', 'agent', 'admin'] },
+        },
+        {
+          path: 'currencies',
+          name: 'admin-currencies',
+          component: () => import('../views/admin/AdminCurrencyRatesView.vue'),
+          meta: { title: 'Taux de change', requiresRole: ['admin'] },
         },
         {
           path: 'users',
           name: 'admin-users',
           component: () => import('../views/admin/AdminUsersView.vue'),
-          meta: { title: 'Utilisateurs' },
+          meta: { title: 'Utilisateurs', requiresRole: ['admin'] },
         },
         {
           path: 'users/:id',
           name: 'admin-user-detail',
           component: () => import('../views/admin/AdminUserDetailView.vue'),
-          meta: { title: 'Détail utilisateur' },
+          meta: { title: 'Détail utilisateur', requiresRole: ['admin'] },
         },
         {
           path: 'rooms',

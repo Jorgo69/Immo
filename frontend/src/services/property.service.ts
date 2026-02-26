@@ -23,6 +23,7 @@ export interface PropertyListItemDto {
   city?: { id: string; name: string }
   gps_latitude?: string | null
   gps_longitude?: string | null
+  neighborhood?: string | null
   main_image?: string | null
   gallery?: string[]
   media?: Array<{ id: string; url: string; type: string; rank?: number; is_primary?: boolean; description?: Record<string, string> }>
@@ -44,6 +45,7 @@ export interface PropertyDetailDto {
   city?: { id: string; name: string; country_id?: string }
   gps_latitude?: string | null
   gps_longitude?: string | null
+  neighborhood?: string | null
   main_image?: string | null
   gallery?: string[]
   description?: Record<string, string> | null
@@ -94,6 +96,7 @@ export interface UnitDto {
   surface_m2: number | null
   floor: number | null
   address?: string | null
+  neighborhood?: string | null
   city_id?: string | null
   gps_latitude?: string | null
   gps_longitude?: string | null
@@ -175,6 +178,8 @@ export interface CreatePropertyPayload {
   name: string
   building_type: string
   address: string
+  /** Quartier (facultatif) — ex: Cadjehoun, Gbegamey */
+  neighborhood?: string | null
   city_id: string
   gps_latitude?: number
   gps_longitude?: number
@@ -205,6 +210,8 @@ export interface CreateUnitPayload {
   unit_status?: UnitStatusDto
   available_from?: string | null
   address?: string | null
+  /** Quartier (facultatif) */
+  neighborhood?: string | null
   city_id?: string | null
   gps_latitude?: string | null
   gps_longitude?: string | null
@@ -303,6 +310,7 @@ export interface UpdatePropertyPayload {
   name?: string
   building_type?: string
   address?: string
+  neighborhood?: string | null
   city_id?: string
   gps_latitude?: number
   gps_longitude?: number
@@ -331,6 +339,7 @@ export interface UpdateUnitPayload {
   unit_status?: UnitStatusDto
   available_from?: string | null
   address?: string | null
+  neighborhood?: string | null
   city_id?: string | null
   gps_latitude?: string | null
   gps_longitude?: string | null

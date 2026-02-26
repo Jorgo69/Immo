@@ -13,6 +13,12 @@ export interface RefDto {
   color?: string
 }
 
+/** Équipement d'unité enrichi avec support d'icône Lucide ou SVG. */
+export interface UnitFeatureDto extends RefDto {
+  icon_lucide: string | null
+  icon_svg: string | null
+}
+
 export interface RefTypeDto extends RefDto {
   ref_category_id: string
 }
@@ -23,6 +29,7 @@ export interface RefFeatureDto extends RefDto {
 
 // Alias explicites pour le back-office
 export type PropertyTypeDto = RefDto
+export type PropertyStatusDto = RefDto & { color: string | null }
 export interface UnitTypeDto extends RefDto {
   property_type_id: string | null
 }
@@ -31,8 +38,12 @@ export interface RefAllResponse {
   propertyTypes: RefDto[]
   propertyStatuses: RefDto[]
   unitTypes: UnitTypeDto[]
-  unitFeatures: RefDto[]
+  unitFeatures: UnitFeatureDto[]
 }
+
+// ————————————————————————————————————————————————————————————
+// LECTURES PUBLIQUES
+// ————————————————————————————————————————————————————————————
 
 export async function getRefAll(): Promise<RefAllResponse> {
   const { data } = await http.get<RefAllResponse>('/ref/all')
@@ -49,8 +60,18 @@ export async function getPropertyTypes(): Promise<PropertyTypeDto[]> {
   return data
 }
 
+export async function getPropertyStatuses(): Promise<PropertyStatusDto[]> {
+  const { data } = await http.get<PropertyStatusDto[]>('/ref/property-statuses')
+  return data
+}
+
 export async function getUnitTypes(): Promise<UnitTypeDto[]> {
   const { data } = await http.get<UnitTypeDto[]>('/ref/unit-types')
+  return data
+}
+
+export async function getUnitFeatures(): Promise<UnitFeatureDto[]> {
+  const { data } = await http.get<UnitFeatureDto[]>('/ref/unit-features')
   return data
 }
 
@@ -65,7 +86,10 @@ export async function getRefFeaturesByTypeId(refTypeId: string): Promise<RefFeat
   return data
 }
 
-// ——— Admin CRUD ———
+// ————————————————————————————————————————————————————————————
+// CRUD ADMIN — ref_categories
+// ————————————————————————————————————————————————————————————
+
 export async function createRefCategory(payload: { code: string; label_fr: string; label_en?: string; sort_order?: number }) {
   const { data } = await http.post<RefDto>('/ref/admin/categories', payload)
   return data
@@ -79,6 +103,10 @@ export async function updateRefCategory(id: string, payload: { code?: string; la
 export async function deleteRefCategory(id: string): Promise<void> {
   await http.delete(`/ref/admin/categories/${id}`)
 }
+
+// ————————————————————————————————————————————————————————————
+// CRUD ADMIN — ref_types (moteur)
+// ————————————————————————————————————————————————————————————
 
 export async function createRefType(payload: { ref_category_id: string; code: string; label_fr: string; label_en?: string; sort_order?: number }) {
   const { data } = await http.post<RefTypeDto>('/ref/admin/types', payload)
@@ -94,6 +122,10 @@ export async function deleteRefType(id: string): Promise<void> {
   await http.delete(`/ref/admin/types/${id}`)
 }
 
+// ————————————————————————————————————————————————————————————
+// CRUD ADMIN — ref_features (moteur)
+// ————————————————————————————————————————————————————————————
+
 export async function createRefFeature(payload: { ref_type_id: string; code: string; label_fr: string; label_en?: string; sort_order?: number }) {
   const { data } = await http.post<RefFeatureDto>('/ref/admin/features', payload)
   return data
@@ -107,6 +139,10 @@ export async function updateRefFeature(id: string, payload: { code?: string; lab
 export async function deleteRefFeature(id: string): Promise<void> {
   await http.delete(`/ref/admin/features/${id}`)
 }
+
+// ————————————————————————————————————————————————————————————
+// CRUD ADMIN — property_types
+// ————————————————————————————————————————————————————————————
 
 export async function createPropertyType(payload: { code: string; label_fr: string; label_en?: string; sort_order?: number }) {
   const { data } = await http.post<PropertyTypeDto>('/ref/admin/property-types', payload)
@@ -125,6 +161,31 @@ export async function deletePropertyType(id: string): Promise<void> {
   await http.delete(`/ref/admin/property-types/${id}`)
 }
 
+// ————————————————————————————————————————————————————————————
+// CRUD ADMIN — property_statuses
+// ————————————————————————————————————————————————————————————
+
+export async function createPropertyStatus(payload: { code: string; label_fr: string; label_en?: string; color?: string; sort_order?: number }) {
+  const { data } = await http.post<PropertyStatusDto>('/ref/admin/property-statuses', payload)
+  return data
+}
+
+export async function updatePropertyStatus(
+  id: string,
+  payload: { code?: string; label_fr?: string; label_en?: string; color?: string; sort_order?: number },
+) {
+  const { data } = await http.put<PropertyStatusDto>(`/ref/admin/property-statuses/${id}`, payload)
+  return data
+}
+
+export async function deletePropertyStatus(id: string): Promise<void> {
+  await http.delete(`/ref/admin/property-statuses/${id}`)
+}
+
+// ————————————————————————————————————————————————————————————
+// CRUD ADMIN — unit_types
+// ————————————————————————————————————————————————————————————
+
 export async function createUnitType(payload: { code: string; label_fr: string; label_en?: string; sort_order?: number; property_type_id?: string }) {
   const { data } = await http.post<UnitTypeDto>('/ref/admin/unit-types', payload)
   return data
@@ -137,4 +198,39 @@ export async function updateUnitType(id: string, payload: { code?: string; label
 
 export async function deleteUnitType(id: string): Promise<void> {
   await http.delete(`/ref/admin/unit-types/${id}`)
+}
+
+// ————————————————————————————————————————————————————————————
+// CRUD ADMIN — unit_features (équipements enrichis avec icônes)
+// ————————————————————————————————————————————————————————————
+
+export async function createUnitFeature(payload: {
+  code: string
+  label_fr: string
+  label_en?: string
+  sort_order?: number
+  icon_lucide?: string | null
+  icon_svg?: string | null
+}) {
+  const { data } = await http.post<UnitFeatureDto>('/ref/admin/unit-features', payload)
+  return data
+}
+
+export async function updateUnitFeature(
+  id: string,
+  payload: {
+    code?: string
+    label_fr?: string
+    label_en?: string
+    sort_order?: number
+    icon_lucide?: string | null
+    icon_svg?: string | null
+  },
+) {
+  const { data } = await http.put<UnitFeatureDto>(`/ref/admin/unit-features/${id}`, payload)
+  return data
+}
+
+export async function deleteUnitFeature(id: string): Promise<void> {
+  await http.delete(`/ref/admin/unit-features/${id}`)
 }

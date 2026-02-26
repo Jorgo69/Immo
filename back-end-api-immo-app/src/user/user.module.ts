@@ -6,6 +6,7 @@ import { UserController } from './user.controller';
 import { CqrsModule } from '@nestjs/cqrs';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModel } from '../auth/models/user.model/user.model';
+import { ProfileEntity } from '../profile/entities/profile.entity';
 import { JwtStrategy } from '../auth/strategy/jwt.strategy';
 import { RolesGuard } from '../auth/strategy/roles.guard';
 import { GetAllHandler } from './queries/handlers/get-all.handler/get-all.handler';
@@ -15,11 +16,12 @@ import { UpdateUserCommandHandler } from './commands/handlers/update-user.comman
 import { DeleteUserCommandHandler } from './commands/handlers/delete-user.command.handler/delete-user.command.handler';
 import { CreateUserCommandHandler } from './commands/handlers/create-user.command.handler/create-user.command.handler';
 import { UpdateProfileCommandHandler } from './commands/handlers/update-profile.command.handler/update-profile.command.handler';
+import { ReviewKycCommandHandler } from './commands/handlers/review-kyc.command.handler/review-kyc.command.handler';
 import { UploadAvatarService } from './upload-avatar.service';
 import { UploadIdCardService } from './upload-id-card.service';
 
 @Module({
-  imports: [CqrsModule, TypeOrmModule.forFeature([UserModel])],
+  imports: [CqrsModule, TypeOrmModule.forFeature([UserModel, ProfileEntity])],
   controllers: [UserController],
   providers: [
     UploadAvatarService,
@@ -33,6 +35,7 @@ import { UploadIdCardService } from './upload-id-card.service';
     UpdateProfileCommandHandler,
     UpdateUserCommandHandler,
     DeleteUserCommandHandler,
+    ReviewKycCommandHandler,
   ],
 })
 export class UserModule {}

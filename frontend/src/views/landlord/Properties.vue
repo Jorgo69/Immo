@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCurrency } from '../../composables/useCurrency'
 /**
  * Gestion de Patrimoine Multi-vues (ARCHITECTURE §6 & §7).
  * Refonte Ultra-Premium : Style "Apple Glass" & Behance (Veri).
@@ -218,8 +219,11 @@ function statusLabel(status: string): string {
   return t('landlord.' + key)
 }
 
-function formatPrice(price: string) {
-  return new Intl.NumberFormat('fr-FR').format(Number(price)) + ' FCFA'
+const { formatPrice: formatPriceC } = useCurrency()
+function formatPrice(val: any) {
+  if (!val && val !== 0) return formatPriceC(0)
+  const v = Number(val)
+  return isNaN(v) ? formatPriceC(0) : formatPriceC(v)
 }
 
 function displayName(p: PropertyListItemDto): string {

@@ -9,6 +9,7 @@ import { User, ArrowLeft, Building2, DoorOpen, Wallet, Receipt, Shield } from 'l
 import {
   getUserDetail,
   getUserDetailTransactions,
+  reviewKyc,
   type AdminUserDto,
   type UserRole,
   type UserDetailResultDto,
@@ -29,6 +30,8 @@ const transactions = ref<PaginatedTransactionsResult | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const transactionsLoading = ref(false)
+const kycReviewing = ref(false)
+const rejectionReason = ref('')
 
 const user = computed<AdminUserDto | null>(() => detail.value?.user ?? null)
 const stats = computed(() => detail.value?.stats ?? null)
@@ -72,6 +75,26 @@ async function fetchDetail() {
   } finally {
     loading.value = false
     transactionsLoading.value = false
+  }
+}
+
+async function handleKycReview(action: 'approve' | 'reject') {
+  if (!user.value?.id) return
+  if (action === 'reject' && !rejectionReason.value.trim()) {
+    toast.error(t('admin.userDetail.kycReasonRequired'))
+    return
+  }
+
+  kycReviewing.value = true
+  try {
+    await reviewKyc(user.value.id, action, action === 'reject' ? rejectionReason.value.trim() : undefined)
+    toast.success(action === 'approve' ? t('admin.userDetail.kycApproved') : t('admin.userDetail.kycRejected'))
+    rejectionReason.value = ''
+    await fetchDetail()
+  } catch (err) {
+    toast.error(getApiErrorMessage(err))
+  } finally {
+    kycReviewing.value = false
   }
 }
 
@@ -223,6 +246,97 @@ watch(id, () => fetchDetail())
         <p v-else class="py-4 text-center text-sm text-[var(--color-muted)]">
           {{ t('admin.userDetail.noTransactions') }}
         </p>
+      </AppCard>
+
+      <!-- Section KYC (Validation par l'Admin) -->
+      <AppCard class="p-4">
+        <template #title>
+          <span class="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+            <Shield class="h-4 w-4 text-[var(--color-accent)]" />
+            Vérification KYC
+          </span>
+        </template>
+        
+        <div class="space-y-4 text-sm text-[var(--color-text)]">
+          <!-- Statut Actuel -->
+          <div class="flex items-center gap-2">
+            <span class="font-medium">Statut :</span>
+            <span
+              class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"
+              :class="{
+                'bg-kyc-verified/15 text-kyc-verified': user.profile?.kyc_status === 'verified',
+                'bg-kyc-rejected/15 text-kyc-rejected': user.profile?.kyc_status === 'rejected',
+                'bg-kyc-pending/15 text-kyc-pending': !user.profile || user.profile.kyc_status === 'pending'
+              }"
+            >
+              {{ user.profile?.kyc_status ? String(user.profile.kyc_status).toUpperCase() : 'PENDING' }}
+            </span>
+          </div>
+
+          <!-- Document -->
+          <div>
+            <span class="font-medium block mb-1">Pièce d'identité :</span>
+            <div v-if="user.id_card_url" class="mt-2 rounded-lg border border-gray-200 p-2 max-w-sm">
+              <a :href="user.id_card_url" target="_blank" rel="noopener noreferrer" class="block aspect-[1.6/1] bg-gray-100 overflow-hidden relative group">
+                <img v-if="user.id_card_url.match(/\.(jpg|jpeg|png|webp|gif)$/i)" :src="user.id_card_url" class="object-cover w-full h-full" alt="Pièce d'identité" />
+                <div v-else class="w-full h-full flex flex-col items-center justify-center text-[var(--color-muted)]">
+                  📄 Voir le PDF
+                </div>
+                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-medium">
+                  Ouvrir
+                </div>
+              </a>
+            </div>
+            <p v-else class="text-[var(--color-muted)] italic">Aucun document téléchargé</p>
+          </div>
+
+          <!-- Dates KYC -->
+          <div v-if="user.profile?.kyc_reviewed_at">
+            <span class="font-medium">Vérifié le :</span>
+            <span class="text-[var(--color-muted)] ml-2">{{ formatDate(user.profile.kyc_reviewed_at) }}</span>
+          </div>
+
+          <!-- Affichage Raison si rejeté -->
+          <div v-if="user.profile?.kyc_status === 'rejected' && user.profile.kyc_rejection_reason" class="p-3 bg-red-50 text-red-800 rounded-lg border border-red-100 mt-2">
+            <span class="font-medium">Raison du rejet :</span>
+            <p class="mt-1">{{ user.profile.kyc_rejection_reason }}</p>
+          </div>
+
+          <!-- Espace d'Actions (Approuver/Rejeter) si document dispo -->
+          <div v-if="user.id_card_url && user.profile?.kyc_status !== 'verified'" class="pt-4 border-t border-gray-100 mt-4">
+            <p class="font-medium mb-2">Prendre une décision</p>
+            <div class="flex flex-col gap-3 max-w-sm">
+              <!-- Raison du rejet (visible si pending ou rejected) -->
+              <textarea
+                v-model="rejectionReason"
+                class="w-full rounded-lg border border-gray-200 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+                placeholder="Raison du rejet (obligatoire en cas de refus)"
+                rows="2"
+              ></textarea>
+              <div class="flex gap-2">
+                <AppButton
+                  type="button"
+                  size="sm"
+                  class="bg-kyc-verified hover:bg-emerald-600 text-white flex-1"
+                  :loading="kycReviewing"
+                  @click="handleKycReview('approve')"
+                >
+                  Approuver
+                </AppButton>
+                <AppButton
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  class="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200 flex-1"
+                  :loading="kycReviewing"
+                  @click="handleKycReview('reject')"
+                >
+                  Rejeter
+                </AppButton>
+              </div>
+            </div>
+          </div>
+        </div>
       </AppCard>
 
       <!-- Connexion / Sécurité (placeholder) -->

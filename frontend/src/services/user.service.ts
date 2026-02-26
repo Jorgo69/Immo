@@ -9,10 +9,18 @@ export interface AdminUserDto {
   id: string
   phone_number: string
   preferred_lang: string
+  id_card_url?: string | null
   role: UserRole
   is_active: boolean
   created_at: string
   updated_at: string
+  profile?: {
+    id: string
+    kyc_status: string
+    kyc_submitted_at: string | null
+    kyc_reviewed_at: string | null
+    kyc_rejection_reason: string | null
+  } | null
 }
 
 export interface PaginatedUsersResult {
@@ -91,5 +99,17 @@ export async function getUserDetailTransactions(
 ): Promise<PaginatedTransactionsResult> {
   const params = new URLSearchParams({ id: userId, page: String(page), limit: String(limit) })
   const { data } = await http.get<PaginatedTransactionsResult>(`/user/detail/transactions?${params.toString()}`)
+  return data
+}
+
+export async function reviewKyc(
+  userId: string,
+  action: 'approve' | 'reject',
+  reason?: string
+): Promise<{ success: boolean; status: string }> {
+  const { data } = await http.post<{ success: boolean; status: string }>(`/user/${encodeURIComponent(userId)}/kyc`, {
+    action,
+    rejection_reason: reason,
+  })
   return data
 }

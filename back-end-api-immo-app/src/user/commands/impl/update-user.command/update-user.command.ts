@@ -35,6 +35,16 @@ export class UpdateUserCommand {
   @MaxLength(5)
   preferred_lang?: string;
 
+  @ApiProperty({ description: 'Devise préférée', example: 'XOF', required: false })
+  @IsOptional()
+  @MaxLength(10)
+  preferred_currency?: string;
+
+  @ApiProperty({ description: 'Thème préféré', example: 'dark', required: false })
+  @IsOptional()
+  @MaxLength(10)
+  preferred_theme?: string;
+
   @ApiProperty({ description: 'Rôle (tenant, landlord, agent, admin)', enum: UserRole, required: false })
   @IsOptional()
   @IsEnum(UserRole)

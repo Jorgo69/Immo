@@ -10,6 +10,7 @@ import { PropertyEntity } from '../../../../property/entities/property.entity';
 import { UnitEntity } from '../../../../property/entities/unit.entity';
 import { WalletEntity } from '../../../../wallet/entities/wallet.entity';
 import { TransactionEntity } from '../../../../wallet/entities/transaction.entity';
+import { ProfileEntity } from '../../../../profile/entities/profile.entity';
 
 export interface UserDetailStatsDto {
   propertiesAsOwnerCount: number;
@@ -23,7 +24,15 @@ export interface UserDetailStatsDto {
 }
 
 export interface UserDetailResultDto {
-  user: Partial<UserModel>;
+  user: Partial<UserModel> & {
+    profile?: {
+      id: string;
+      kyc_status: string;
+      kyc_submitted_at: Date | null;
+      kyc_reviewed_at: Date | null;
+      kyc_rejection_reason: string | null;
+    } | null;
+  };
   stats: UserDetailStatsDto;
 }
 
@@ -42,6 +51,7 @@ export class GetUserDetailHandler implements IQueryHandler<GetUserDetailQuery> {
         'last_name',
         'email',
         'avatar_url',
+        'id_card_url',
         'is_profile_complete',
         'is_verified',
         'preferred_lang',
@@ -59,6 +69,12 @@ export class GetUserDetailHandler implements IQueryHandler<GetUserDetailQuery> {
     const unitRepo = this.dataSource.getRepository(UnitEntity);
     const walletRepo = this.dataSource.getRepository(WalletEntity);
     const transactionRepo = this.dataSource.getRepository(TransactionEntity);
+    const profileRepo = this.dataSource.getRepository(ProfileEntity);
+
+    const profile = await profileRepo.findOne({
+      where: { user_id: query.id },
+      select: ['id', 'kyc_status', 'kyc_submitted_at', 'kyc_reviewed_at', 'kyc_rejection_reason'],
+    });
 
     const [propertiesAsOwnerCount, propertiesAsAgentCount] = await Promise.all([
       propertyRepo.count({ where: { owner_id: query.id } }),
@@ -110,7 +126,18 @@ export class GetUserDetailHandler implements IQueryHandler<GetUserDetailQuery> {
     }
 
     return {
-      user,
+      user: {
+        ...user,
+        profile: profile
+          ? {
+              id: profile.id,
+              kyc_status: profile.kyc_status,
+              kyc_submitted_at: profile.kyc_submitted_at,
+              kyc_reviewed_at: profile.kyc_reviewed_at,
+              kyc_rejection_reason: profile.kyc_rejection_reason,
+            }
+          : null,
+      },
       stats: {
         propertiesAsOwnerCount,
         roomsAsOwnerCount: roomsAsOwnerTotal,

@@ -55,6 +55,7 @@ const form = ref({
   name: '',
   building_type: 'villa' as string,
   address: '',
+  neighborhood: '' as string,
   country_id: '',
   city_id: '',
   status: 'available' as string,
@@ -164,6 +165,7 @@ async function loadProperty() {
     form.value.name = p.name ?? ''
     form.value.building_type = (p.building_type as string) ?? 'villa'
     form.value.address = p.address ?? ''
+    form.value.neighborhood = p.neighborhood ?? ''
     form.value.city_id = p.city_id ?? ''
     form.value.status = p.status ?? 'available'
     form.value.description = {
@@ -301,6 +303,7 @@ async function submit() {
       name: form.value.name?.trim() || 'Sans nom',
       building_type: form.value.building_type,
       address: form.value.address.trim(),
+      neighborhood: form.value.neighborhood?.trim() || null,
       city_id: form.value.city_id,
       status: form.value.status,
       description: (form.value.description?.fr?.trim() || form.value.description?.en?.trim())
@@ -414,6 +417,8 @@ async function submit() {
                   <AppSelect v-model="form.country_id" :label="t('landlord.country')" :options="countryOptions" />
                   <AppSelect v-model="form.city_id" :label="t('landlord.city')" :options="cityOptions" :disabled="!form.country_id || loadingCities" />
                 </div>
+
+                <AppInput v-model="form.neighborhood" label="Quartier (facultatif)" placeholder="Ex: Cadjehoun, Gbegamey, Zogbo" />
 
                 <div class="space-y-4">
                     <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{{ t('landlord.description') }}</label>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCurrency } from '../../../composables/useCurrency'
 /**
  * Vue Détail Complet d'une Unité
  * Affiche toutes les informations (prix, caractéristiques, médias, description)
@@ -94,9 +95,11 @@ function statusLabel(status: string): string {
   return t('landlord.' + key)
 }
 
-function formatPrice(price: string | number | undefined) {
-  if (price == null) return '—'
-  return new Intl.NumberFormat('fr-FR').format(Number(price)) + ' FCFA'
+const { formatPrice: formatPriceC } = useCurrency()
+function formatPrice(val: any) {
+  if (!val && val !== 0) return formatPriceC(0)
+  const v = Number(val)
+  return isNaN(v) ? formatPriceC(0) : formatPriceC(v)
 }
 
 async function confirmDelete() {

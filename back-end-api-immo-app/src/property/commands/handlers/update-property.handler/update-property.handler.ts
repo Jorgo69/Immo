@@ -30,6 +30,7 @@ export class UpdatePropertyHandler implements ICommandHandler<UpdatePropertyComm
       if (command.name !== undefined) existing.name = command.name;
       if (command.building_type !== undefined) existing.building_type = command.building_type;
       if (command.address !== undefined) existing.address = command.address;
+      if (command.neighborhood !== undefined) existing.neighborhood = command.neighborhood ?? null;
       if (command.city_id !== undefined) existing.city_id = command.city_id;
       if (command.gps_latitude !== undefined) existing.gps_latitude = String(command.gps_latitude);
       if (command.gps_longitude !== undefined) existing.gps_longitude = String(command.gps_longitude);

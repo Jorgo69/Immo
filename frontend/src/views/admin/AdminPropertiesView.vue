@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCurrency } from '../../composables/useCurrency'
 /**
  * Liste des biens (admin) : recherche, filtres (ville, statut, prix), tableau, lien vers détail.
  */
@@ -89,8 +90,12 @@ function formatDate(iso: string | undefined) {
   })
 }
 
-function formatPrice(price: string) {
-  return new Intl.NumberFormat('fr-FR', { style: 'decimal' }).format(Number(price)) + ' FCFA'
+const { formatPrice: formatPriceC } = useCurrency()
+function formatPrice(val: any) {
+  if (!val && val !== 0) return formatPriceC(0)
+  const v = Number(val)
+  return isNaN(v) ? formatPriceC(0) : formatPriceC(v)
+}).format(Number(price)) + ' FCFA'
 }
 
 function openDetail(property: PropertyListItemDto) {

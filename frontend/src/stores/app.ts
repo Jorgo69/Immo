@@ -49,6 +49,16 @@ export const useAppStore = defineStore('app', () => {
       setUser(null, null, false)
       return
     }
+    
+    // Sync preferences from backend -> frontend
+    if (user.preferred_lang && user.preferred_lang !== locale.value) setLocale(user.preferred_lang, false)
+    if (user.preferred_currency && user.preferred_currency !== currency.value) setCurrency(user.preferred_currency, false)
+    if (user.preferred_theme) {
+      import('../composables/useTheme').then(({ useTheme }) => {
+        useTheme().setTheme(user.preferred_theme as 'light' | 'dark', false)
+      })
+    }
+
     setUser(user.id, user.role, user.is_profile_complete, {
       first_name: user.first_name,
       last_name: user.last_name,
@@ -70,14 +80,24 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  function setLocale(value: string) {
+  function setLocale(value: string, syncBackend = true) {
     locale.value = value
     localStorage.setItem('immo_locale', value)
+    if (syncBackend && token.value) {
+      import('../services/auth.service').then(({ updateUser }) => {
+        updateUser({ preferred_lang: value }).catch(console.error)
+      })
+    }
   }
 
-  function setCurrency(value: string) {
+  function setCurrency(value: string, syncBackend = true) {
     currency.value = value
     localStorage.setItem('immo_currency', value)
+    if (syncBackend && token.value) {
+      import('../services/auth.service').then(({ updateUser }) => {
+        updateUser({ preferred_currency: value }).catch(console.error)
+      })
+    }
   }
 
   function setUser(

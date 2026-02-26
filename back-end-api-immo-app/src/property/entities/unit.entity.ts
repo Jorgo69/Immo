@@ -91,6 +91,10 @@ export class UnitEntity {
   @Column({ type: 'text', nullable: true })
   address: string | null;
 
+  /** Quartier (facultatif) — précision géographique locale (ex: Cadjehoun, Gbegamey). */
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  neighborhood: string | null;
+
   @Column({ type: 'uuid', name: 'city_id', nullable: true })
   city_id: string | null;
 

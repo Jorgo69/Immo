@@ -2,17 +2,17 @@
 /**
  * Sélecteur de devise : FCFA (XOF) par défaut, prêt pour Naira (NGN) et Dollar (USD).
  */
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useAppStore } from '../../stores/app'
+import { useCurrency } from '../../composables/useCurrency'
 import { Banknote } from 'lucide-vue-next'
 
 const appStore = useAppStore()
+const { rates, loadRates } = useCurrency()
 
-const currencyOptions: { value: string; label: string; symbol: string }[] = [
-  { value: 'XOF', label: 'FCFA', symbol: 'FCFA' },
-  { value: 'NGN', label: 'Naira', symbol: '₦' },
-  { value: 'USD', label: 'Dollar', symbol: '$' },
-]
+onMounted(() => {
+  loadRates()
+})
 
 const currentCurrency = computed({
   get: () => appStore.currency,
@@ -32,8 +32,8 @@ const currentCurrency = computed({
       class="min-w-[5.5rem] cursor-pointer appearance-none rounded-lg bg-transparent py-2 pl-1 pr-7 text-sm text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] dark:bg-transparent"
       aria-label="Devise"
     >
-      <option v-for="opt in currencyOptions" :key="opt.value" :value="opt.value">
-        {{ opt.label }}
+      <option v-for="opt in rates" :key="opt.currency_code" :value="opt.currency_code">
+        {{ opt.currency_symbol || opt.currency_code }}
       </option>
     </select>
     <span

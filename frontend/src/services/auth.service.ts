@@ -12,6 +12,8 @@ export interface AuthUserDto {
   id_card_url?: string | null
   phone_verified?: boolean
   preferred_lang: string
+  preferred_currency: string
+  preferred_theme: string
   role: 'tenant' | 'landlord' | 'agent' | 'admin'
   is_active: boolean
   created_at: string
@@ -76,6 +78,9 @@ export async function updateUser(payload: {
   last_name?: string
   email?: string
   avatar_url?: string
+  preferred_lang?: string
+  preferred_currency?: string
+  preferred_theme?: string
   role?: 'tenant' | 'landlord' | 'agent' | 'admin'
 }): Promise<AuthUserDto> {
   const { data } = await http.post<AuthUserDto>('/user/update', payload)

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCurrency } from '../composables/useCurrency'
 /**
  * Page détail bien — Galerie immersive type Marketplace (70% écran) + colonne détails sticky (30%).
  * Galerie : fond flou (image cover) + image nette au centre (object-contain) + flèches + thumbnails cliquables.
@@ -163,11 +164,11 @@ const mapSnippetCoords = computed(() => {
   return { latitude: lat, longitude: lng }
 })
 
-function formatPrice(value: string | null | undefined): string {
-  if (value == null || value === '') return ''
-  const n = Number(value)
-  if (Number.isNaN(n)) return ''
-  return new Intl.NumberFormat('fr-FR').format(n) + ' FCFA'
+const { formatPrice: formatPriceC } = useCurrency()
+function formatPrice(val: any) {
+  if (!val && val !== 0) return formatPriceC(0)
+  const v = Number(val)
+  return isNaN(v) ? formatPriceC(0) : formatPriceC(v)
 }
 
 function getUnitDescription(room: UnitDto): string {

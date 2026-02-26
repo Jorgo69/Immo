@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCurrency } from '../composables/useCurrency'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -75,9 +76,11 @@ async function loadList() {
   }
 }
 
-function formatPrice(value: string | null) {
-  if (!value) return ''
-  return new Intl.NumberFormat('fr-FR').format(Number(value)) + ' FCFA'
+const { formatPrice: formatPriceC } = useCurrency()
+function formatPrice(val: any) {
+  if (!val && val !== 0) return formatPriceC(0)
+  const v = Number(val)
+  return isNaN(v) ? formatPriceC(0) : formatPriceC(v)
 }
 
 function next() {

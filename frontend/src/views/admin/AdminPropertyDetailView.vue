@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCurrency } from '../../composables/useCurrency'
 /**
  * Page dédiée détail d'un bien (admin) : fil d'Ariane, infos, adresse, médias, chambres.
  */
@@ -28,8 +29,12 @@ function statusLabel(status: string): string {
   return t('admin.status.' + status)
 }
 
-function formatPrice(price: string) {
-  return new Intl.NumberFormat('fr-FR', { style: 'decimal' }).format(Number(price)) + ' FCFA'
+const { formatPrice: formatPriceC } = useCurrency()
+function formatPrice(val: any) {
+  if (!val && val !== 0) return formatPriceC(0)
+  const v = Number(val)
+  return isNaN(v) ? formatPriceC(0) : formatPriceC(v)
+}).format(Number(price)) + ' FCFA'
 }
 
 function formatDate(iso: string | undefined) {

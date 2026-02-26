@@ -147,6 +147,7 @@ fetchList(1)
               <th class="px-4 py-3 font-medium text-[var(--color-text)]">{{ t('admin.users.tablePhone') }}</th>
               <th class="px-4 py-3 font-medium text-[var(--color-text)]">{{ t('admin.users.tableRole') }}</th>
               <th class="px-4 py-3 font-medium text-[var(--color-text)]">{{ t('admin.users.tableStatus') }}</th>
+              <th class="px-4 py-3 font-medium text-[var(--color-text)]">KYC</th>
               <th class="px-4 py-3 font-medium text-[var(--color-text)]">{{ t('admin.users.tableCreated') }}</th>
               <th class="w-20 px-4 py-3"></th>
             </tr>
@@ -188,6 +189,18 @@ fetchList(1)
                   :class="u.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
                 >
                   {{ statusLabel(u.is_active) }}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <span
+                  class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"
+                  :class="{
+                    'bg-kyc-verified/15 text-kyc-verified': u.profile?.kyc_status === 'verified',
+                    'bg-kyc-rejected/15 text-kyc-rejected': u.profile?.kyc_status === 'rejected',
+                    'bg-kyc-pending/15 text-kyc-pending': !u.profile || u.profile.kyc_status === 'pending'
+                  }"
+                >
+                  {{ u.profile?.kyc_status ? String(u.profile.kyc_status).toUpperCase() : 'PENDING' }}
                 </span>
               </td>
               <td class="px-4 py-3 text-[var(--color-muted)]">

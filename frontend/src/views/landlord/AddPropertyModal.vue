@@ -41,6 +41,7 @@ const form = ref({
   name: 'Sans nom',
   building_type: 'villa' as string,
   address: '',
+  neighborhood: '' as string,
   country_id: '',
   city_id: '',
   status: 'available' as string,
@@ -204,6 +205,7 @@ async function submit() {
       name: form.value.name?.trim() || 'Sans nom',
       building_type: form.value.building_type || 'villa',
       address: form.value.address.trim(),
+      neighborhood: form.value.neighborhood?.trim() || null,
       city_id: form.value.city_id,
       status: form.value.status,
       title_deed: form.value.title_deed?.trim() || undefined,
@@ -234,6 +236,7 @@ watch(() => props.show, (visible) => {
       name: 'Sans nom',
       building_type: 'villa',
       address: '',
+      neighborhood: '',
       country_id: '',
       city_id: '',
       status: 'available',
@@ -329,6 +332,8 @@ onMounted(() => { if (props.show) loadCountries() })
                  <AppSelect v-model="form.country_id" :label="t('landlord.country')" :options="countryOptions" />
                  <AppSelect v-model="form.city_id" :label="t('landlord.city')" :options="cityOptions" :disabled="!form.country_id || loadingCities" />
                </div>
+
+               <AppInput v-model="form.neighborhood" label="Quartier (facultatif)" placeholder="Ex: Cadjehoun, Gbegamey, Zogbo" />
 
                <div class="space-y-4">
                   <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{{ t('landlord.description') }}</label>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCurrency } from '../composables/useCurrency'
 /**
  * Accueil unifié (ex-Espace Pro) — Dashboard type SaaS Premium.
  * Locataire : uniquement "Mes demandes".
@@ -63,8 +64,11 @@ const topProperties = computed(() =>
     .slice(0, 5),
 )
 
-function formatPrice(value: string | number) {
-  return new Intl.NumberFormat('fr-FR').format(Number(value)) + ' FCFA'
+const { formatPrice: formatPriceC } = useCurrency()
+function formatPrice(val: any) {
+  if (!val && val !== 0) return formatPriceC(0)
+  const v = Number(val)
+  return isNaN(v) ? formatPriceC(0) : formatPriceC(v)
 }
 
 function formatDate(dateStr: string) {

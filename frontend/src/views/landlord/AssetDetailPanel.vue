@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { 
   X, MapPin, Building2, LayoutGrid, Ruler, 
@@ -7,7 +7,8 @@ import {
   Layers, Settings, ShieldCheck, Zap, TrendingUp
 } from 'lucide-vue-next'
 import type { PropertyDetailDto } from '../../services/property.service'
-import { AppButton, AppSkeleton } from '../../components/ui'
+import { getUnitFeatures, type UnitFeatureDto } from '../../services/references.service'
+import { AppButton, AppSkeleton, FeatureIcon } from '../../components/ui'
 
 const props = defineProps<{
   asset: PropertyDetailDto | null
@@ -22,6 +23,16 @@ const emit = defineEmits(['close', 'edit', 'add-unit', 'edit-unit', 'delete'])
 
 const { t, locale } = useI18n()
 const activeTab = ref('overview')
+const allUnitFeatures = ref<UnitFeatureDto[]>([])
+
+/** Map code → UnitFeatureDto pour résolution rapide. */
+const featureMap = computed<Record<string, UnitFeatureDto>>(() =>
+  Object.fromEntries(allUnitFeatures.value.map((f) => [f.code, f]))
+)
+
+onMounted(async () => {
+  try { allUnitFeatures.value = await getUnitFeatures() } catch { /* silencieux */ }
+})
 
 const isVirtual = computed(() => (props.asset as any)?._virtual === true)
 const units = computed(() => props.asset?.units ?? [])
@@ -168,9 +179,17 @@ function unitTypeLabel(type: string): string {
               <h3 class="text-xs font-black uppercase tracking-widest-xl text-slate-900 dark:text-white">{{ t('landlord.assetSectionFeatures') }}</h3>
             </div>
             <div class="grid grid-cols-2 gap-3">
-               <div v-for="f in (asset as any).features || []" :key="f" class="flex items-center gap-3 p-4 rounded-2xl bg-white/40 dark:bg-white/5 border border-white/10">
-                 <div class="w-2 h-2 rounded-full bg-primary-emerald shadow-glass-primary" />
-                 <span class="text-xs font-black text-slate-700 dark:text-slate-200 capitalize">{{ f }}</span>
+               <div v-for="code in (asset as any).features || []" :key="code" class="flex items-center gap-3 p-4 rounded-2xl bg-white/40 dark:bg-white/5 border border-white/10">
+                 <div class="w-7 h-7 rounded-lg bg-primary-emerald/10 flex items-center justify-center text-primary-emerald shrink-0">
+                   <FeatureIcon
+                     :icon-lucide="featureMap[code]?.icon_lucide ?? null"
+                     :icon-svg="featureMap[code]?.icon_svg ?? null"
+                     :size="14"
+                   />
+                 </div>
+                 <span class="text-xs font-black text-slate-700 dark:text-slate-200 capitalize">
+                   {{ locale === 'fr' ? (featureMap[code]?.label_fr || code) : (featureMap[code]?.label_en || featureMap[code]?.label_fr || code) }}
+                 </span>
                </div>
             </div>
           </section>

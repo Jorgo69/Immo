@@ -96,6 +96,12 @@ export class UpdateUnitCommand {
   @IsString()
   address?: string | null;
 
+  @ApiPropertyOptional({ description: 'Quartier (ex: Cadjehoun, Gbegamey)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  neighborhood?: string | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsUUID()

@@ -28,10 +28,18 @@ function applyTheme(theme: Theme) {
 export function useTheme() {
   const theme = ref<Theme>(getStoredTheme())
 
-  function setTheme(value: Theme) {
+  function setTheme(value: Theme, syncBackend = true) {
     theme.value = value
     localStorage.setItem(STORAGE_KEY, value)
     applyTheme(value)
+    if (syncBackend) {
+      const token = localStorage.getItem('immo_token')
+      if (token) {
+        import('../services/auth.service').then(({ updateUser }) => {
+          updateUser({ preferred_theme: value }).catch(console.error)
+        })
+      }
+    }
   }
 
   function toggle() {

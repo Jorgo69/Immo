@@ -10,6 +10,7 @@ import {
   Post,
   Query,
   Request,
+  Param,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -24,6 +25,7 @@ import { CreateUserCommand } from './commands/impl/create-user.command/create-us
 import { UpdateProfileCommand } from './commands/impl/update-profile.command/update-profile.command';
 import { UpdateUserCommand } from './commands/impl/update-user.command/update-user.command';
 import { DeleteUserCommand } from './commands/impl/delete-user.command/delete-user.command';
+import { ReviewKycCommand } from './commands/impl/review-kyc.command/review-kyc.command';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 import { RolesGuard } from '../auth/strategy/roles.guard';
 import { Roles } from '../auth/strategy/roles.decorator';
@@ -99,6 +101,16 @@ export class UserController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Créer un utilisateur (admin ou formulaire complet)' })
   async create(@Body() command: CreateUserCommand) {
+    return this.commandBus.execute(command);
+  }
+
+  @Post(':id/kyc')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Valider ou rejeter les documents KYC (admin)' })
+  async reviewKyc(@Param('id') userId: string, @Body() command: ReviewKycCommand) {
+    command.user_id = userId;
     return this.commandBus.execute(command);
   }
 

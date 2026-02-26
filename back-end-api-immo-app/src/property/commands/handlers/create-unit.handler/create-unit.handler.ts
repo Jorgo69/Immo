@@ -79,6 +79,7 @@ export class CreateUnitHandler implements ICommandHandler<CreateUnitCommand> {
           unit_status: command.unit_status ?? UnitStatus.AVAILABLE,
           available_from: command.available_from ?? null,
           address: command.address ?? null,
+          neighborhood: command.neighborhood?.trim() || null,
           city_id: command.city_id ?? null,
           gps_latitude: command.gps_latitude ?? null,
           gps_longitude: command.gps_longitude ?? null,

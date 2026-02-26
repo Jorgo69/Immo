@@ -19,6 +19,7 @@ import { ProfileModule } from './profile/profile.module';
 import { LocationModule } from './location/location.module';
 import { ReferencesModule } from './references/references.module';
 import { RentalModule } from './rental/rental.module';
+import { CurrencyModule } from './currency/currency.module';
 
 // Entités TypeORM
 import { UserModel } from './auth/models/user.model/user.model';
@@ -39,6 +40,7 @@ import { RefCategoryEntity } from './references/entities/ref-category.entity';
 import { RefTypeEntity } from './references/entities/ref-type.entity';
 import { RefFeatureEntity } from './references/entities/ref-feature.entity';
 import { RentalRequestEntity } from './rental/entities/rental-request.entity';
+import { CurrencyRateEntity } from './currency/entities/currency-rate.entity';
 
 @Module({
   imports: [
@@ -58,7 +60,7 @@ import { RentalRequestEntity } from './rental/entities/rental-request.entity';
         username: configService.get('database.username'),
         password: configService.get('database.password'),
         database: configService.get('database.database'),
-        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, UnitEntity, CountryEntity, CityEntity, ProfileEntity, PaymentMethodEntity, PropertyTypeEntity, PropertyStatusEntity, UnitTypeEntity, UnitFeatureEntity, RefCategoryEntity, RefTypeEntity, RefFeatureEntity, RentalRequestEntity],
+        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, UnitEntity, CountryEntity, CityEntity, ProfileEntity, PaymentMethodEntity, PropertyTypeEntity, PropertyStatusEntity, UnitTypeEntity, UnitFeatureEntity, RefCategoryEntity, RefTypeEntity, RefFeatureEntity, RentalRequestEntity, CurrencyRateEntity],
         synchronize: configService.get('database.synchronize'),
         logging: configService.get('database.logging'),
       }),
@@ -75,6 +77,7 @@ import { RentalRequestEntity } from './rental/entities/rental-request.entity';
     LocationModule,
     ReferencesModule,
     RentalModule,
+    CurrencyModule,
     HealthModule,
   ],
   controllers: [AppController],
