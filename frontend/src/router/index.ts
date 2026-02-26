@@ -24,18 +24,8 @@ export const router = createRouter({
           component: () => import('../views/OnboardingView.vue'),
           meta: { title: 'Compléter mon profil', requiresAuth: true },
         },
-        {
-          path: 'profile',
-          name: 'profile',
-          component: () => import('../views/ProfileView.vue'),
-          meta: { title: 'Mon profil', requiresAuth: true },
-        },
-        {
-          path: 'profile/edit',
-          name: 'profile-edit',
-          component: () => import('../views/ProfileEditView.vue'),
-          meta: { title: 'Éditer le profil', requiresAuth: true },
-        },
+        { path: 'profile', redirect: '/admin/profile' },
+        { path: 'profile/edit', redirect: '/admin/profile/edit' },
         {
           path: 'property',
           name: 'property-list',
@@ -103,6 +93,31 @@ export const router = createRouter({
           component: () => import('../views/landlord/LandlordUnitsView.vue'),
           meta: { title: 'Unités', requiresRole: ['landlord', 'agent', 'admin'] },
         },
+        // --- NOUVELLES ROUTES SEPAREES (PROPERTIES & UNITS) ---
+        {
+          path: 'assets/properties',
+          name: 'assets-properties',
+          component: () => import('../views/admin/assets/PropertyManagerView.vue'),
+          meta: { title: 'Liste des biens', requiresRole: ['landlord', 'agent', 'admin'] },
+        },
+        {
+          path: 'assets/properties/:id',
+          name: 'assets-property-detail',
+          component: () => import('../views/admin/assets/PropertyDetailFullView.vue'),
+          meta: { title: 'Détail du bien', requiresRole: ['landlord', 'agent', 'admin'] },
+        },
+        {
+          path: 'assets/units',
+          name: 'assets-units',
+          component: () => import('../views/admin/assets/UnitManagerView.vue'),
+          meta: { title: 'Liste des unités', requiresRole: ['landlord', 'agent', 'admin'] },
+        },
+        {
+          path: 'assets/units/:propertyId/:unitId',
+          name: 'assets-unit-detail',
+          component: () => import('../views/admin/assets/UnitDetailFullView.vue'),
+          meta: { title: 'Détail de l\'unité', requiresRole: ['landlord', 'agent', 'admin'] },
+        },
         {
           path: 'properties/:id',
           name: 'admin-property-detail',
@@ -156,6 +171,18 @@ export const router = createRouter({
           name: 'admin-references',
           component: () => import('../views/admin/AdminReferencesView.vue'),
           meta: { title: 'Configuration référentiels', requiresRole: ['admin'] },
+        },
+        {
+          path: 'profile',
+          name: 'profile',
+          component: () => import('../views/ProfileView.vue'),
+          meta: { title: 'Mon profil', requiresAuth: true },
+        },
+        {
+          path: 'profile/edit',
+          name: 'profile-edit',
+          component: () => import('../views/ProfileEditView.vue'),
+          meta: { title: 'Éditer le profil', requiresAuth: true },
         },
       ],
     },

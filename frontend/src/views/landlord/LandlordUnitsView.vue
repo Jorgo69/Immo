@@ -11,7 +11,7 @@ import { getMyProperties } from '../../services/property.service'
 import type { PropertyListItemDto, UnitDto } from '../../services/property.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
-import { AppTitle, AppCard, AppParagraph, AppButton } from '../../components/ui'
+import { AppTitle, AppParagraph, AppButton, AppSkeleton } from '../../components/ui'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -43,7 +43,7 @@ function formatPrice(price: string | number | undefined) {
   return new Intl.NumberFormat('fr-FR').format(Number(price)) + ' FCFA'
 }
 
-function goToProperty(propertyId: string) {
+function goToProperty() {
   router.push(`/admin/landlord/properties`)
 }
 
@@ -82,9 +82,9 @@ onMounted(async () => {
     </div>
 
     <p v-if="error" class="mb-4 text-sm text-red-600">{{ error }}</p>
-    <AppCard v-if="loading" class="p-8 text-center text-[var(--color-muted)]">
-      {{ t('admin.loading') }}
-    </AppCard>
+    <div v-if="loading" class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+      <AppSkeleton v-for="i in 5" :key="i" type="table-row" />
+    </div>
 
     <div v-else class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
       <table class="w-full min-w-[500px] text-left text-sm">
@@ -101,7 +101,7 @@ onMounted(async () => {
             v-for="item in unitsFlat"
             :key="item.unit.id"
             class="cursor-pointer bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-            @click="item.propertyId && goToProperty(item.propertyId)"
+            @click="goToProperty()"
           >
             <td class="px-4 py-3 font-medium text-[var(--color-text)]">{{ item.unit.name }}</td>
             <td class="px-4 py-3 text-[var(--color-muted)]">{{ item.propertyName }}</td>

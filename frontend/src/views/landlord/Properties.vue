@@ -1,13 +1,17 @@
 <script setup lang="ts">
 /**
  * Gestion de Patrimoine Multi-vues (ARCHITECTURE §6 & §7).
- * Grille (xl: 6 colonnes) / Tableau / Compact. ViewSwitcher + persistance localStorage.
- * Données via CRUD Back-end ; affichage nom/ville formaté (jamais d'ID brut).
+ * Refonte Ultra-Premium : Style "Apple Glass" & Behance (Veri).
+ * Utilise les Design Tokens officiels de tailwind.config.js.
  */
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Building2, Plus, MapPin, Settings2, MoreVertical, TrendingUp, PieChart, Home, Clock, Car, Users } from 'lucide-vue-next'
+import { 
+  Building2, Plus, MapPin, Settings2, MoreVertical, 
+  TrendingUp, PieChart, Home, Clock, Car, Users,
+  ChevronDown, Check
+} from 'lucide-vue-next'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
 import { useProperty } from '../../composables/useProperty'
@@ -15,10 +19,10 @@ import { useViewMode } from '../../composables/useViewMode'
 import type { PropertyListItemDto, PropertyDetailDto, UnitDto } from '../../services/property.service'
 import { deleteProperty } from '../../services/property.service'
 import { getCities } from '../../services/location.service'
-import { AppButton, AppTitle, AppParagraph, AppInput, AppCard, ViewSwitcher, ConfirmModal, StatCard } from '../../components/ui'
+import { AppButton, AppInput, ViewSwitcher, ConfirmModal, AppSkeleton } from '../../components/ui'
 import PropertyCardImage from '../../components/landlord/PropertyCardImage.vue'
 import PropertyTable from './PropertyTable.vue'
-import PropertyDetailsDrawer from './PropertyDetailsDrawer.vue'
+import AssetDetailPanel from './AssetDetailPanel.vue'
 import AddPropertyModal from './AddPropertyModal.vue'
 import EditPropertyModal from './EditPropertyModal.vue'
 import AddUnitModal from './AddUnitModal.vue'
@@ -27,7 +31,7 @@ import QuickEditPropertyModal from './QuickEditPropertyModal.vue'
 
 const ASSET_VIEW_KEY = 'immo_landlord_assets_view'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { viewMode, setViewMode } = useViewMode(ASSET_VIEW_KEY, 'grid')
@@ -37,9 +41,12 @@ const showAddPropertyModal = ref(false)
 const showAddUnitModal = ref(false)
 const createdPropertyId = ref<string | null>(null)
 const createdPropertyName = ref<string>('')
-const drawerPropertyId = ref<string | null>(null)
-const detailForDrawer = ref<PropertyDetailDto | null>(null)
-const loadingDetail = ref(false)
+
+// Split-View / Asset Selection
+const selectedAssetId = ref<string | null>(null)
+const selectedAssetDetail = ref<PropertyDetailDto | null>(null)
+const loadingAssetDetail = ref(false)
+
 const quickEditProperty = ref<PropertyListItemDto | null>(null)
 const editPropertyId = ref<string | null>(null)
 const editUnitContext = ref<{ propertyId: string; unit: UnitDto } | null>(null)
@@ -91,7 +98,191 @@ watch(gridActionsOpenId, (id) => {
 
 onBeforeUnmount(() => document.removeEventListener('click', onDocClickGrid))
 
-/** Retourne la chaîne du nom pour recherche (jamais d’ID brut). */
+/** Selection Logic */
+async function selectAsset(p: PropertyListItemDto) {
+  if (selectedAssetId.value === p.id) {
+    selectedAssetId.value = null
+    selectedAssetDetail.value = null
+    return
+  }
+  
+  selectedAssetId.value = p.id
+  loadingAssetDetail.value = true
+  selectedAssetDetail.value = null
+  
+  try {
+    selectedAssetDetail.value = await getDetail(p.id)
+  } catch (e) {
+    toast.error(getApiErrorMessage(e))
+  } finally {
+    loadingAssetDetail.value = false
+  }
+}
+
+function closeAssetDetail() {
+  selectedAssetId.value = null
+  selectedAssetDetail.value = null
+}
+
+function onAssetActionAddUnit() {
+  const p = filteredProperties.value.find((x: PropertyListItemDto) => x.id === selectedAssetId.value)
+  if (p) openAddUnitForProperty(p)
+}
+
+function openAddPropertyModal() {
+  showAddPropertyModal.value = true
+}
+
+function openAddUnitForProperty(p: PropertyListItemDto) {
+  const name = typeof p.name === 'object' && p.name !== null && 'fr' in p.name
+    ? (p.name as { fr?: string }).fr ?? (p.name as { en?: string }).en ?? ''
+    : String(p.name ?? '')
+  createdPropertyId.value = p.id
+  createdPropertyName.value = name
+  showAddUnitModal.value = true
+}
+
+function openQuickEdit(p: PropertyListItemDto) {
+  quickEditProperty.value = p
+}
+
+function openEditProperty(p: PropertyListItemDto) {
+  editPropertyId.value = p.id
+}
+
+function onEditPropertySaved() {
+  fetchList().catch(() => {})
+  if (selectedAssetId.value) {
+    const p = filteredProperties.value.find(x => x.id === selectedAssetId.value)
+    if (p) selectAsset(p)
+  }
+  editPropertyId.value = null
+  toast.success(t('landlord.toast.propertyUpdateSuccess'))
+}
+
+function openEditUnit(propertyId: string, unit: UnitDto) {
+  editUnitContext.value = { propertyId, unit }
+}
+
+function onEditUnitSaved() {
+  fetchList().catch(() => {})
+  if (selectedAssetId.value) {
+    const p = filteredProperties.value.find(x => x.id === selectedAssetId.value)
+    if (p) selectAsset(p)
+  }
+  editUnitContext.value = null
+  toast.success(t('landlord.toast.unitUpdated'))
+}
+
+function onPropertyModalClosed(result?: { created: boolean; propertyId?: string; propertyName?: string }) {
+  showAddPropertyModal.value = false
+  if (result?.created) {
+    toast.success(t('landlord.toast.propertyCreated'))
+    fetchList().catch(() => {})
+    if (result.propertyId) {
+      createdPropertyId.value = result.propertyId
+      createdPropertyName.value = result.propertyName ?? ''
+      showAddUnitModal.value = true
+    }
+  }
+}
+
+function onUnitModalClosed(result?: { created: boolean }) {
+  if (result?.created) {
+    toast.success(t('landlord.toast.unitCreated'))
+    fetchList().catch(() => {})
+    if (selectedAssetId.value) {
+       const p = filteredProperties.value.find(x => x.id === selectedAssetId.value)
+       if (p) selectAsset(p)
+    }
+  }
+  showAddUnitModal.value = false
+  createdPropertyId.value = null
+  createdPropertyName.value = ''
+}
+
+function onQuickEditSaved() {
+  toast.success(t('landlord.toast.propertyUpdateSuccess'))
+  fetchList().catch(() => {})
+}
+
+function onQuickEditClosed() {
+  quickEditProperty.value = null
+}
+
+function statusLabel(status: string): string {
+  const key =
+    status === 'coming_soon'
+      ? 'statusComingSoon'
+      : 'status' + status.charAt(0).toUpperCase() + status.slice(1)
+  return t('landlord.' + key)
+}
+
+function formatPrice(price: string) {
+  return new Intl.NumberFormat('fr-FR').format(Number(price)) + ' FCFA'
+}
+
+function displayName(p: PropertyListItemDto): string {
+  const n = p.name
+  if (typeof n === 'object' && n !== null && 'fr' in n) return (n as { fr?: string }).fr ?? (n as { en?: string }).en ?? '—'
+  return typeof n === 'string' ? n : '—'
+}
+
+function cityDisplay(p: PropertyListItemDto): string {
+  return p.city?.name ?? '—'
+}
+
+function openDeleteConfirm(propertyId: string) {
+  deleteConfirmPropertyId.value = propertyId
+}
+
+function closeDeleteConfirm() {
+  deleteConfirmPropertyId.value = null
+  deletingProperty.value = false
+}
+
+async function confirmDeleteProperty() {
+  const id = deleteConfirmPropertyId.value
+  if (!id) return
+  deletingProperty.value = true
+  try {
+    await deleteProperty(id)
+    toast.success(t('landlord.toast.propertyDeleted'))
+    closeDeleteConfirm()
+    if (selectedAssetId.value === id) closeAssetDetail()
+    await fetchList()
+  } catch (e) {
+    toast.error(t('landlord.toast.apiError', { message: getApiErrorMessage(e) }))
+  } finally {
+    deletingProperty.value = false
+  }
+}
+
+function unitCount(p: PropertyListItemDto): number {
+  return p.units?.length ?? 0
+}
+
+function occupiedCount(p: PropertyListItemDto): number {
+  return (p.units ?? []).filter((u: UnitDto) => u.unit_status !== 'available' && u.is_available !== true).length
+}
+
+function occupancyPercent(p: PropertyListItemDto): number {
+  const total = unitCount(p)
+  if (total === 0) return 0
+  return Math.round((occupiedCount(p) / total) * 100)
+}
+
+function hasVehicleAccess(p: PropertyListItemDto): boolean {
+  const re = /parking|vehicle|véhicule|voiture|accès\s*véhicule/i
+  const propFeatures = (p as any).equipment ?? (p as any).features
+  if (Array.isArray(propFeatures) && propFeatures.some((x: string) => re.test(String(x)))) return true
+  const units = p.units ?? []
+  for (const u of units) {
+    if (Array.isArray(u.features) && u.features.some((x: string) => re.test(String(x)))) return true
+  }
+  return false
+}
+
 function getPropertyNameForSearch(p: PropertyListItemDto): string {
   const n = p.name
   if (typeof n === 'object' && n !== null) {
@@ -120,11 +311,10 @@ const filteredProperties = computed(() => {
   let list = properties.value
   const q = searchQuery.value?.trim().toLowerCase()
   if (q) {
-    list = list.filter(
-      (p) =>
-        getPropertyNameForSearch(p).toLowerCase().includes(q) ||
-        (p.city?.name?.toLowerCase().includes(q)) ||
-        (p.address?.toLowerCase().includes(q))
+    list = list.filter((p) =>
+      getPropertyNameForSearch(p).toLowerCase().includes(q) ||
+      (p.city?.name?.toLowerCase().includes(q)) ||
+      (p.address?.toLowerCase().includes(q))
     )
   }
   const cityFilter = filterCityId.value
@@ -132,558 +322,334 @@ const filteredProperties = computed(() => {
     list = list.filter((p) => (p.city_id ?? '') === cityFilter)
   }
   if (filterVacanciesOnly.value) {
-    list = list.filter((p) => {
-      const units = p.units ?? []
-      return units.some((u: UnitDto) => u.unit_status === 'available' || u.is_available === true)
-    })
+    list = list.filter((p) => (p.units ?? []).some((u: UnitDto) => u.unit_status === 'available' || u.is_available === true))
   }
   return list
 })
 
-/** KPI agrégés (toutes les propriétés, pas seulement filtrées). */
+/** Global KPIs */
 const kpiMonthlyRevenue = computed(() => {
   let sum = 0
   for (const p of properties.value) {
-    const units = p.units ?? []
-    for (const u of units) {
-      const isOccupied = u.unit_status !== 'available' && u.is_available !== true
-      if (isOccupied) sum += Number(u.price || 0)
+    for (const u of (p.units ?? [])) {
+      if (u.unit_status !== 'available' && u.is_available !== true) sum += Number(u.price || 0)
     }
   }
   return sum
 })
-
-const kpiTotalUnits = computed(() => {
-  return properties.value.reduce((acc, p) => acc + (p.units?.length ?? 0), 0)
-})
-
+const kpiTotalUnits = computed(() => properties.value.reduce((acc, p) => acc + (p.units?.length ?? 0), 0))
 const kpiOccupiedUnits = computed(() => {
   let n = 0
   for (const p of properties.value) {
-    const units = p.units ?? []
-    for (const u of units) {
+    for (const u of (p.units ?? [])) {
       if (u.unit_status !== 'available' && u.is_available !== true) n += 1
     }
   }
   return n
 })
-
-const kpiOccupancyRate = computed(() => {
-  const total = kpiTotalUnits.value
-  if (total === 0) return 0
-  return Math.round((kpiOccupiedUnits.value / total) * 100)
-})
-
+const kpiOccupancyRate = computed(() => kpiTotalUnits.value === 0 ? 0 : Math.round((kpiOccupiedUnits.value / kpiTotalUnits.value) * 100))
 const kpiVacantUnits = computed(() => kpiTotalUnits.value - kpiOccupiedUnits.value)
-
-/** Paiements en attente : placeholder (0) tant qu'aucun endpoint dédié. */
 const kpiPendingPayments = computed(() => 0)
-
-async function loadDetailForDrawer(propertyId: string) {
-  if (drawerPropertyId.value !== propertyId) return
-  loadingDetail.value = true
-  detailForDrawer.value = null
-  try {
-    detailForDrawer.value = await getDetail(propertyId)
-  } catch (e) {
-    toast.error(getApiErrorMessage(e))
-  } finally {
-    loadingDetail.value = false
-  }
-}
-
-/** Ouvre le drawer Détails & Unités (clic ligne ou « Voir détails »). Pas de dépliage de ligne. */
-function openDrawer(p: PropertyListItemDto) {
-  drawerPropertyId.value = p.id
-  detailForDrawer.value = null
-  loadDetailForDrawer(p.id)
-}
-
-function closeDrawer() {
-  drawerPropertyId.value = null
-  detailForDrawer.value = null
-}
-
-function openAddPropertyModal() {
-  showAddPropertyModal.value = true
-}
-
-function openAddUnitForProperty(p: PropertyListItemDto) {
-  const name = typeof p.name === 'object' && p.name !== null && 'fr' in p.name
-    ? (p.name as { fr?: string }).fr ?? (p.name as { en?: string }).en ?? ''
-    : String(p.name ?? '')
-  createdPropertyId.value = p.id
-  createdPropertyName.value = name
-  showAddUnitModal.value = true
-}
-
-function onDrawerAddUnit() {
-  const p = filteredProperties.value.find((x: PropertyListItemDto) => x.id === drawerPropertyId.value)
-  if (p) openAddUnitForProperty(p)
-}
-
-function openQuickEdit(p: PropertyListItemDto) {
-  quickEditProperty.value = p
-}
-
-function openEditProperty(p: PropertyListItemDto) {
-  editPropertyId.value = p.id
-}
-
-function onEditPropertySaved() {
-  fetchList().catch(() => {})
-  if (drawerPropertyId.value) loadDetailForDrawer(drawerPropertyId.value)
-  editPropertyId.value = null
-  toast.success(t('landlord.toast.propertyUpdateSuccess'))
-}
-
-function openEditUnit(propertyId: string, unit: UnitDto) {
-  editUnitContext.value = { propertyId, unit }
-}
-
-function onEditUnitSaved() {
-  fetchList().catch(() => {})
-  if (drawerPropertyId.value) loadDetailForDrawer(drawerPropertyId.value)
-  editUnitContext.value = null
-  toast.success(t('landlord.toast.unitUpdated'))
-}
-
-function onPropertyModalClosed(result?: { created: boolean; propertyId?: string; propertyName?: string }) {
-  showAddPropertyModal.value = false
-  if (result?.created) {
-    toast.success(t('landlord.toast.propertyCreated'))
-    fetchList().catch(() => {})
-    if (result.propertyId) {
-      createdPropertyId.value = result.propertyId
-      createdPropertyName.value = result.propertyName ?? ''
-      showAddUnitModal.value = true
-    }
-  }
-}
-
-function onUnitModalClosed(result?: { created: boolean }) {
-  if (result?.created) {
-    toast.success(t('landlord.toast.unitCreated'))
-    fetchList().catch(() => {})
-    if (drawerPropertyId.value) loadDetailForDrawer(drawerPropertyId.value)
-  }
-  showAddUnitModal.value = false
-  createdPropertyId.value = null
-  createdPropertyName.value = ''
-}
-
-function onQuickEditSaved() {
-  toast.success(t('landlord.toast.propertyUpdateSuccess'))
-  fetchList().catch(() => {})
-}
-function onQuickEditClosed() {
-  quickEditProperty.value = null
-}
-
-function statusLabel(status: string): string {
-  const key =
-    status === 'coming_soon'
-      ? 'statusComingSoon'
-      : 'status' + status.charAt(0).toUpperCase() + status.slice(1)
-  return t('landlord.' + key)
-}
-
-function formatPrice(price: string) {
-  return new Intl.NumberFormat('fr-FR').format(Number(price)) + ' FCFA'
-}
-
-/** Nom affiché : clé fr si JSONB, sinon chaîne (jamais d'ID brut). */
-function displayName(p: PropertyListItemDto): string {
-  const n = p.name
-  if (typeof n === 'object' && n !== null && 'fr' in n) return (n as { fr?: string }).fr ?? (n as { en?: string }).en ?? '—'
-  return typeof n === 'string' ? n : '—'
-}
-
-function cityDisplay(p: PropertyListItemDto): string {
-  return p.city?.name ?? '—'
-}
-
-function drawerDisplayName(): string {
-  const d = detailForDrawer.value
-  if (d?.name) {
-    if (typeof d.name === 'object' && d.name !== null && 'fr' in d.name) return (d.name as { fr?: string }).fr ?? (d.name as { en?: string }).en ?? '—'
-    return typeof d.name === 'string' ? d.name : '—'
-  }
-  const p = properties.value.find((x) => x.id === drawerPropertyId.value)
-  return p ? displayName(p) : '—'
-}
-
-function drawerCityName(): string {
-  const d = detailForDrawer.value
-  if (d?.city?.name) return d.city.name
-  const p = properties.value.find((x) => x.id === drawerPropertyId.value)
-  return p ? cityDisplay(p) : '—'
-}
-
-function openDeleteConfirm(propertyId: string) {
-  deleteConfirmPropertyId.value = propertyId
-}
-
-function closeDeleteConfirm() {
-  deleteConfirmPropertyId.value = null
-  deletingProperty.value = false
-}
-
-async function confirmDeleteProperty() {
-  const id = deleteConfirmPropertyId.value
-  if (!id) return
-  deletingProperty.value = true
-  try {
-    await deleteProperty(id)
-    toast.success(t('landlord.toast.propertyDeleted'))
-    closeDeleteConfirm()
-    if (drawerPropertyId.value === id) closeDrawer()
-    await fetchList()
-  } catch (e) {
-    toast.error(t('landlord.toast.apiError', { message: getApiErrorMessage(e) }))
-  } finally {
-    deletingProperty.value = false
-  }
-}
-
-function unitCount(p: PropertyListItemDto): number {
-  if (drawerPropertyId.value === p.id && detailForDrawer.value?.units?.length)
-    return detailForDrawer.value.units.length
-  return p.units?.length ?? 0
-}
-
-function occupiedCount(p: PropertyListItemDto): number {
-  const units = drawerPropertyId.value === p.id && detailForDrawer.value?.units
-    ? detailForDrawer.value.units
-    : p.units ?? []
-  return units.filter((u: UnitDto) => u.unit_status !== 'available' && u.is_available !== true).length
-}
-
-/** Taux de remplissage du bien (0–100) pour la barre de progression. */
-function occupancyPercent(p: PropertyListItemDto): number {
-  const total = unitCount(p)
-  if (total === 0) return 0
-  return Math.round((occupiedCount(p) / total) * 100)
-}
-
-/** True si le bien ou au moins une unité a un équipement type Parking ou Accès véhicule. */
-function hasVehicleAccess(p: PropertyListItemDto): boolean {
-  const re = /parking|vehicle|véhicule|voiture|accès\s*véhicule/i
-  // Équipement au niveau bien (si l’API l’expose un jour)
-  const propFeatures = (p as unknown as { equipment?: string[]; features?: string[] }).equipment
-    ?? (p as unknown as { equipment?: string[]; features?: string[] }).features
-  if (Array.isArray(propFeatures) && propFeatures.some((x: string) => re.test(String(x)))) return true
-  const units = p.units ?? []
-  for (const u of units) {
-    const f = u.features
-    if (Array.isArray(f) && f.some((x: string) => re.test(String(x)))) return true
-    if (f && typeof f === 'object' && !Array.isArray(f)) {
-      const arr = (f as Record<string, string[]>).fr ?? (f as Record<string, string[]>).en ?? []
-      if (arr.some((x: string) => re.test(x))) return true
-    }
-  }
-  return false
-}
-
-watch(
-  () => route.query.openAdd,
-  (v) => {
-    if (v === 'property') {
-      showAddPropertyModal.value = true
-      router.replace({ path: route.path, query: {} })
-    }
-  }
-)
 </script>
 
 <template>
-  <main class="w-full max-w-full px-3 py-4 md:px-4 lg:px-6">
-    <div class="grid grid-cols-12 gap-4">
-      <!-- Header + actions -->
-      <header class="col-span-12 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <AppTitle :level="2" class="flex items-center gap-2 text-xl text-gray-900 dark:text-gray-100">
-            <Building2 :size="20" class="shrink-0 text-primary-emerald" />
-            {{ t('landlord.myProperties') }}
-          </AppTitle>
-          <AppParagraph muted class="mt-0.5 text-sm">{{ t('landlord.myPropertiesSubtitle') }}</AppParagraph>
-        </div>
-        <div class="flex items-center gap-2">
-          <ViewSwitcher v-model="viewMode" :storage-key="ASSET_VIEW_KEY" />
-          <AppButton variant="primary" size="sm" class="flex items-center gap-1.5" @click="openAddPropertyModal">
-            <Plus :size="20" class="shrink-0 text-white" />
-            {{ t('landlord.addProperty') }}
-          </AppButton>
-        </div>
-      </header>
+  <main class="w-full h-full flex flex-col min-h-0 relative overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors duration-700">
+    <!-- Mesh Gradient Background Animé -->
+    <div class="absolute inset-0 pointer-events-none overflow-hidden opacity-40 dark:opacity-60">
+      <div class="absolute -top-1/4 -left-1/4 w-3/4 h-3/4 bg-mesh-emerald blur-mesh-glow rounded-full animate-blob" />
+      <div class="absolute top-0 -right-1/4 w-1/2 h-1/2 bg-mesh-blue blur-mesh-glow rounded-full animate-blob animation-delay-2000" />
+      <div class="absolute -bottom-1/4 left-1/4 w-3/4 h-1/2 bg-mesh-purple blur-mesh-glow rounded-full animate-blob animation-delay-4000" />
+    </div>
 
-      <!-- KPI Header (StatCard) -->
-      <section v-if="properties.length" class="col-span-12 grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          :label="t('landlord.kpi.monthlyRevenue')"
-          :value="new Intl.NumberFormat('fr-FR').format(kpiMonthlyRevenue) + ' FCFA'"
-          :icon="TrendingUp"
-        />
-        <StatCard
-          :label="t('landlord.kpi.occupancyRate')"
-          :value="kpiOccupancyRate + '%'"
-          :icon="PieChart"
-        >
-          <template #value>
-            <div class="flex items-center gap-2 min-w-0">
-              <div class="flex-1 h-2 rounded-full bg-ui-border dark:bg-ui-border-dark overflow-hidden min-w-0">
-                <div
-                  class="h-full rounded-full bg-primary-emerald transition-all duration-300"
-                  :style="{ width: String(kpiOccupancyRate) + '%' }"
-                />
-              </div>
-              <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 shrink-0">{{ kpiOccupancyRate }}%</span>
+    <!-- Main Content Area -->
+    <div class="flex-1 flex min-h-0 overflow-hidden relative z-10">
+      <!-- List Area -->
+      <div 
+        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-700 cubic-bezier"
+        :class="selectedAssetId ? 'pr-0 lg:pr-[40%] xl:pr-asset-detail 2xl:pr-asset-detail-xl' : ''"
+      >
+        <div class="flex-1 overflow-y-auto custom-scrollbar px-6 lg:px-12 py-10 space-y-10">
+          <!-- Header Moderniste -->
+          <header class="flex flex-wrap items-center justify-between gap-6">
+            <div class="space-y-1">
+              <h1 class="text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">
+                {{ t('landlord.myProperties') }}
+              </h1>
+              <p class="text-slate-500 dark:text-slate-400 font-bold text-lg tracking-tight">{{ t('landlord.myPropertiesSubtitle') }}</p>
             </div>
-          </template>
-        </StatCard>
-        <StatCard
-          :label="t('landlord.kpi.vacantUnits')"
-          :value="String(kpiVacantUnits)"
-          :icon="Home"
-          :alert="kpiVacantUnits > 0"
-        />
-        <StatCard
-          :label="t('landlord.kpi.pendingPayments')"
-          :value="String(kpiPendingPayments)"
-          :icon="Clock"
-        />
-      </section>
+            <div class="flex items-center gap-4 bg-white/40 dark:bg-white/5 backdrop-blur-md p-2 rounded-8xl border border-white/20 shadow-glass">
+              <ViewSwitcher v-model="viewMode" :storage-key="ASSET_VIEW_KEY" />
+              <AppButton variant="primary" size="lg" class="font-black rounded-6xl px-8 shadow-primary" @click="openAddPropertyModal">
+                <Plus :size="24" class="mr-2" />
+                {{ t('common.add') }} {{ t('landlord.addProperty') }}
+              </AppButton>
+            </div>
+          </header>
 
-      <!-- Filtres -->
-      <section class="col-span-12 flex flex-wrap items-center gap-2">
-        <AppInput
-          v-model="searchQuery"
-          type="text"
-          :placeholder="t('landlord.searchPlaceholder')"
-          class="min-w-44 max-w-xs text-sm"
-        />
-        <select
-          v-model="filterCityId"
-          class="rounded-lg border border-ui-border dark:border-ui-border-dark bg-ui-surface dark:bg-ui-surface-dark px-3 py-2 text-sm text-gray-900 dark:text-gray-100 min-w-36"
-        >
-          <option v-for="c in cityOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
-        </select>
-        <label class="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-900 dark:text-gray-100">
-          <input v-model="filterVacanciesOnly" type="checkbox" class="rounded border-ui-border text-primary-emerald" />
-          {{ t('landlord.filterVacancies') }}
-        </label>
-      </section>
-
-      <section class="col-span-12">
-        <div v-if="loading" class="flex items-center justify-center py-12 text-sm text-ui-muted">
-          {{ t('admin.properties.loading') }}
-        </div>
-
-        <div
-          v-else-if="!properties.length"
-          class="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-ui-border dark:border-ui-border-dark bg-ui-background dark:bg-ui-surface-dark py-12 px-4 text-center"
-        >
-          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary-emerald/10 text-primary-emerald mb-4">
-            <Building2 :size="32" class="shrink-0 text-primary-emerald" />
-          </div>
-          <AppTitle :level="3" class="mb-1 text-lg">{{ t('landlord.emptyTitle') }}</AppTitle>
-          <AppParagraph muted class="text-sm mb-6">{{ t('landlord.emptyBody') }}</AppParagraph>
-          <AppButton variant="primary" size="sm" class="flex items-center gap-2" @click="openAddPropertyModal">
-            <Plus :size="20" class="shrink-0 text-white" />
-            {{ t('landlord.emptyCta') }}
-          </AppButton>
-        </div>
-
-        <template v-else-if="filteredProperties.length">
-          <!-- Vue Tableau (Pro) -->
-          <div v-show="viewMode === 'table'">
-            <PropertyTable
-              :properties="filteredProperties"
-              :primary-image-url="getPrimaryImageUrl"
-              :display-name="displayName"
-              :city-display="cityDisplay"
-              :status-label="statusLabel"
-              :format-price="formatPrice"
-              @select-property="openDrawer"
-              @select-property-units="openDrawer"
-              @view-details="openDrawer"
-              @add-unit="openAddUnitForProperty"
-              @quick-edit="openQuickEdit"
-              @edit-property="openEditProperty"
-            />
-          </div>
-
-          <!-- Vue Grille (MallOS style : data-dense, rounded-2xl, barre de remplissage) -->
-          <div v-show="viewMode === 'grid'" class="grid grid-cols-12 gap-3">
-            <div
-              v-for="p in filteredProperties"
-              :key="p.id"
-              class="col-span-12 sm:col-span-6 lg:col-span-4 xl:col-span-2 flex flex-col relative"
+          <!-- Glassy KPI Pods -->
+          <section v-if="properties.length" class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <div 
+              v-for="(kpi, idx) in [
+                { label: 'landlord.kpi.monthlyRevenue', value: formatPrice(String(kpiMonthlyRevenue)), icon: TrendingUp, color: 'emerald' },
+                { label: 'landlord.kpi.occupancyRate', value: kpiOccupancyRate + '%', icon: PieChart, color: 'blue' },
+                { label: 'landlord.kpi.vacantUnits', value: String(kpiVacantUnits), icon: Home, color: 'orange', alert: kpiVacantUnits > 0 },
+                { label: 'landlord.kpi.pendingPayments', value: String(kpiPendingPayments), icon: Clock, color: 'purple' }
+              ]"
+              :key="idx"
+              class="group relative p-6 rounded-5xl bg-white/40 dark:bg-white/5 backdrop-blur-ultra-glass border border-white/20 dark:border-white/10 shadow-glass transition-all duration-500 hover:scale-[1.05] hover:shadow-2xl overflow-hidden"
             >
-              <AppCard padding="none" class="overflow-hidden flex flex-col h-full">
-                <div class="aspect-video bg-ui-background dark:bg-ui-surface-dark relative shrink-0">
-                  <PropertyCardImage
-                    :src="getPrimaryImageUrl(p)"
-                    :alt="displayName(p)"
-                    class="absolute inset-0 w-full h-full object-cover"
-                  />
-                  <span
-                    class="absolute top-1.5 right-1.5 rounded-lg px-1.5 py-0.5 text-xs font-medium"
-                    :class="{
-                      'bg-primary-emerald-light text-primary-emerald dark:bg-primary-emerald/20 dark:text-primary-emerald': p.status === 'available',
-                      'bg-warning-orange-light text-warning-orange dark:bg-warning-orange/20 dark:text-warning-orange': p.status === 'coming_soon' || p.status === 'maintenance',
-                      'bg-ui-border text-ui-muted dark:bg-ui-border-dark dark:text-ui-muted': p.status === 'occupied',
-                    }"
-                  >
-                    {{ statusLabel(p.status) }}
-                  </span>
-                  <span class="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-lg bg-brand-dark/80 px-1.5 py-0.5 text-xs font-medium text-white">
-                    <Users :size="14" class="shrink-0 text-white" />
-                    {{ unitCount(p) }} {{ t('landlord.kpi.households') }}
-                  </span>
-                  <span v-if="hasVehicleAccess(p)" class="absolute bottom-1.5 right-1.5 inline-flex items-center gap-1 rounded-lg bg-brand-dark/80 px-1.5 py-0.5 text-xs font-medium text-white">
-                    <Car :size="14" class="shrink-0 text-white" />
-                    {{ t('landlord.kpi.vehicleAccess') }}
-                  </span>
+              <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div class="flex flex-col gap-4">
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors" :class="`bg-${kpi.color}-500/10 text-${kpi.color}-500 dark:text-${kpi.color}-400`">
+                  <component :is="kpi.icon" :size="24" />
                 </div>
-                <div class="p-2.5 flex flex-col flex-1 min-w-0">
-                  <p class="font-medium text-sm truncate text-gray-900 dark:text-gray-100" :title="displayName(p)">{{ displayName(p) }}</p>
-                  <p class="text-xs text-ui-muted flex items-center gap-1 truncate mt-0.5">
-                    <MapPin :size="18" class="shrink-0 text-ui-muted" />
-                    {{ cityDisplay(p) }}
-                  </p>
-                  <div class="mt-2 h-1.5 rounded-full bg-ui-border dark:bg-ui-border-dark overflow-hidden" role="progressbar" :aria-valuenow="occupancyPercent(p)" aria-valuemin="0" aria-valuemax="100">
-                    <div
-                      class="h-full rounded-full bg-primary-emerald transition-all duration-300"
-                      :style="{ width: String(occupancyPercent(p)) + '%' }"
-                    />
+                <div>
+                  <p class="text-xs font-black uppercase tracking-widest-xl text-slate-500 dark:text-slate-400 mb-1">{{ t(kpi.label) }}</p>
+                  <p class="text-2xl font-black text-slate-900 dark:text-white tracking-tighter" :class="kpi.alert ? 'text-rose-500 animate-pulse' : ''">{{ kpi.value }}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Global Filters Bar -->
+          <div class="flex flex-wrap items-center gap-4 bg-white/30 dark:bg-white/[0.02] backdrop-blur-md p-3 rounded-8xl border border-white/10 shadow-inner">
+            <div class="relative flex-1 max-w-md group">
+              <AppInput 
+                v-model="searchQuery" 
+                :placeholder="t('landlord.searchPlaceholder')" 
+                class="rounded-3xl border-transparent bg-white/40 dark:bg-white/5 pl-12 h-14 font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:scale-[1.02] transition-all" 
+              />
+              <Settings2 class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary-emerald transition-colors" />
+            </div>
+            
+            <div class="relative h-14 flex-none min-w-48">
+              <select v-model="filterCityId" class="w-full h-full rounded-3xl border-transparent bg-white/40 dark:bg-white/5 px-6 text-sm font-black text-slate-900 dark:text-white appearance-none cursor-pointer hover:bg-white/60 dark:hover:bg-white/10 transition-all">
+                <option v-for="c in cityOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+              <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40 text-slate-900 dark:text-white">
+                <ChevronDown :size="16" />
+              </div>
+            </div>
+
+            <label class="flex items-center gap-3 px-6 h-14 rounded-3xl bg-white/40 dark:bg-white/5 backdrop-blur-sm border border-transparent hover:border-white/20 transition-all cursor-pointer group">
+              <div class="relative w-6 h-6 flex items-center justify-center">
+                <input v-model="filterVacanciesOnly" type="checkbox" class="peer absolute inset-0 opacity-0 cursor-pointer" />
+                <div class="w-full h-full rounded-lg border-2 border-slate-300 dark:border-slate-700 peer-checked:bg-primary-emerald peer-checked:border-primary-emerald transition-all" />
+                <Check :size="16" class="absolute text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+              </div>
+              <span class="text-sm font-black text-slate-700 dark:text-slate-200 uppercase tracking-widest">{{ t('landlord.filterVacancies') }}</span>
+            </label>
+          </div>
+
+          <div v-if="loading" class="grid grid-cols-12 gap-8">
+            <div v-for="i in 6" :key="i" class="col-span-12 sm:col-span-6 xl:col-span-4">
+              <AppSkeleton type="property-card" />
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else-if="!properties.length" class="flex flex-col items-center justify-center py-32 rounded-8xl bg-white/20 dark:bg-white/[0.02] border border-dashed border-white/20 backdrop-blur-sm">
+            <div class="w-32 h-32 rounded-7xl bg-primary-emerald/10 flex items-center justify-center text-primary-emerald mb-8 shadow-inner">
+              <Building2 :size="60" />
+            </div>
+            <h2 class="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter">{{ t('landlord.emptyTitle') }}</h2>
+            <p class="text-slate-500 dark:text-slate-400 font-bold mb-10 text-center max-w-sm">{{ t('landlord.emptyBody') }}</p>
+            <AppButton variant="primary" size="lg" class="font-black h-16 rounded-4xl px-12 shadow-primary scale-110 hover:scale-125 transition-transform" @click="openAddPropertyModal">
+              <Plus :size="24" class="mr-2" />
+              {{ t('landlord.emptyCta') }}
+            </AppButton>
+          </div>
+
+          <template v-else-if="filteredProperties.length">
+            <!-- Table View -->
+            <div v-show="viewMode === 'table'" class="animate-in fade-in slide-in-from-bottom-10 duration-700">
+              <PropertyTable
+                :properties="filteredProperties"
+                :primary-image-url="getPrimaryImageUrl"
+                :display-name="displayName"
+                :city-display="cityDisplay"
+                :status-label="statusLabel"
+                :format-price="formatPrice"
+                :selected-id="selectedAssetId"
+                @select-property="selectAsset"
+                @select-property-units="selectAsset"
+                @view-details="selectAsset"
+                @add-unit="openAddUnitForProperty"
+                @quick-edit="openQuickEdit"
+                @edit-property="openEditProperty"
+              />
+            </div>
+
+            <!-- Enhanced Grid View -->
+            <div v-show="viewMode === 'grid'" class="grid grid-cols-12 gap-8 animate-in fade-in zoom-in-95 duration-700">
+              <div
+                v-for="p in filteredProperties"
+                :key="p.id"
+                class="col-span-12 sm:col-span-6 xl:col-span-4"
+              >
+                <div 
+                  class="group relative bg-white/50 dark:bg-slate-900/50 backdrop-blur-ultra-glass rounded-6xl border border-white/20 dark:border-white/10 shadow-glass transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl cursor-pointer overflow-hidden p-3"
+                  :class="selectedAssetId === p.id ? 'ring-4 ring-primary-emerald/50 border-primary-emerald shadow-glass-primary' : ''"
+                  @click="selectAsset(p)"
+                >
+                  <div class="aspect-video relative rounded-5xl overflow-hidden shadow-inner">
+                    <PropertyCardImage :src="getPrimaryImageUrl(p)" :alt="displayName(p)" class="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-110" />
+                    
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                    <!-- Glass Badges -->
+                    <div class="absolute top-5 left-5 right-5 flex justify-between items-start pointer-events-none">
+                       <div class="flex flex-col gap-2">
+                         <span v-if="(p as any)._virtual" class="px-4 py-1.5 rounded-2xl backdrop-blur-xl bg-amber-500/20 border border-white/20 text-[10px] font-black uppercase tracking-widest-xl text-amber-200">
+                           {{ t('landlord.assetTypeUnit') }}
+                         </span>
+                         <span class="px-4 py-1.5 rounded-2xl backdrop-blur-xl bg-black/30 border border-white/10 text-[10px] font-black uppercase tracking-widest-xl text-white">
+                           {{ statusLabel(p.status) }}
+                         </span>
+                       </div>
+                    </div>
+
+                    <div class="absolute bottom-5 left-5 right-5 flex items-center justify-between">
+                       <div class="flex gap-2">
+                         <span class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-xl text-[10px] font-black text-white uppercase tracking-widest-xl">
+                           <Users :size="16" />
+                           {{ unitCount(p) }} {{ t('landlord.units') }}
+                         </span>
+                         <span v-if="hasVehicleAccess(p)" class="flex items-center justify-center w-10 h-10 rounded-2xl bg-black/40 backdrop-blur-xl text-white">
+                           <Car :size="16" />
+                         </span>
+                       </div>
+                    </div>
                   </div>
-                  <div class="mt-auto pt-1.5 relative" data-grid-actions>
-                    <AppButton
-                      variant="ghost"
-                      size="sm"
-                      class="min-w-0 p-1.5 h-8 rounded-lg text-ui-muted hover:text-gray-900 dark:hover:text-gray-100"
-                      :aria-label="t('landlord.assets.quickActions')"
-                      @click="gridActionsOpenId = gridActionsOpenId === p.id ? null : p.id"
-                    >
-                      <MoreVertical :size="20" class="shrink-0 text-ui-muted" />
-                    </AppButton>
-                    <div
-                      v-show="gridActionsOpenId === p.id"
-                      class="absolute left-0 bottom-full mb-0.5 z-10 min-w-40 rounded-xl border border-ui-border dark:border-ui-border-dark bg-ui-surface dark:bg-ui-surface-dark shadow-soft-lg py-1"
-                      role="menu"
-                    >
-                      <button type="button" class="w-full px-3 py-2 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-ui-background dark:hover:bg-ui-border-dark flex items-center gap-2" @click="openEditProperty(p); gridActionsOpenId = null">
-                        {{ t('landlord.editProperty') }}
-                      </button>
-                      <button type="button" class="w-full px-3 py-2 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-ui-background dark:hover:bg-ui-border-dark flex items-center gap-2" @click="openQuickEdit(p); gridActionsOpenId = null">
-                        {{ t('landlord.assets.quickEdit') }}
-                      </button>
-                      <button type="button" class="w-full px-3 py-2 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-ui-background dark:hover:bg-ui-border-dark flex items-center gap-2 border-t border-ui-border dark:border-ui-border-dark" @click="openDrawer(p); gridActionsOpenId = null">
-                        <Settings2 :size="18" class="shrink-0 text-ui-muted" />
-                        {{ t('landlord.manageUnits') }}
-                      </button>
+
+                  <div class="p-6 space-y-4">
+                    <div class="flex items-center justify-between">
+                      <div class="space-y-1">
+                        <h3 class="text-xl font-black text-slate-900 dark:text-white truncate tracking-tighter" :title="displayName(p)">{{ displayName(p) }}</h3>
+                        <div class="flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-slate-400">
+                          <MapPin :size="16" class="text-primary-emerald" />
+                          {{ cityDisplay(p) }}
+                        </div>
+                      </div>
+                      <div class="data-grid-actions" @click.stop>
+                        <button class="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500 hover:bg-primary-emerald hover:text-white transition-all shadow-sm" @click="gridActionsOpenId = gridActionsOpenId === p.id ? null : p.id">
+                          <MoreVertical :size="20" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Occupancy Progress -->
+                    <div class="space-y-2">
+                      <div class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest-xl text-slate-400">
+                        <span>{{ t('landlord.kpi.occupancy') }}</span>
+                        <span class="text-slate-900 dark:text-white">{{ occupancyPercent(p) }}%</span>
+                      </div>
+                      <div class="h-3 rounded-full bg-slate-200 dark:bg-white/5 overflow-hidden shadow-inner">
+                        <div class="h-full bg-gradient-to-r from-primary-emerald to-emerald-400 transition-all duration-1000 ease-out" :style="{ width: occupancyPercent(p) + '%' }" />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </AppCard>
+              </div>
             </div>
-          </div>
 
-          <!-- Vue Compacte (data-dense, barre de remplissage) -->
-          <div
-            v-show="viewMode === 'compact'"
-            class="grid grid-cols-12 gap-2 sm:grid-cols-6 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6"
-          >
-            <div
-              v-for="p in filteredProperties"
-              :key="p.id"
-              class="col-span-6 md:col-span-3 xl:col-span-2 flex flex-col"
-            >
-              <AppCard padding="none" class="overflow-hidden flex flex-col h-full">
-                <div class="aspect-video bg-ui-background dark:bg-ui-surface-dark relative shrink-0">
-                  <PropertyCardImage
-                    :src="getPrimaryImageUrl(p)"
-                    :alt="displayName(p)"
-                    class="absolute inset-0 w-full h-full object-cover"
-                  />
-                  <span class="absolute bottom-0 left-0 right-0 inline-flex items-center gap-1 bg-brand-dark/80 px-1.5 py-0.5 text-xs text-white truncate">
-                    <Users :size="14" class="shrink-0 text-white" />
-                    {{ unitCount(p) }} {{ t('landlord.kpi.households') }}<span v-if="hasVehicleAccess(p)" class="inline-flex items-center gap-0.5"> · <Car :size="14" class="shrink-0 text-white" /></span>
-                  </span>
+            <!-- Compact View -->
+            <div v-show="viewMode === 'compact'" class="grid grid-cols-12 gap-6">
+              <div v-for="p in filteredProperties" :key="p.id" class="col-span-6 md:col-span-3 lg:col-span-2">
+                <div 
+                  class="group p-5 rounded-5xl bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/10 shadow-glass cursor-pointer transition-all hover:scale-[1.05]"
+                  :class="selectedAssetId === p.id ? 'ring-2 ring-primary-emerald bg-white/60 dark:bg-white/10' : ''"
+                  @click="selectAsset(p)"
+                >
+                   <div class="space-y-3">
+                     <p class="text-sm font-black text-slate-900 dark:text-white truncate tracking-tighter">{{ displayName(p) }}</p>
+                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">{{ cityDisplay(p) }}</p>
+                     <div class="h-1.5 rounded-full bg-slate-200 dark:bg-white/5 overflow-hidden">
+                       <div class="h-full bg-primary-emerald shadow-primary-light" :style="{ width: occupancyPercent(p) + '%' }" />
+                     </div>
+                   </div>
                 </div>
-                <div class="p-1.5">
-                  <div class="h-1 rounded-full bg-ui-border dark:bg-ui-border-dark overflow-hidden mb-1">
-                    <div class="h-full rounded-full bg-primary-emerald transition-all duration-300" :style="{ width: String(occupancyPercent(p)) + '%' }" />
-                  </div>
-                  <p class="text-xs font-medium truncate text-gray-900 dark:text-gray-100" :title="displayName(p)">{{ displayName(p) }}</p>
-                  <div class="flex gap-1 mt-1 flex-wrap">
-                    <button type="button" class="text-xs text-primary-emerald hover:underline" @click="openEditProperty(p)">{{ t('landlord.editProperty') }}</button>
-                    <button type="button" class="text-xs text-ui-muted hover:underline" @click="openQuickEdit(p)">{{ t('landlord.assets.quickEdit') }}</button>
-                    <button type="button" class="text-xs text-ui-muted hover:underline" @click="openDrawer(p)">{{ t('landlord.manageUnits') }}</button>
-                  </div>
-                </div>
-              </AppCard>
+              </div>
             </div>
+          </template>
+
+          <div v-else class="py-32 text-center animate-in fade-in zoom-in-95">
+            <p class="text-lg font-black text-slate-400 italic tracking-tight">{{ t('landlord.assets.noResults') }}</p>
           </div>
-
-        </template>
-
-        <div v-else class="py-8 text-center text-sm text-ui-muted">
-          {{ t('landlord.assets.noResults') }}
         </div>
-      </section>
+      </div>
+
+      <!-- Detail Panel (Fixed Right on Desktop) -->
+      <aside 
+        class="fixed inset-y-0 right-0 z-20 w-asset-detail-mobile lg:w-[40%] xl:w-asset-detail 2xl:w-asset-detail-xl transform transition-all duration-[800ms] cubic-bezier"
+        :class="selectedAssetId ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 translate-y-20'"
+      >
+        <AssetDetailPanel
+          v-if="selectedAssetId || selectedAssetDetail"
+          :asset="selectedAssetDetail"
+          :loading="loadingAssetDetail"
+          :primary-image-url="selectedAssetId ? getPrimaryImageUrl(properties.find(p => p.id === selectedAssetId)!) : undefined"
+          :display-name="selectedAssetDetail ? (typeof selectedAssetDetail.name === 'object' ? selectedAssetDetail.name[locale] || displayName(selectedAssetDetail as any) : selectedAssetDetail.name) : (selectedAssetId ? displayName(properties.find(p => p.id === selectedAssetId)!) : '')"
+          :city-name="selectedAssetDetail?.city?.name || (selectedAssetId ? cityDisplay(properties.find(p => p.id === selectedAssetId)!) : '')"
+          :format-price="formatPrice"
+          @close="closeAssetDetail"
+          @edit="editPropertyId = selectedAssetId; closeAssetDetail()"
+          @add-unit="onAssetActionAddUnit"
+          @edit-unit="(u) => openEditUnit(selectedAssetId!, u)"
+          @delete="openDeleteConfirm(selectedAssetId!)"
+        />
+      </aside>
     </div>
 
+    <!-- Modals -->
     <AddPropertyModal :show="showAddPropertyModal" @close="onPropertyModalClosed" />
-    <AddUnitModal
-      :show="showAddUnitModal"
-      :property-id="createdPropertyId"
-      :property-name="createdPropertyName"
-      @close="onUnitModalClosed"
-    />
-    <QuickEditPropertyModal
-      :show="!!quickEditProperty"
-      :property="quickEditProperty"
-      @close="onQuickEditClosed"
-      @saved="onQuickEditSaved"
-    />
-    <EditPropertyModal
-      :show="!!editPropertyId"
-      :property-id="editPropertyId"
-      @close="editPropertyId = null"
-      @saved="onEditPropertySaved"
-    />
-    <EditUnitModal
-      :show="!!editUnitContext"
-      :property-id="editUnitContext?.propertyId ?? null"
-      :unit="editUnitContext?.unit ?? null"
-      @close="editUnitContext = null"
-      @saved="onEditUnitSaved"
-    />
-    <PropertyDetailsDrawer
-      :show="!!drawerPropertyId"
-      :property="detailForDrawer"
-      :primary-image-url="drawerPropertyId ? getPrimaryImageUrl(filteredProperties.find((x) => x.id === drawerPropertyId)!) : undefined"
-      :display-name="drawerDisplayName()"
-      :city-name="drawerCityName()"
-      :format-price="formatPrice"
-      @close="closeDrawer"
-      @edit-property="editPropertyId = drawerPropertyId; closeDrawer()"
-      @add-unit="onDrawerAddUnit"
-      @edit-unit="(unit) => { if (drawerPropertyId) openEditUnit(drawerPropertyId, unit) }"
-      @saved-unit="drawerPropertyId && loadDetailForDrawer(drawerPropertyId)"
-      @delete="openDeleteConfirm(drawerPropertyId!)"
-    />
-    <ConfirmModal
-      :show="!!deleteConfirmPropertyId"
-      :title="t('landlord.deleteConfirm.title')"
-      :message="t('landlord.deleteConfirm.message')"
-      :confirm-label="t('landlord.deleteConfirm.delete')"
-      variant="danger"
-      :loading="deletingProperty"
-      @close="closeDeleteConfirm"
-      @confirm="confirmDeleteProperty"
-    />
+    <AddUnitModal :show="showAddUnitModal" :property-id="createdPropertyId" :property-name="createdPropertyName" @close="onUnitModalClosed" />
+    <QuickEditPropertyModal :show="!!quickEditProperty" :property="quickEditProperty" @close="onQuickEditClosed" @saved="onQuickEditSaved" />
+    <EditPropertyModal :show="!!editPropertyId" :property-id="editPropertyId" @close="editPropertyId = null" @saved="onEditPropertySaved" />
+    <EditUnitModal :show="!!editUnitContext" :property-id="editUnitContext?.propertyId ?? null" :unit="editUnitContext?.unit ?? null" @close="editUnitContext = null" @saved="onEditUnitSaved" />
+    <ConfirmModal :show="!!deleteConfirmPropertyId" :title="t('landlord.deleteConfirm.title')" :message="t('landlord.deleteConfirm.message')" :confirm-label="t('landlord.deleteConfirm.delete')" variant="danger" :loading="deletingProperty" @close="closeDeleteConfirm" @confirm="confirmDeleteProperty" />
   </main>
 </template>
+
+<style scoped>
+.cubic-bezier {
+  transition-timing-function: cubic-bezier(0.87, 0, 0.13, 1);
+}
+
+.shadow-primary {
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+}
+.shadow-primary-light {
+  box-shadow: 0 0 40px rgba(16, 185, 129, 0.15);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.1);
+  border-radius: 10px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+.animate-blob {
+  animation: blob 7s infinite;
+}
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+</style>

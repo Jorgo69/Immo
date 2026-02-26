@@ -69,7 +69,7 @@ const navItems = computed(() => {
     return [
       { path: '/admin', label: t('admin.navHome'), icon: Home },
       { path: '/my-requests', label: t('admin.proMyRequests'), icon: FileText },
-      { path: '/profile/edit', label: t('admin.navSettings'), icon: Settings2 },
+      { path: '/admin/profile/edit', label: t('admin.navSettings'), icon: Settings2 },
     ]
   }
   return [
@@ -86,6 +86,16 @@ const navItems = computed(() => {
       ],
     }] : []),
     ...(canAddOrManageProperties.value ? [{ path: '/admin/landlord/units', label: t('admin.navUnits'), icon: Key }] : []),
+    ...(canAddOrManageProperties.value ? [{
+      key: 'patrimoine',
+      label: 'Patrimoine (Nouveau)',
+      icon: Home,
+      children: [
+        { path: '/admin/assets/properties', label: 'Biens immobiliers' },
+        { path: '/admin/assets/units', label: 'Unités' },
+      ],
+    }] : []),
+
     {
       key: 'finances',
       label: t('admin.navFinances'),
@@ -95,7 +105,7 @@ const navItems = computed(() => {
         { path: '/admin/transactions', label: t('admin.navTransactions') },
       ],
     },
-    { path: '/profile/edit', label: t('admin.navSettings'), icon: Settings2 },
+    { path: '/admin/profile/edit', label: t('admin.navSettings'), icon: Settings2 },
     ...(isAdmin.value ? [
       { path: '/admin/users', label: t('admin.navUsers'), icon: Users },
       { path: '/admin/location', label: t('admin.navLocation'), icon: Globe },
@@ -144,12 +154,12 @@ function logout() {
       @click="sidebarOpen = false"
     />
 
-    <!-- Sidebar : thème global — light = claire, dark = sombre (ARCHITECTURE §2) -->
+    <!-- Sidebar : thème global — Apple Glass Style -->
     <aside
-      class="fixed md:static inset-y-0 left-0 z-50 shrink-0 flex flex-col border-r transition-[width] duration-200 ease-out md:translate-x-0 bg-ui-surface dark:bg-brand-dark border-ui-border dark:border-gray-800"
+      class="fixed md:static inset-y-0 left-0 z-50 shrink-0 flex flex-col border-r transition-[width] duration-300 ease-in-out md:translate-x-0 bg-white/70 dark:bg-brand-dark/70 backdrop-blur-xl border-ui-border/50 dark:border-white/5"
       :class="[
         sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-        sidebarCollapsed ? 'w-sidebar-collapsed md:w-sidebar-collapsed' : 'w-sidebar-expanded md:w-60',
+        sidebarCollapsed ? 'w-sidebar-collapsed md:w-sidebar-collapsed' : 'w-sidebar-expanded md:w-64',
       ]"
     >
       <!-- Header sidebar -->
@@ -198,58 +208,59 @@ function logout() {
         </div>
       </div>
 
-      <nav class="p-2 flex-1 flex flex-col gap-0.5 overflow-y-auto overflow-x-hidden">
+      <nav class="p-3 flex-1 flex flex-col gap-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
         <template v-for="(item, idx) in navItems" :key="'path' in item ? item.path : (item as { key?: string }).key ?? idx">
           <!-- Lien simple -->
           <AppLink
             v-if="'path' in item && item.path"
             :to="item.path"
-            class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors min-w-0"
+            class="group flex items-center gap-3 px-3.5 py-3 rounded-2xl text-sm transition-all duration-300 min-w-0 relative overflow-hidden"
             :class="isActive(item.path)
-              ? 'bg-primary-emerald/10 dark:bg-primary-emerald/20 text-primary-emerald font-medium'
-              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-gray-200'"
+              ? 'bg-primary-emerald text-white shadow-glow-emerald font-bold'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-white/80 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-100'"
             @click="closeSidebarOnMobile"
           >
-            <component :is="item.icon" class="w-5 h-5 shrink-0" />
-            <span v-show="!sidebarCollapsed" class="truncate">{{ item.label }}</span>
+            <component :is="item.icon" class="w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110" />
+            <span v-show="!sidebarCollapsed" class="truncate relative z-10">{{ item.label }}</span>
+            <div v-if="isActive(item.path)" class="absolute inset-0 bg-gradient-to-tr from-primary-emerald to-emerald-400 opacity-20" />
           </AppLink>
 
           <!-- Section avec enfants : accordéon (étendu) ou flottant (réduit) -->
           <template v-else-if="'children' in item && item.children?.length">
             <div
               v-if="!sidebarCollapsed"
-              class="rounded-xl"
+              class="rounded-2xl overflow-hidden"
             >
               <button
                 type="button"
-                class="flex w-full items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors min-w-0"
+                class="group flex w-full items-center gap-3 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 min-w-0"
                 :class="hasActiveChild(item.children)
-                  ? 'bg-primary-emerald/10 dark:bg-primary-emerald/20 text-primary-emerald'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-gray-200'"
+                  ? 'text-primary-emerald bg-primary-emerald/5 dark:bg-primary-emerald/10'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-white/80 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-100'"
                 @click="toggleAccordion((item as { key: string }).key ?? String(idx))"
               >
-                <component :is="item.icon" class="w-5 h-5 shrink-0" />
+                <component :is="item.icon" class="w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110" />
                 <span class="truncate flex-1 text-left">{{ item.label }}</span>
                 <ChevronDown
-                  class="w-4 h-4 shrink-0 transition-transform"
-                  :class="expandedAccordion === ((item as { key?: string }).key ?? String(idx)) ? 'rotate-180' : ''"
+                  class="w-4 h-4 shrink-0 transition-transform duration-300"
+                  :class="expandedAccordion === ((item as { key: string }).key ?? String(idx)) ? 'rotate-180 text-primary-emerald' : ''"
                 />
               </button>
               <div
                 v-show="expandedAccordion === ((item as { key?: string }).key ?? String(idx))"
-                class="pl-4 pr-2 pb-1 space-y-0.5"
+                class="pl-11 pr-2 pb-2 space-y-1 animate-in slide-in-from-top-2 duration-300"
               >
                 <AppLink
                   v-for="(child, cIdx) in item.children"
                   :key="cIdx"
                   :to="child.path"
-                  class="flex items-center gap-2 py-2 px-2 rounded-lg text-sm transition-colors"
+                  class="flex items-center gap-2 py-2 px-3 rounded-xl text-sm transition-all duration-200"
                   :class="isActive(child.path)
-                    ? 'bg-primary-emerald/10 dark:bg-primary-emerald/20 text-primary-emerald font-medium'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-gray-200'"
+                    ? 'text-primary-emerald font-bold bg-primary-emerald/5'
+                    : 'text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/50 dark:hover:bg-white/5'"
                   @click="closeSidebarOnMobile"
                 >
-                  <Plus v-if="child.path && child.path.includes('openAdd')" class="w-4 h-4 shrink-0" />
+                  <Plus v-if="child.path && child.path.includes('openAdd')" class="w-3.5 h-3.5 shrink-0" />
                   <span class="truncate">{{ child.label }}</span>
                 </AppLink>
               </div>
@@ -305,35 +316,39 @@ function logout() {
     </aside>
 
     <!-- Zone contenu : fond explicite pour light/dark -->
-    <div class="flex-1 flex flex-col min-w-0 bg-ui-background dark:bg-gray-900">
-      <header class="h-14 shrink-0 border-b border-ui-border dark:border-gray-700 bg-ui-surface dark:bg-gray-900 px-4 md:px-6 flex items-center justify-between gap-2">
-        <div class="flex items-center gap-3 min-w-0">
+    <div class="flex-1 flex flex-col min-w-0 bg-ui-background dark:bg-gray-900 relative">
+      <header class="sticky top-0 z-30 h-16 shrink-0 border-b border-ui-border/50 dark:border-white/5 bg-white/80 dark:bg-brand-dark/80 backdrop-blur-md px-4 md:px-8 flex items-center justify-between gap-4 transition-all duration-300">
+        <div class="flex items-center gap-4 min-w-0">
           <button
             type="button"
-            class="md:hidden p-2 rounded-lg text-ui-muted hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
+            class="md:hidden p-2 rounded-xl text-ui-muted hover:bg-gray-100 dark:hover:bg-white/5 transition-colors shrink-0"
             :aria-label="t('admin.navProperties')"
             @click="sidebarOpen = true"
           >
             <Menu class="w-6 h-6" />
           </button>
-          <h1 class="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+          <h1 class="text-xl font-extrabold text-gray-900 dark:text-gray-100 truncate tracking-tight">
             {{ pageTitle }}
           </h1>
         </div>
-        <div class="flex items-center gap-2">
-          <LanguageSwitcher />
-          <CurrencySwitcher />
+        <div class="flex items-center gap-3">
+          <div class="hidden lg:flex items-center gap-2 p-1 rounded-2xl bg-gray-100/50 dark:bg-white/5 border border-ui-border/50 dark:border-white/5">
+            <LanguageSwitcher />
+            <div class="w-px h-4 bg-ui-border dark:bg-white/10 mx-1" />
+            <CurrencySwitcher />
+          </div>
           <ThemeToggle />
           <AppLink
-            to="/profile"
-            class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            to="/admin/profile"
+            class="flex items-center gap-2 px-3 py-2 rounded-2xl text-sm font-bold text-gray-700 dark:text-gray-200 bg-gray-100/50 dark:bg-white/5 border border-transparent hover:border-ui-border/50 dark:hover:border-white/10 transition-all"
           >
-            <User class="w-5 h-5 shrink-0 text-ui-muted" />
+            <div class="h-7 w-7 rounded-full bg-primary-emerald/10 flex items-center justify-center text-primary-emerald">
+              <User class="w-4 h-4" />
+            </div>
             <span class="hidden sm:inline">{{ userLabel || t('nav.profile') }}</span>
-            <ChevronDown class="w-5 h-5 shrink-0 text-ui-muted" />
           </AppLink>
-          <AppButton type="button" variant="ghost" size="sm" @click="logout">
-            <LogOut class="w-5 h-5 shrink-0" />
+          <AppButton type="button" variant="ghost" size="none" class="h-10 w-10 !rounded-2xl hover:bg-danger-red/10 hover:text-danger-red transition-all" @click="logout" v-tooltip="t('common.logout')">
+            <LogOut class="w-5 h-5" />
           </AppButton>
         </div>
       </header>

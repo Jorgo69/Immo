@@ -10,7 +10,7 @@ withDefaults(
     disabled?: boolean
     loading?: boolean
     block?: boolean
-    size?: 'sm' | 'md' | 'lg'
+    size?: 'sm' | 'md' | 'lg' | 'none'
   }>(),
   { variant: 'primary', type: 'button', disabled: false, loading: false, block: false, size: 'md' }
 )

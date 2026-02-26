@@ -1,243 +1,140 @@
 <script setup lang="ts">
 /**
- * Vue tableau pro — PATTERN DE VISUALISATION (ARCHITECTURE §6).
- * Colonnes : [Miniature ronde] | Nom du bien | Ville | Unités (Total/Occupé) | Revenu (FCFA) | Statut | Quick Actions (menu déroulant).
- * @props properties - liste filtrée
- * @props displayName - nom formaté (fr JSONB ou chaîne, jamais d'ID brut)
- * @emits manage-units, add-unit, quick-edit, view-details
+ * Table des biens immobiliers (Split-View High-End).
+ * Glassmorphism, lignes translucides et typographie Bolder.
+ * Utilise les Design Tokens officiels.
  */
-import { ref, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { MapPin, Layers, TrendingUp, MoreVertical, Pencil, Plus, Eye } from 'lucide-vue-next'
-import type { PropertyListItemDto, UnitDto } from '../../services/property.service'
-import { AppButton } from '../../components/ui'
+import { MoreVertical, MapPin, Users, ChevronRight } from 'lucide-vue-next'
 import PropertyCardImage from '../../components/landlord/PropertyCardImage.vue'
+import type { PropertyListItemDto } from '../../services/property.service'
 
-const props = defineProps<{
+defineProps<{
   properties: PropertyListItemDto[]
   primaryImageUrl: (p: PropertyListItemDto) => string | undefined
   displayName: (p: PropertyListItemDto) => string
   cityDisplay: (p: PropertyListItemDto) => string
   statusLabel: (status: string) => string
-  formatPrice: (price: string) => string
+  formatPrice: (p: string) => string
+  selectedId: string | null
 }>()
 
-const emit = defineEmits<{
-  (e: 'select-property', p: PropertyListItemDto): void
-  (e: 'select-property-units', p: PropertyListItemDto): void
-  (e: 'add-unit', p: PropertyListItemDto): void
-  (e: 'quick-edit', p: PropertyListItemDto): void
-  (e: 'edit-property', p: PropertyListItemDto): void
-  (e: 'view-details', p: PropertyListItemDto): void
-}>()
+const emit = defineEmits([
+  'select-property',
+  'select-property-units',
+  'view-details',
+  'add-unit',
+  'quick-edit',
+  'edit-property'
+])
 
 const { t } = useI18n()
-const openMenuId = ref<string | null>(null)
-
-function toggleMenu(propertyId: string) {
-  openMenuId.value = openMenuId.value === propertyId ? null : propertyId
-}
-
-function closeMenu() {
-  openMenuId.value = null
-}
-
-function onEdit(p: PropertyListItemDto) {
-  closeMenu()
-  emit('quick-edit', p)
-}
-
-function onAddUnit(p: PropertyListItemDto) {
-  closeMenu()
-  emit('add-unit', p)
-}
-
-function onEditProperty(p: PropertyListItemDto) {
-  closeMenu()
-  emit('edit-property', p)
-}
-
-function onViewDetails(p: PropertyListItemDto) {
-  closeMenu()
-  emit('view-details', p)
-}
-
-function onSelectProperty(p: PropertyListItemDto) {
-  closeMenu()
-  emit('select-property', p)
-}
-
-function onSelectPropertyUnits(p: PropertyListItemDto) {
-  closeMenu()
-  emit('select-property-units', p)
-}
 
 function unitCount(p: PropertyListItemDto): number {
   return p.units?.length ?? 0
 }
 
 function occupiedCount(p: PropertyListItemDto): number {
-  if (!p.units?.length) return 0
-  return p.units.filter((u: UnitDto) => u.unit_status !== 'available' && u.is_available !== true).length
+  return (p.units ?? []).filter((u: any) => u.unit_status !== 'available' && u.is_available !== true).length
 }
 
-function estimatedRevenue(p: PropertyListItemDto): string {
-  if (!p.units?.length) return '—'
-  const total = p.units.reduce((sum, u) => sum + Number(u.price || 0), 0)
-  return props.formatPrice(String(total))
+function occupancyPercent(p: PropertyListItemDto): number {
+  const total = unitCount(p)
+  return total === 0 ? 0 : Math.round((occupiedCount(p) / total) * 100)
 }
-
-function onDocClick(e: MouseEvent) {
-  const target = e.target as HTMLElement
-  if (target?.closest?.('[data-quick-actions]')) return
-  closeMenu()
-}
-
-watch(openMenuId, (id) => {
-  if (id) {
-    setTimeout(() => document.addEventListener('click', onDocClick), 0)
-  } else {
-    document.removeEventListener('click', onDocClick)
-  }
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', onDocClick)
-})
 </script>
 
 <template>
-  <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-600">
-    <table class="w-full text-sm text-left">
-      <thead class="bg-gray-50 dark:bg-gray-800/80 text-[var(--color-muted)]">
-        <tr>
-          <th class="w-12 px-2 py-2.5 font-medium">{{ t('landlord.assets.thumbnail') }}</th>
-          <th class="px-3 py-2.5 font-medium">{{ t('landlord.assets.name') }}</th>
-          <th class="px-3 py-2.5 font-medium">{{ t('landlord.assets.location') }}</th>
-          <th class="px-3 py-2.5 font-medium">{{ t('landlord.assets.units') }}</th>
-          <th class="px-3 py-2.5 font-medium">{{ t('landlord.assets.revenue') }}</th>
-          <th class="px-3 py-2.5 font-medium">{{ t('landlord.assets.status') }}</th>
-          <th class="px-3 py-2.5 font-medium text-right">{{ t('landlord.assets.actions') }}</th>
+  <div class="overflow-x-auto custom-scrollbar rounded-5xl bg-white/20 dark:bg-white/[0.02] backdrop-blur-ultra-glass border border-white/10 shadow-glass">
+    <table class="w-full text-left border-collapse min-w-[56.25rem]">
+      <thead>
+        <tr class="border-b border-white/10 transition-colors">
+          <th class="py-8 px-8 text-[11px] font-black uppercase tracking-widest-2xl text-slate-500 dark:text-slate-400">{{ t('landlord.assets.thumbnail') }}</th>
+          <th class="py-8 px-6 text-[11px] font-black uppercase tracking-widest-2xl text-slate-500 dark:text-slate-400">{{ t('landlord.assets.name') }}</th>
+          <th class="py-8 px-6 text-[11px] font-black uppercase tracking-widest-2xl text-slate-500 dark:text-slate-400">{{ t('landlord.assets.units') }}</th>
+          <th class="py-8 px-6 text-[11px] font-black uppercase tracking-widest-2xl text-slate-500 dark:text-slate-400">{{ t('landlord.assets.revenue') }}</th>
+          <th class="py-8 px-6 text-[11px] font-black uppercase tracking-widest-2xl text-slate-500 dark:text-slate-400">{{ t('landlord.assets.status') }}</th>
+          <th class="py-8 px-8 text-right text-[11px] font-black uppercase tracking-widest-2xl text-slate-500 dark:text-slate-400">{{ t('landlord.assets.actions') }}</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
+      <tbody>
         <tr
           v-for="p in properties"
           :key="p.id"
-          class="text-[var(--color-text)] hover:bg-gray-50/50 dark:hover:bg-gray-800/30"
+          class="group transition-all duration-300 border-b border-white/5 last:border-0 cursor-pointer"
+          :class="selectedId === p.id ? 'bg-primary-emerald/10 shadow-inner' : 'hover:bg-white/40 dark:hover:bg-white/[0.04]'"
+          @click="emit('select-property', p)"
         >
-          <td class="px-2 py-2 w-12">
-            <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 flex items-center justify-center">
-              <PropertyCardImage
-                :src="primaryImageUrl(p)"
-                :alt="displayName(p)"
-                rounded="full"
-                class="w-full h-full"
-              />
+          <!-- Thumbnail -->
+          <td class="py-6 px-8">
+            <div class="relative w-20 h-20 rounded-2xl overflow-hidden shadow-inner border border-white/10 group-hover:scale-110 transition-transform">
+              <PropertyCardImage :src="primaryImageUrl(p)" class="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 transition-all duration-500" alt="Asset" />
+              <div v-if="(p as any)._virtual" class="absolute inset-0 bg-amber-500/20 flex items-center justify-center">
+                 <span class="text-[8px] font-black uppercase text-amber-200 backdrop-blur-sm bg-black/40 px-2 py-0.5 rounded-full ring-1 ring-white/20">UNIT</span>
+              </div>
             </div>
           </td>
-          <td class="px-3 py-2.5 font-medium max-w-[180px]">
-            <button
-              type="button"
-              class="text-left truncate block w-full text-[var(--color-accent)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 rounded"
-              @click="onSelectProperty(p)"
-            >
-              {{ displayName(p) }}
-            </button>
+
+          <!-- Name & Location -->
+          <td class="py-6 px-6">
+            <div class="space-y-1">
+              <p class="text-lg font-black text-slate-900 dark:text-white tracking-tighter group-hover:text-primary-emerald transition-colors">{{ displayName(p) }}</p>
+              <div class="flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                <MapPin :size="14" class="text-primary-emerald" />
+                {{ cityDisplay(p) }}
+              </div>
+            </div>
           </td>
-          <td class="px-3 py-2.5 text-[var(--color-muted)]">
-            <span class="inline-flex items-center gap-1">
-              <MapPin class="w-3.5 h-3.5 shrink-0" />
-              {{ cityDisplay(p) }}
-            </span>
+
+          <!-- Units Stats -->
+          <td class="py-6 px-6">
+            <div class="space-y-2 max-w-32">
+              <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-widest-xl text-slate-500">
+                <span class="flex items-center gap-1"><Users :size="12" /> {{ unitCount(p) }}</span>
+                <span>{{ occupancyPercent(p) }}%</span>
+              </div>
+              <div class="h-1.5 rounded-full bg-slate-200 dark:bg-white/5 overflow-hidden">
+                <div class="h-full bg-primary-emerald shadow-glass-primary transition-all duration-1000" :style="{ width: occupancyPercent(p) + '%' }" />
+              </div>
+            </div>
           </td>
-          <td class="px-3 py-2.5">
-            <span class="inline-flex items-center gap-1">
-              <Layers class="w-3.5 h-3.5 text-[var(--color-muted)]" />
-              {{ unitCount(p) }} / {{ occupiedCount(p) }}
-            </span>
+
+          <!-- Revenue -->
+          <td class="py-6 px-6">
+            <div class="space-y-1">
+              <p class="text-base font-black text-slate-900 dark:text-white tracking-tighter">{{ formatPrice(String((p as any).revenue || 0)) }}</p>
+              <p class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest-xl">{{ t('landlord.kpi.estMonthly') }}</p>
+            </div>
           </td>
-          <td class="px-3 py-2.5 text-[var(--color-muted)]">
-            <span class="inline-flex items-center gap-1">
-              <TrendingUp class="w-3.5 h-3.5" />
-              {{ estimatedRevenue(p) }}
-            </span>
-          </td>
-          <td class="px-3 py-2.5">
-            <span
-              class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-              :class="{
-                'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': p.status === 'available',
-                'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300': p.status === 'coming_soon',
-                'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-200': p.status === 'occupied',
-                'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300': p.status === 'maintenance',
-              }"
+
+          <!-- Status Badge -->
+          <td class="py-6 px-6">
+            <span 
+              class="inline-flex px-4 py-1.5 rounded-xl backdrop-blur-md text-[10px] font-black uppercase tracking-widest-xl border transition-all"
+              :class="p.status === 'available' 
+                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                : 'bg-rose-500/10 text-rose-500 border-rose-500/20'"
             >
               {{ statusLabel(p.status) }}
             </span>
           </td>
-          <td class="px-3 py-2.5 text-right relative" data-quick-actions>
-            <div class="flex justify-end">
-              <AppButton
-                variant="ghost"
-                size="sm"
-                class="min-w-0 p-1.5 text-[var(--color-muted)] hover:text-[var(--color-text)]"
-                :aria-label="t('landlord.assets.quickActions')"
-                :aria-expanded="openMenuId === p.id"
-                @click="toggleMenu(p.id)"
-              >
-                <MoreVertical class="w-4 h-4" />
-              </AppButton>
-            </div>
-            <div
-              v-show="openMenuId === p.id"
-              class="absolute right-0 top-full z-10 mt-0.5 min-w-[160px] rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg py-1"
-              role="menu"
-            >
-              <button
-                type="button"
-                class="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                role="menuitem"
-                @click="onEdit(p)"
-              >
-                <Pencil class="w-3.5 h-3.5 text-[var(--color-muted)]" />
-                {{ t('landlord.assets.quickEdit') }}
-              </button>
-              <button
-                type="button"
-                class="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                role="menuitem"
-                @click="onAddUnit(p)"
-              >
-                <Plus class="w-3.5 h-3.5 text-[var(--color-muted)]" />
-                {{ t('landlord.addUnit') }}
-              </button>
-              <button
-                type="button"
-                class="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                role="menuitem"
-                @click="onEditProperty(p)"
-              >
-                <Pencil class="w-3.5 h-3.5 text-[var(--color-muted)]" />
-                {{ t('landlord.editProperty') }}
-              </button>
-              <button
-                type="button"
-                class="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                role="menuitem"
-                @click="onViewDetails(p)"
-              >
-                <Eye class="w-3.5 h-3.5 text-[var(--color-muted)]" />
-                {{ t('landlord.assets.viewDetails') }}
-              </button>
-              <button
-                type="button"
-                class="w-full px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 border-t border-gray-100 dark:border-gray-700"
-                role="menuitem"
-                @click="onSelectPropertyUnits(p)"
-              >
-                {{ t('landlord.manageUnits') }}
-              </button>
+
+          <!-- Actions -->
+          <td class="py-6 px-8 text-right">
+            <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+               <button 
+                 class="w-10 h-10 rounded-xl bg-white/50 dark:bg-white/5 border border-white/20 dark:border-white/10 flex items-center justify-center text-slate-500 hover:bg-primary-emerald hover:text-white hover:scale-110 active:scale-95 transition-all shadow-sm"
+                 @click.stop="emit('view-details', p)"
+                 :title="t('landlord.assets.viewDetails')"
+               >
+                 <ChevronRight :size="18" />
+               </button>
+               <button 
+                 class="w-10 h-10 rounded-xl bg-white/50 dark:bg-white/5 border border-white/20 dark:border-white/10 flex items-center justify-center text-slate-500 hover:bg-primary-emerald hover:text-white hover:scale-110 active:scale-95 transition-all shadow-sm"
+                 @click.stop="emit('quick-edit', p)"
+               >
+                 <MoreVertical :size="18" />
+               </button>
             </div>
           </td>
         </tr>
@@ -245,3 +142,16 @@ onBeforeUnmount(() => {
     </table>
   </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.1);
+  border-radius: 10px;
+}
+</style>

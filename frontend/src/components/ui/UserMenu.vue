@@ -19,10 +19,6 @@ const isOpen = ref(false)
 const menuRef = ref<HTMLElement | null>(null)
 
 const loggedIn = computed(() => !!appStore.token)
-const isPro = computed(() => {
-  const role = appStore.userRole
-  return role === 'admin' || role === 'agent' || role === 'landlord'
-})
 
 function toggle() {
   isOpen.value = !isOpen.value
@@ -92,7 +88,7 @@ onUnmounted(() => {
         <span>{{ t('nav.homePro') }}</span>
       </AppLink>
       <AppLink
-        to="/profile"
+        to="/admin/profile"
         class="flex w-full items-center gap-2 px-3 py-2 text-[var(--color-text)] hover:bg-gray-100 dark:hover:bg-gray-800"
         @click="close"
       >

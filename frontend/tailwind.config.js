@@ -37,12 +37,21 @@ export default {
         'ui-surface-dark': '#1f2937',
         'sidebar-dark': '#0f1419',
         'overlay': 'rgba(0, 0, 0, 0.5)',
+        'mesh-emerald': 'rgba(16, 185, 129, 0.2)',
+        'mesh-blue': 'rgba(59, 130, 246, 0.1)',
+        'mesh-purple': 'rgba(168, 85, 247, 0.1)',
       },
       boxShadow: {
         'soft': '0 2px 8px rgba(0, 0, 0, 0.06)',
         'soft-sm': '0 1px 3px rgba(0, 0, 0, 0.05)',
         'soft-lg': '0 4px 16px rgba(0, 0, 0, 0.08)',
         'ui-soft': '0 2px 8px rgba(0, 0, 0, 0.06)',
+        'glow-emerald': '0 0 20px rgba(5, 150, 105, 0.15)',
+        'glow-orange': '0 0 20px rgba(234, 88, 12, 0.15)',
+        'glow-red': '0 0 20px rgba(220, 38, 38, 0.15)',
+        'glass': '0 8px 32px 0 rgba(15, 23, 42, 0.08)',
+        'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.4)',
+        'glass-primary': '0 0 40px rgba(16, 185, 129, 0.15)',
       },
       maxWidth: {
         layout: '1440px',
@@ -54,6 +63,9 @@ export default {
         card: '350px',
         'sidebar-expanded': '15rem',
         'sidebar-collapsed': '4rem',
+        'asset-detail': '500px',
+        'asset-detail-xl': '600px',
+        'asset-detail-mobile': '95vw',
       },
       fontSize: {
         xs: ['0.9rem', { lineHeight: '1.25rem' }],
@@ -63,6 +75,10 @@ export default {
         xl: ['1.5rem', { lineHeight: '2rem' }],
         hero: ['4.5rem', { lineHeight: '1', fontWeight: '900', letterSpacing: '-0.02em' }],
         'section-title': ['3rem', { lineHeight: '1.1', fontWeight: '800' }],
+      },
+      letterSpacing: {
+        'widest-xl': '0.2em',
+        'widest-2xl': '0.25em',
       },
       spacing: {
         section: '8rem',
@@ -79,21 +95,31 @@ export default {
       },
       height: {
         'screen-nav': 'calc(100vh - 64px)',
+        'asset-cover': '280px',
       },
       blur: {
         gallery: '40px',
+        'ultra-glass': '40px',
+        'mesh-glow': '120px',
       },
       brightness: {
         gallery: '0.7',
       },
       borderRadius: {
         '2xl': '1rem',
+        '3xl': '1.5rem',
+        '4xl': '2rem',
+        '5xl': '2.5rem',
+        '6xl': '3rem',
+        '7xl': '3.5rem',
+        '8xl': '4rem',
         'card': '1rem',
         'card-lg': '1.25rem',
       },
       backdropBlur: {
         'modal': '4px',
         'gallery': '20px',
+        'ultra-glass': '40px',
       },
       zIndex: {
         'map': '1',

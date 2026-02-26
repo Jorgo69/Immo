@@ -7,7 +7,7 @@ import gsap from 'gsap'
 import { useAppStore } from '../stores/app'
 import { Smartphone, Mail, MessageCircle, ChevronDown } from 'lucide-vue-next'
 import { requestOtp, verifyOtp, type AuthChannel } from '../services/auth.service'
-import { AppTitle, AppInput, AppButton } from '../components/ui'
+import { AppInputPremium, AppButton, AppCardPremium } from '../components/ui'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -126,161 +126,178 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="min-h-[100dvh] bg-[#F9FAFB] px-4 py-10 dark:bg-gray-950">
-    <div class="mx-auto w-full max-w-sm space-y-8">
-      <!-- En-tête sobre -->
-      <section class="auth-hero space-y-3 text-center">
+  <main class="min-h-screen bg-ui-background dark:bg-brand-dark flex flex-col justify-center relative overflow-hidden">
+    <!-- Subtle Background Glow -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden opacity-30 dark:opacity-40">
+      <div class="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-primary-emerald blur-[140px] rounded-full" />
+      <div class="absolute bottom-[0%] -right-[10%] w-[40%] h-[40%] bg-blue-500 blur-[120px] rounded-full" />
+    </div>
+
+    <div class="relative mx-auto w-full max-w-md px-6 py-12 space-y-10">
+      <!-- En-tête Premium -->
+      <section class="auth-hero space-y-4 text-center">
         <div
-          class="mx-auto inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-900"
+          class="mx-auto inline-flex items-center justify-center rounded-3xl bg-primary-emerald p-4 shadow-glow-emerald text-white"
         >
-          <Smartphone class="h-5 w-5 text-[var(--color-accent)]" />
+          <Smartphone class="h-8 w-8" />
         </div>
-        <AppTitle :level="2">
-          {{ t('nav.auth') }}
-        </AppTitle>
-        <p class="text-sm text-[var(--color-muted)]">
-          {{ t('auth.subtitle') }}
-        </p>
+        <div>
+          <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 italic">
+            IMMO<span class="text-primary-emerald">.PRO</span>
+          </h1>
+          <p class="mt-2 text-ui-muted font-bold uppercase tracking-widest text-xs">
+            {{ t('auth.subtitle') }}
+          </p>
+        </div>
       </section>
 
-      <!-- Carte Auth -->
-      <section
-        class="auth-card rounded-3xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900"
-      >
+      <!-- Carte Auth Premium -->
+      <AppCardPremium class="auth-card p-8 shadow-glow-emerald/5">
         <form
           v-if="step === 'phone'"
-          class="space-y-4"
+          class="space-y-6"
           @submit.prevent="requestCode()"
         >
-          <!-- Phone input style WhatsApp : drapeau + indicatif dans le champ -->
-          <div class="space-y-1">
-            <label class="block text-sm font-medium text-[var(--color-text)]">
-              {{ t('auth.phone') }}
-            </label>
-            <div
-              class="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm focus-within:ring-2 focus-within:ring-[var(--color-accent)] dark:border-gray-700 dark:bg-gray-900"
+          <!-- Phone input avec sélecteur de pays intégré Premium -->
+            <AppInputPremium
+              v-model="phoneLocal"
+              type="text"
+              inputmode="tel"
+              :placeholder="'90 12 34 56'"
+              input-class="font-bold tracking-widest"
+              required
             >
-              <div class="relative">
-                <button
-                  type="button"
-                  class="flex items-center gap-1 rounded-xl px-2 py-1 text-sm text-[var(--color-text)] hover:bg-gray-50 dark:hover:bg-gray-800"
-                  @click.stop="countryMenuOpen = !countryMenuOpen"
-                >
-                  <span class="text-lg">{{ selectedCountry.flag }}</span>
-                  <span class="text-xs text-[var(--color-muted)]">
-                    {{ selectedCountry.dial }}
-                  </span>
-                  <ChevronDown class="h-3 w-3 text-[var(--color-muted)]" />
-                </button>
-                <div
-                  v-if="countryMenuOpen"
-                  class="absolute left-0 top-full z-20 mt-1 w-40 rounded-2xl border border-gray-200 bg-white py-1 text-xs shadow-lg dark:border-gray-700 dark:bg-gray-900"
-                >
+              <template #prefix>
+                <div class="relative flex items-center pr-2 border-r border-ui-border/50 dark:border-ui-border-dark/50">
                   <button
-                    v-for="c in countries"
-                    :key="c.code"
                     type="button"
-                    class="flex w-full items-center gap-2 px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    @click.stop="
-                      selectedCountryCode = c.code;
-                      countryMenuOpen = false
-                    "
+                    class="flex items-center gap-2 pl-4 pr-3 py-3.5 text-base font-bold text-gray-900 dark:text-gray-100 hover:bg-primary-emerald/5 transition-colors rounded-l-2xl"
+                    @click.stop="countryMenuOpen = !countryMenuOpen"
                   >
-                    <span>{{ c.flag }}</span>
-                    <span class="truncate">
-                      {{ c.name }} ({{ c.dial }})
+                    <span class="text-xl">{{ selectedCountry.flag }}</span>
+                    <span class="text-base">
+                      {{ selectedCountry.dial }}
                     </span>
+                    <ChevronDown class="h-4 w-4 text-ui-muted transition-transform duration-300" :class="countryMenuOpen ? 'rotate-180' : ''" />
                   </button>
+                  
+                  <div
+                    v-if="countryMenuOpen"
+                    class="absolute left-0 top-full z-50 mt-2 w-56 rounded-2xl border border-ui-border bg-white p-2 shadow-xl backdrop-blur-xl dark:border-ui-border-dark dark:bg-brand-dark/95 animate-in fade-in slide-in-from-top-2"
+                  >
+                    <button
+                      v-for="c in countries"
+                      :key="c.code"
+                      type="button"
+                      class="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-primary-emerald/10 text-sm font-bold text-gray-900 dark:text-gray-100 transition-colors"
+                      @click.stop="
+                        selectedCountryCode = c.code;
+                        countryMenuOpen = false
+                      "
+                    >
+                      <span class="text-xl">{{ c.flag }}</span>
+                      <span class="truncate">
+                        {{ c.name }}
+                      </span>
+                      <span class="ml-auto text-ui-muted text-xs">{{ c.dial }}</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <AppInput
-                v-model="phoneLocal"
-                class="flex-1 border-0 bg-transparent px-0 py-0"
-                type="text"
-                inputmode="tel"
-                :label="undefined"
-                :placeholder="'90 12 34 56'"
-              />
-            </div>
-          </div>
+              </template>
+            </AppInputPremium>
 
-          <!-- Email (optionnel, canal email) -->
-          <div class="space-y-1">
-            <AppInput
+          <!-- Email Premium -->
+          <div class="space-y-2">
+            <AppInputPremium
               v-model="email"
               type="email"
               :label="t('auth.email')"
               :placeholder="t('auth.emailPlaceholder')"
             />
-            <p class="text-xs text-[var(--color-muted)]">
+            <p class="ml-1 text-[10px] font-bold text-ui-muted uppercase tracking-wider">
               {{ t('auth.otpEmailHint') }}
             </p>
           </div>
 
-          <AppButton type="submit" block :loading="loading">
+          <AppButton type="submit" block size="lg" class="py-4 font-bold text-lg shadow-glow-emerald" :loading="loading">
             {{ t('auth.requestCode') }}
           </AppButton>
 
-          <p class="pt-2 text-xs leading-relaxed text-[var(--color-muted)]">
+          <p class="pt-4 text-[10px] font-medium leading-relaxed text-ui-muted text-center uppercase tracking-widest px-4">
             {{ t('auth.legalNotice') }}
           </p>
         </form>
 
         <template v-else>
-          <p class="mb-4 text-sm text-[var(--color-muted)]">
-            {{ t('auth.whereToReceive') }}
-          </p>
+          <div class="text-center mb-8">
+            <h2 class="text-2xl font-extrabold text-gray-900 dark:text-gray-100 mb-2 italic">Vérification</h2>
+            <p class="text-sm font-medium text-ui-muted">
+              {{ t('auth.whereToReceive') }}
+            </p>
+          </div>
 
-          <!-- Choix du canal OTP -->
-          <div class="mb-6 space-y-3">
+          <!-- Choix du canal OTP Premium -->
+          <div class="mb-8 grid grid-cols-1 gap-4">
             <AppButton
               v-if="hasEmailChannel"
               type="button"
               block
               variant="secondary"
+              class="h-14 font-bold"
               @click="toast.success(t('auth.sentByEmail'))"
             >
-              <Mail class="mr-2 h-4 w-4" />
+              <Mail class="mr-3 h-5 w-5" />
               {{ t('auth.viaEmail') }}
             </AppButton>
 
-            <AppButton
-              v-if="hasWhatsAppChannel"
-              type="button"
-              block
-              variant="outline"
-              @click="openWhatsApp"
-            >
-              <MessageCircle class="mr-2 h-4 w-4" />
-              {{ t('auth.viaWhatsApp') }}
-            </AppButton>
+            <div class="grid grid-cols-2 gap-4">
+              <AppButton
+                v-if="hasWhatsAppChannel"
+                type="button"
+                variant="outline"
+                class="h-14 font-bold border-2"
+                @click="openWhatsApp"
+              >
+                <MessageCircle class="mr-2 h-5 w-5 text-emerald-500" />
+                WhatsApp
+              </AppButton>
 
-            <AppButton
-              v-if="hasSmsChannel"
-              type="button"
-              block
-              variant="outline"
-              @click="toast.info(t('auth.viaSmsInfo'))"
-            >
-              <Smartphone class="mr-2 h-4 w-4" />
-              {{ t('auth.viaSms') }}
-            </AppButton>
+              <AppButton
+                v-if="hasSmsChannel"
+                type="button"
+                variant="outline"
+                class="h-14 font-bold border-2"
+                @click="toast.info(t('auth.viaSmsInfo'))"
+              >
+                <Smartphone class="mr-2 h-5 w-5 text-blue-500" />
+                SMS
+              </AppButton>
+            </div>
           </div>
 
-          <form class="space-y-4" @submit.prevent="verifyCode()">
-            <AppInput
+          <form class="space-y-6" @submit.prevent="verifyCode()">
+            <AppInputPremium
               v-model="code"
               type="text"
+              input-class="text-center text-2xl tracking-[1em]"
               :label="t('auth.code')"
-              :placeholder="t('auth.enterCode')"
+              :placeholder="'000000'"
               maxlength="6"
             />
-            <AppButton type="submit" block :loading="loading">
+            <AppButton type="submit" block size="lg" class="py-4 font-bold text-lg shadow-glow-emerald" :loading="loading">
               {{ t('auth.verify') }}
             </AppButton>
+            
+            <button 
+              type="button"
+              class="w-full text-center text-xs font-bold uppercase tracking-widest text-primary-emerald hover:underline"
+              @click="step = 'phone'"
+            >
+              Modifier le numéro
+            </button>
           </form>
         </template>
-      </section>
+      </AppCardPremium>
     </div>
   </main>
 </template>

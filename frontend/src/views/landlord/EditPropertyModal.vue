@@ -1,14 +1,12 @@
 <script setup lang="ts">
 /**
  * Modal d'édition complète d'un bien (ARCHITECTURE §2, §5, §7).
- * Permet de modifier : Pays, Ville, Nom du bien, type, adresse, statut, description i18n, images, GPS.
- * Réutilise le même pattern que AddPropertyModal (pays/ville via location.service).
- * @props show, propertyId - bien à éditer
- * @emits close, saved
+ * DESIGN: Ultra-Premium Apple Glass / MallOS.
+ * Navigation: Flexible (toutes les étapes accessibles).
  */
-import { ref, watch, computed, onMounted, defineAsyncComponent } from 'vue'
+import { ref, watch, computed, defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { X, ChevronRight, MapPin } from 'lucide-vue-next'
+import { X, ChevronRight, ChevronLeft, Building2, Map, Camera, Save } from 'lucide-vue-next'
 import { getCountries, getCities, type CountryDto, type CityDto } from '../../services/location.service'
 import { useReferenceStore } from '../../stores/references'
 import { getUploadUrl } from '../../config/api'
@@ -66,7 +64,6 @@ const form = ref({
 })
 const descriptionLangTab = ref<'fr' | 'en'>('fr')
 
-/** Images existantes (url) : on peut modifier rank, is_primary, description ou retirer. */
 interface ExistingImageItem {
   url: string
   previewUrl: string
@@ -75,7 +72,6 @@ interface ExistingImageItem {
   description: Record<string, string>
   _removed?: boolean
 }
-/** Nouvelles images (fichiers) à uploader. */
 interface NewImageItem {
   file: File
   previewUrl: string
@@ -88,10 +84,10 @@ const existingImageItems = ref<ExistingImageItem[]>([])
 const photoFiles = ref<File[]>([])
 const newImageItems = ref<NewImageItem[]>([])
 
-const stepTitles = [
-  { key: 'landlord.stepInfo', icon: MapPin },
-  { key: 'landlord.stepLocation', icon: MapPin },
-  { key: 'landlord.stepDocuments', icon: MapPin },
+const steps = [
+  { id: 1, label: 'landlord.stepInfo', icon: Building2 },
+  { id: 2, label: 'landlord.stepLocation', icon: Map },
+  { id: 3, label: 'landlord.stepDocuments', icon: Camera },
 ]
 
 const step1Valid = computed(() => {
@@ -99,7 +95,6 @@ const step1Valid = computed(() => {
   const nameVal = f.name?.trim() || ''
   return (
     nameVal.length > 0 &&
-    nameVal.length <= 255 &&
     referenceStore.propertyTypes.some((r) => r.code === f.building_type) &&
     typeof f.address === 'string' &&
     f.address.trim().length > 0 &&
@@ -134,14 +129,9 @@ const suggestedMapQuery = computed(() => {
 })
 
 async function loadCountries() {
-  try {
-    countries.value = await getCountries()
-  } catch {
-    countries.value = []
-  }
+  try { countries.value = await getCountries() } catch { countries.value = [] }
 }
 
-/** Charge les villes du pays ; en mode édition, préserve city_id si la ville appartient au pays. */
 async function loadCities(countryId: string, preserveCurrentCity = false) {
   if (!countryId) {
     cities.value = []
@@ -204,13 +194,10 @@ async function loadProperty() {
   }
 }
 
-watch(
-  () => form.value.country_id,
-  (id) => {
-    if (id) loadCities(id, false)
-    else cities.value = []
-  }
-)
+watch(() => form.value.country_id, (id) => {
+  if (id) loadCities(id, false)
+  else cities.value = []
+})
 
 watch(photoFiles, (files) => {
   newImageItems.value.forEach((it) => URL.revokeObjectURL(it.previewUrl))
@@ -226,31 +213,25 @@ watch(photoFiles, (files) => {
     is_primary: existingImageItems.value.filter((x) => !x._removed).length === 0 && i === 0,
     description: { fr: '', en: '' },
   }))
-  if (newImageItems.value.length === 1 && existingImageItems.value.every((x) => x._removed)) {
-    newImageItems.value[0].is_primary = true
-  }
 }, { deep: true })
 
-watch(
-  () => [props.show, props.propertyId] as const,
-  ([show, id]) => {
-    if (show && id) {
-      loadProperty()
-      loadCountries()
-    }
-    if (!show) {
-      errorMessage.value = ''
-      currentStep.value = 1
-    }
-  },
-  { immediate: true }
-)
+watch(() => [props.show, props.propertyId] as const, ([show, id]) => {
+  if (show && id) {
+    loadProperty()
+    loadCountries()
+  }
+  if (!show) {
+    errorMessage.value = ''
+    currentStep.value = 1
+  }
+}, { immediate: true })
 
 function updateExistingItem(index: number, payload: Partial<ExistingImageItem>) {
   const item = existingImageItems.value[index]
   if (!item) return
   if (payload.is_primary !== undefined) {
     existingImageItems.value.forEach((x, i) => { x.is_primary = i === index })
+    newImageItems.value.forEach((x) => { x.is_primary = false })
   }
   Object.assign(item, payload)
 }
@@ -283,7 +264,7 @@ function next() {
 
 function back() {
   if (currentStep.value > 1) currentStep.value--
-  else emit('close')
+  else close()
 }
 
 function close() {
@@ -314,8 +295,7 @@ async function submit() {
       description: (it.description?.fr || it.description?.en) ? it.description : undefined,
     }))
     const allImages = [...existingAsPayload, ...newUploads]
-    const hasPrimary = allImages.some((i) => i.is_primary)
-    if (allImages.length > 0 && !hasPrimary) allImages[0].is_primary = true
+    if (allImages.length > 0 && !allImages.some((i) => i.is_primary)) allImages[0].is_primary = true
 
     const payload: UpdatePropertyPayload = {
       name: form.value.name?.trim() || 'Sans nom',
@@ -323,13 +303,12 @@ async function submit() {
       address: form.value.address.trim(),
       city_id: form.value.city_id,
       status: form.value.status,
-      description:
-        form.value.description?.fr?.trim() || form.value.description?.en?.trim()
-          ? {
-              fr: form.value.description.fr?.trim() || form.value.description.en?.trim() || '',
-              en: form.value.description.en?.trim() || form.value.description.fr?.trim() || '',
-            }
-          : undefined,
+      description: (form.value.description?.fr?.trim() || form.value.description?.en?.trim())
+        ? {
+            fr: form.value.description.fr?.trim() || form.value.description.en?.trim() || '',
+            en: form.value.description.en?.trim() || form.value.description.fr?.trim() || '',
+          }
+        : undefined,
       images: allImages.length > 0 ? allImages : undefined,
     }
     const lat = form.value.gps_latitude !== '' ? Number(form.value.gps_latitude) : undefined
@@ -340,6 +319,7 @@ async function submit() {
     await updateProperty(props.propertyId, payload)
     emit('saved')
     emit('close')
+    toast.success(t('landlord.toast.propertyUpdated'))
   } catch (e) {
     const msg = getApiErrorMessage(e)
     errorMessage.value = msg
@@ -348,196 +328,194 @@ async function submit() {
     submitting.value = false
   }
 }
-
-onMounted(() => {
-  if (props.show) loadCountries()
-})
 </script>
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="show"
-      class="fixed inset-0 z-[75] flex items-center justify-center p-4 bg-black/60"
-      @click.self="close"
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
     >
       <div
-        class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="edit-property-title"
+        v-if="show && propertyId"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md"
+        @click.self="close"
       >
-        <header class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <AppTitle id="edit-property-title" :level="3">{{ t('landlord.editProperty') }}</AppTitle>
-          <button
-            type="button"
-            class="p-2 rounded-lg text-[var(--color-muted)] hover:bg-gray-100 dark:hover:bg-gray-700"
-            :aria-label="t('common.cancel')"
-            @click="close"
-          >
-            <X class="w-5 h-5" />
-          </button>
-        </header>
+        <div
+          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-8xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-300"
+          role="dialog"
+          aria-modal="true"
+        >
+          <!-- Internal Glow Effects -->
+          <div class="absolute -top-[10%] -right-[10%] w-[40%] h-[30%] bg-primary-emerald/10 blur-mesh-glow rounded-full pointer-events-none" />
+          <div class="absolute bottom-[5%] -left-[10%] w-[30%] h-[20%] bg-blue-500/10 blur-mesh-glow rounded-full pointer-events-none" />
 
-        <div v-if="loadingDetail" class="flex items-center justify-center py-12 text-[var(--color-muted)]">
-          {{ t('landlord.loading') }}
-        </div>
-
-        <template v-else>
-          <div class="flex border-b border-gray-200 dark:border-gray-700 px-4 gap-4 py-3">
-            <span
-              v-for="(step, i) in stepTitles"
-              :key="i"
-              :class="[
-                'flex items-center gap-2 text-sm font-medium',
-                currentStep === i + 1 ? 'text-[var(--color-accent)]' : 'text-[var(--color-muted)]',
-              ]"
+          <!-- Header -->
+          <header class="flex items-center justify-between p-8 pb-4 shrink-0 relative z-10">
+            <div class="space-y-1">
+              <AppTitle id="edit-property-title" :level="3" class="text-3xl font-black tracking-tighter">{{ t('landlord.editProperty') }}</AppTitle>
+               <p v-if="property" class="text-xs font-black uppercase tracking-widest-xl text-primary-emerald opacity-70">{{ property.name }}</p>
+            </div>
+            <button
+              type="button"
+              class="w-12 h-12 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-all group"
+              @click="close"
             >
-              {{ t(step.key) }}
-            </span>
+              <X class="w-6 h-6 text-slate-400 group-hover:rotate-90 transition-transform duration-300" />
+            </button>
+          </header>
+
+          <div v-if="loadingDetail" class="flex-1 flex items-center justify-center py-24">
+             <div class="flex flex-col items-center gap-4">
+               <div class="w-16 h-16 border-4 border-primary-emerald/20 border-t-primary-emerald rounded-full animate-spin" />
+               <p class="text-xs font-black uppercase tracking-widest text-slate-400 animate-pulse">{{ t('landlord.loading') }}</p>
+             </div>
           </div>
 
-          <div class="flex-1 overflow-y-auto p-6">
-            <div v-show="currentStep === 1" class="space-y-4">
-              <AppInput v-model="form.name" :label="t('landlord.name')" :placeholder="t('landlord.namePlaceholder')" />
-              <AppSelect
-                v-model="form.building_type"
-                :label="t('landlord.propertyType')"
-                :options="buildingTypeOptions"
-                :placeholder="t('landlord.propertyType')"
-              />
-              <AppInput v-model="form.address" :label="t('landlord.address')" :placeholder="t('landlord.addressPlaceholder')" />
-              <AppSelect
-                v-model="form.country_id"
-                :label="t('landlord.country')"
-                :options="countryOptions"
-                :placeholder="t('landlord.countryPlaceholder')"
-              />
-              <AppSelect
-                v-model="form.city_id"
-                :label="t('landlord.city')"
-                :options="cityOptions"
-                :placeholder="t('landlord.cityPlaceholder')"
-                :disabled="!form.country_id || loadingCities"
-              />
-              <div>
-                <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.status') }}</label>
-                <select
-                  v-model="form.status"
-                  class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
+          <template v-else>
+            <!-- Glass Stepper (Flexible in Edit) -->
+            <div class="px-8 py-4 shrink-0 relative z-10">
+              <div class="flex items-center justify-between bg-black/5 dark:bg-white/5 p-2 rounded-[2rem] border border-white/10">
+                <button
+                  v-for="step in steps"
+                  :key="step.id"
+                  class="flex-1 flex items-center justify-center gap-2 py-3 rounded-3xl transition-all relative overflow-hidden"
+                  :class="currentStep === step.id ? 'bg-white dark:bg-white/10 shadow-glass text-slate-900 dark:text-white' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'"
+                  @click="currentStep = step.id"
                 >
-                  <option v-for="s in referenceStore.propertyStatuses" :key="s.code" :value="s.code">
-                    {{ locale === 'fr' ? s.label_fr : s.label_en || s.label_fr }}
-                  </option>
-                </select>
+                  <component :is="step.icon" :size="18" :class="currentStep === step.id ? 'text-primary-emerald' : ''" />
+                  <span class="text-[10px] font-black uppercase tracking-widest hidden md:inline">{{ t(step.label) }}</span>
+                  <div v-if="currentStep === step.id" class="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-primary-emerald rounded-full" />
+                </button>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-[var(--color-text)] mb-2">{{ t('landlord.description') }}</label>
-                <div class="flex gap-2 mb-2">
-                  <button
-                    type="button"
-                    :class="['px-3 py-1.5 rounded-lg text-sm font-medium', descriptionLangTab === 'fr' ? 'bg-[var(--color-accent)] text-white' : 'bg-gray-100 dark:bg-gray-700 text-[var(--color-text)]']"
-                    @click="descriptionLangTab = 'fr'"
-                  >
-                    {{ t('landlord.langFr') }}
-                  </button>
-                  <button
-                    type="button"
-                    :class="['px-3 py-1.5 rounded-lg text-sm font-medium', descriptionLangTab === 'en' ? 'bg-[var(--color-accent)] text-white' : 'bg-gray-100 dark:bg-gray-700 text-[var(--color-text)]']"
-                    @click="descriptionLangTab = 'en'"
-                  >
-                    {{ t('landlord.langEn') }}
-                  </button>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto p-8 pt-4 custom-scrollbar relative z-10">
+              <!-- Step 1: Info -->
+              <div v-if="currentStep === 1" class="space-y-8 animate-in slide-in-from-right-10 duration-500">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <AppInput v-model="form.name" :label="t('landlord.name')" :placeholder="t('landlord.namePlaceholder')" />
+                  <AppSelect v-model="form.building_type" :label="t('landlord.propertyType')" :options="buildingTypeOptions" />
                 </div>
-                <textarea
-                  v-if="descriptionLangTab === 'fr'"
-                  v-model="form.description.fr"
-                  rows="3"
-                  class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
-                  :placeholder="t('landlord.descriptionFr')"
-                />
-                <textarea
-                  v-else
-                  v-model="form.description.en"
-                  rows="3"
-                  class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800"
-                  :placeholder="t('landlord.descriptionEn')"
-                />
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div class="md:col-span-2">
+                      <AppInput v-model="form.address" :label="t('landlord.address')" :placeholder="t('landlord.addressPlaceholder')" />
+                  </div>
+                  <AppSelect v-model="form.status" :label="t('landlord.status')" :options="referenceStore.propertyStatuses.map(s => ({ value: s.code, label: locale === 'fr' ? s.label_fr : s.label_en || s.label_fr }))" />
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <AppSelect v-model="form.country_id" :label="t('landlord.country')" :options="countryOptions" />
+                  <AppSelect v-model="form.city_id" :label="t('landlord.city')" :options="cityOptions" :disabled="!form.country_id || loadingCities" />
+                </div>
+
+                <div class="space-y-4">
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{{ t('landlord.description') }}</label>
+                    <div class="p-2 bg-black/5 dark:bg-white/5 rounded-2xl flex gap-1 w-fit">
+                      <button v-for="lang in ['fr', 'en'] as const" :key="lang" class="px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all" :class="descriptionLangTab === lang ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-sm' : 'text-slate-400'" @click="descriptionLangTab = lang">
+                        {{ lang }}
+                      </button>
+                    </div>
+                    <textarea v-model="form.description[descriptionLangTab]" rows="3" class="w-full p-6 rounded-4xl bg-white/40 dark:bg-white/5 border border-white/10 focus:border-primary-emerald/50 outline-none transition-all text-sm font-bold placeholder:text-slate-400" :placeholder="descriptionLangTab === 'fr' ? t('landlord.descriptionFr') : t('landlord.descriptionEn')" />
+                </div>
+              </div>
+
+              <!-- Step 2: Map -->
+              <div v-if="currentStep === 2" class="space-y-6 animate-in slide-in-from-right-10 duration-500">
+                <div class="rounded-5xl overflow-hidden border border-white/10 shadow-glass relative group">
+                    <MapLocationPicker
+                      :latitude="form.gps_latitude"
+                      :longitude="form.gps_longitude"
+                      :suggested-query="suggestedMapQuery"
+                      :suggested-hint-text="suggestedMapQuery ? t('landlord.mapSuggestedHint') : ''"
+                      height="400px"
+                      @update:latitude="(v) => (form.gps_latitude = v)"
+                      @update:longitude="(v) => (form.gps_longitude = v)"
+                    />
+                </div>
+              </div>
+
+              <!-- Step 3: Photos -->
+              <div v-if="currentStep === 3" class="space-y-8 animate-in slide-in-from-right-10 duration-500">
+                <div v-if="existingImageItems.filter(x => !x._removed).length" class="space-y-4">
+                  <p class="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Photos existantes</p>
+                  <div class="grid grid-cols-1 gap-4">
+                      <ImageWithMeta
+                        v-for="(item, idx) in existingImageItems"
+                        v-show="!item._removed"
+                        :key="'ex-' + idx"
+                        :item="item"
+                        :index="idx"
+                        :can-remove="true"
+                        @update:item="(p) => updateExistingItem(idx, p)"
+                        @remove="removeExistingItem(idx)"
+                      />
+                  </div>
+                </div>
+
+                <AppUpload :label="t('landlord.stepDocuments')" :max-files="10" @update:files="photoFiles = $event" />
+                
+                <div v-if="newImageItems.length" class="space-y-4 mt-8">
+                  <p class="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Nouvelles photos</p>
+                  <div class="grid grid-cols-1 gap-4">
+                      <ImageWithMeta
+                        v-for="(item, idx) in newImageItems"
+                        :key="'new-' + idx"
+                        :item="item"
+                        :index="idx"
+                        :can-remove="true"
+                        @update:item="(p) => updateNewItem(idx, p)"
+                        @remove="removeNewItem(idx)"
+                      />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div v-show="currentStep === 2" class="space-y-4">
-              <label class="block text-sm font-medium text-[var(--color-text)]">{{ t('landlord.mapLocationTitle') }}</label>
-              <p class="text-sm text-[var(--color-muted)]">
-                {{ t('landlord.mapStep2Guide', { example: suggestedMapQuery || t('landlord.mapStep2Example') }) }}
-              </p>
-              <MapLocationPicker
-                v-if="currentStep === 2"
-                :latitude="form.gps_latitude"
-                :longitude="form.gps_longitude"
-                :suggested-query="suggestedMapQuery"
-                :suggested-hint-text="suggestedMapQuery ? t('landlord.mapSuggestedHint') : ''"
-                height="320px"
-                :placeholder="t('landlord.mapSearchPlaceholder')"
-                :search-button-label="t('landlord.mapSearch')"
-                :clear-label="t('landlord.mapClear')"
-                :hint-text="t('landlord.mapClickHint')"
-                :error-no-results="t('landlord.mapErrorNoResults')"
-                :error-search="t('landlord.mapErrorSearch')"
-                @update:latitude="(v) => (form.gps_latitude = v)"
-                @update:longitude="(v) => (form.gps_longitude = v)"
-              />
-            </div>
-
-            <div v-show="currentStep === 3" class="space-y-4">
-              <p class="text-sm font-medium text-[var(--color-text)]">{{ t('landlord.stepDocuments') }}</p>
-              <div v-if="existingImageItems.filter((x) => !x._removed).length" class="space-y-3">
-                <p class="text-xs text-[var(--color-muted)]">{{ t('landlord.imageDescription') }} — existantes</p>
-                <ImageWithMeta
-                  v-for="(item, idx) in existingImageItems"
-                  v-show="!item._removed"
-                  :key="'ex-' + idx"
-                  :item="item"
-                  :index="idx"
-                  :can-remove="true"
-                  @update:item="(p) => updateExistingItem(idx, p)"
-                  @remove="removeExistingItem(idx)"
-                />
+            <!-- Footer -->
+            <footer class="p-8 pt-4 flex items-center justify-between shrink-0 relative z-10 bg-white/30 dark:bg-white/[0.02] backdrop-blur-xl border-t border-white/10">
+              <AppButton variant="ghost" size="lg" class="h-16 rounded-4xl font-black text-slate-500" @click="back">
+                <ChevronLeft v-if="currentStep > 1" class="mr-2" />
+                {{ currentStep === 1 ? t('common.cancel') : t('landlord.back') }}
+              </AppButton>
+              
+              <div class="flex gap-4 flex-1 ml-4">
+                <AppButton 
+                  variant="primary" 
+                  size="lg" 
+                  class="h-16 flex-1 rounded-4xl font-black text-lg tracking-tighter shadow-emerald-500/20 shadow-lg"
+                  :loading="submitting" 
+                  :disabled="!canNext" 
+                  @click="next"
+                >
+                  <Save v-if="currentStep === totalSteps" :size="20" class="mr-2" />
+                  {{ currentStep === totalSteps ? t('landlord.assets.save') : t('landlord.next') }}
+                  <ChevronRight v-if="currentStep < totalSteps" class="ml-2" />
+                </AppButton>
               </div>
-              <AppUpload :max-files="10" @update:files="photoFiles = $event" />
-              <div v-if="newImageItems.length" class="space-y-3">
-                <p class="text-xs text-[var(--color-muted)]">Nouvelles images</p>
-                <ImageWithMeta
-                  v-for="(item, idx) in newImageItems"
-                  :key="'new-' + idx"
-                  :item="item"
-                  :index="existingImageItems.filter((x) => !x._removed).length + idx"
-                  :can-remove="true"
-                  @update:item="(p) => updateNewItem(idx, p)"
-                  @remove="removeNewItem(idx)"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div v-if="errorMessage" class="px-6 py-2 text-sm text-red-600">{{ errorMessage }}</div>
-
-          <footer class="flex items-center justify-between gap-4 p-4 border-t border-gray-200 dark:border-gray-700">
-            <AppButton variant="ghost" @click="back">
-              {{ currentStep === 1 ? t('common.cancel') : t('landlord.back') }}
-            </AppButton>
-            <AppButton
-              variant="primary"
-              :loading="submitting && currentStep === totalSteps"
-              :disabled="!canNext"
-              @click="next"
-            >
-              {{ currentStep === totalSteps ? t('landlord.assets.save') : t('landlord.next') }}
-              <ChevronRight class="w-4 h-4" />
-            </AppButton>
-          </footer>
-        </template>
+            </footer>
+          </template>
+        </div>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.1);
+  border-radius: 10px;
+}
+</style>

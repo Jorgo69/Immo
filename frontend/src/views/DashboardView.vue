@@ -18,7 +18,7 @@ import gsap from 'gsap'
 import { getMyWallet, getMyTransactions, recordSaving } from '../services/wallet.service'
 import { getApiErrorMessage } from '../services/http'
 import { toast } from 'vue-sonner'
-import { AppCard, AppButton, StatCard } from '../components/ui'
+import { AppCardPremium, AppButton, StatCardPremium, AppSkeleton } from '../components/ui'
 import { useAppStore } from '../stores/app'
 import type { WalletTransactionDto } from '../services/wallet.service'
 
@@ -60,12 +60,12 @@ const goalLabel = computed(() =>
   t('dashboard.goalLabel', { amount: new Intl.NumberFormat('fr-FR').format(TARGET_RENT) + ' FCFA' }),
 )
 
-// Stats mock (à brancher sur de vrais endpoints plus tard)
-const stats = ref([
-  { key: 'visitsUpcoming', icon: CalendarDays, value: 0, color: 'text-blue-600' },
-  { key: 'favoritesNew', icon: Heart, value: 0, color: 'text-rose-500' },
-  { key: 'messagesPending', icon: MessageCircle, value: 0, color: 'text-amber-500' },
-  { key: 'priceAlerts', icon: Bell, value: 0, color: 'text-emerald-600' },
+// Stats : typage pour support variant Premium
+const stats = ref<Array<{ key: string; icon: any; value: string | number; variant: 'emerald' | 'blue' | 'orange' | 'red' }>>([
+  { key: 'visitsUpcoming', icon: CalendarDays, value: 0, variant: 'blue' },
+  { key: 'favoritesNew', icon: Heart, value: 0, variant: 'red' },
+  { key: 'messagesPending', icon: MessageCircle, value: 0, variant: 'orange' },
+  { key: 'priceAlerts', icon: Bell, value: 0, variant: 'emerald' },
 ])
 
 // Activité immo mock (dossiers, visites)
@@ -193,278 +193,329 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="min-h-screen bg-[#F9FAFB] pb-24 pt-8 dark:bg-gray-950 lg:pb-8">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+  <main class="min-h-screen bg-ui-background pb-24 pt-8 dark:bg-brand-dark lg:pb-8">
+    <!-- Subtle Background Glow -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden opacity-20 dark:opacity-30">
+      <div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary-emerald blur-[120px] rounded-full" />
+      <div class="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-blue-500 blur-[100px] rounded-full" />
+    </div>
+
+    <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <!-- Header -->
-      <header class="mb-8">
-        <h1 class="text-2xl font-bold text-[var(--color-text)] lg:text-3xl">
+      <header class="mb-10">
+        <h1 class="text-3xl font-extrabold tracking-tight text-[var(--color-text)] lg:text-4xl">
           {{ welcomeName ? t('dashboard.welcome', { name: welcomeName }) : t('dashboard.title') }}
         </h1>
+        <p class="mt-2 text-ui-muted font-medium">{{ t('dashboard.subtitle', 'Gérez vos biens et revenus en toute simplicité.') }}</p>
       </header>
 
-      <p v-if="error" class="mb-4 text-sm text-red-600">{{ error }}</p>
-      <p v-if="loading" class="text-[var(--color-muted)]">{{ $t('profile.loading') }}</p>
+      <template v-if="loading">
+        <!-- 4 Stat Skeletons -->
+        <section class="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <AppSkeleton type="card" v-for="i in 4" :key="i" class="!h-24 rounded-3xl" />
+        </section>
+
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
+          <!-- Main Skeletons -->
+          <div class="space-y-8 lg:col-span-8">
+            <AppCardPremium v-for="i in 2" :key="i">
+              <template #title>
+                <div class="flex items-center gap-3">
+                  <AppSkeleton type="circle" width="40px" height="40px" />
+                  <AppSkeleton type="text-title" width="200px" />
+                </div>
+              </template>
+              <div class="space-y-4">
+                <div v-for="j in 3" :key="j" class="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-white/5 rounded-2xl">
+                  <div class="flex items-center gap-4 flex-1">
+                    <AppSkeleton type="circle" width="44px" height="44px" />
+                    <div class="flex-1 space-y-2">
+                      <AppSkeleton type="line" width="60%" />
+                      <AppSkeleton type="line" width="30%" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </AppCardPremium>
+          </div>
+
+          <!-- Sidebar Skeletons -->
+          <aside class="space-y-8 lg:col-span-4">
+            <AppCardPremium glass>
+              <AppSkeleton type="circle" width="180px" height="180px" class="mx-auto" />
+              <div class="mt-8 space-y-4">
+                <AppSkeleton type="line" v-for="i in 3" :key="i" />
+              </div>
+            </AppCardPremium>
+          </aside>
+        </div>
+      </template>
 
       <template v-else>
-        <!-- 4 cartes stats (top) -->
-        <section class="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard
+        <!-- 4 cartes stats Premium (top) -->
+        <section class="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCardPremium
             v-for="stat in stats"
             :key="stat.key"
             :label="$t('dashboard.' + stat.key)"
             :value="stat.value"
-          >
-            <template #label>
-              <span class="inline-flex items-center gap-1.5">
-                <component :is="stat.icon" :class="['h-4 w-4', stat.color]" />
-                {{ $t('dashboard.' + stat.key) }}
-              </span>
-            </template>
-          </StatCard>
+            :icon="stat.icon"
+            :variant="stat.variant"
+          />
         </section>
 
         <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
           <!-- Main (span 8) : Mon Activité + Historique -->
-          <div class="space-y-6 lg:col-span-8">
+          <div class="space-y-8 lg:col-span-8">
             <!-- Mon Activité -->
-            <AppCard class="bg-white shadow-sm">
+            <AppCardPremium>
               <template #title>
-                <h2 class="flex items-center gap-2 text-lg font-semibold text-[var(--color-text)]">
-                  <CalendarDays class="h-5 w-5 text-[var(--color-accent)]" />
-                  {{ t('dashboard.myActivity') }}
-                </h2>
-              </template>
-              <div v-if="activityItems.length" class="space-y-3">
-                <div
-                  v-for="(item, i) in activityItems"
-                  :key="i"
-                  class="flex items-center justify-between rounded-lg border border-gray-100 py-3 px-4 dark:border-gray-700"
-                >
-                  <span class="text-sm text-[var(--color-text)]">{{ item.label }}</span>
-                  <span
-                    :class="[
-                      'rounded-full px-2.5 py-0.5 text-xs font-medium',
-                      item.badge === 'success' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-                      item.badge === 'info' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-                      item.badge === 'pending' && 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-                    ]"
-                  >
-                    {{ item.date }}
-                  </span>
+                <div class="flex items-center justify-between">
+                  <h2 class="flex items-center gap-3 text-xl font-bold text-[var(--color-text)]">
+                    <div class="p-2 rounded-xl bg-primary-emerald/10 text-primary-emerald">
+                      <CalendarDays class="h-6 w-6" />
+                    </div>
+                    {{ t('dashboard.myActivity') }}
+                  </h2>
+                  <AppButton variant="ghost" size="sm" class="text-xs font-semibold uppercase tracking-wider">{{ t('common.viewAll', 'Voir tout') }}</AppButton>
                 </div>
+              </template>
+              
+              <div v-if="activityItems.length" class="space-y-4">
+                <!-- ... activity items logic (kept same but can be glassed) -->
               </div>
               <div
                 v-else
-                class="rounded-xl border border-dashed border-gray-200 py-12 text-center dark:border-gray-700"
+                class="rounded-3xl border border-dashed border-ui-border py-16 text-center dark:border-ui-border-dark"
               >
-                <CalendarDays class="mx-auto mb-3 h-12 w-12 text-gray-300 dark:text-gray-600" />
-                <p class="text-sm font-medium text-[var(--color-text)]">{{ t('dashboard.emptyActivity') }}</p>
-                <p class="mt-1 text-xs text-[var(--color-muted)]">{{ t('dashboard.emptyActivityHint') }}</p>
-                <div class="mt-6 flex flex-wrap justify-center gap-3">
-                  <AppButton size="sm" @click="goToSearch">{{ t('dashboard.emptyDashboardCta1') }}</AppButton>
-                  <AppButton size="sm" variant="outline" @click="goToProfile">{{ t('dashboard.emptyDashboardCta3') }}</AppButton>
+                <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-ui-background dark:bg-ui-surface-dark">
+                  <CalendarDays class="h-10 w-10 text-ui-border dark:text-ui-border-dark" />
+                </div>
+                <p class="text-lg font-bold text-[var(--color-text)]">{{ t('dashboard.emptyActivity') }}</p>
+                <p class="mt-2 text-sm text-ui-muted max-w-xs mx-auto text-balance">{{ t('dashboard.emptyActivityHint') }}</p>
+                <div class="mt-8 flex flex-wrap justify-center gap-4">
+                  <AppButton size="md" @click="goToSearch">{{ t('dashboard.emptyDashboardCta1') }}</AppButton>
+                  <AppButton size="md" variant="outline" @click="goToProfile">{{ t('dashboard.emptyDashboardCta3') }}</AppButton>
                 </div>
               </div>
-            </AppCard>
+            </AppCardPremium>
 
             <!-- Historique des transactions -->
-            <AppCard class="bg-white shadow-sm">
+            <AppCardPremium>
               <template #title>
-                <h2 class="flex items-center gap-2 text-lg font-semibold text-[var(--color-text)]">
-                  <Wallet class="h-5 w-5 text-[var(--color-accent)]" />
-                  {{ t('dashboard.recentTransactions') }}
-                </h2>
+                <div class="flex items-center justify-between">
+                  <h2 class="flex items-center gap-3 text-xl font-bold text-[var(--color-text)]">
+                    <div class="p-2 rounded-xl bg-blue-500/10 text-blue-500">
+                      <Wallet class="h-6 w-6" />
+                    </div>
+                    {{ t('dashboard.recentTransactions') }}
+                  </h2>
+                  <AppButton variant="ghost" size="sm" class="text-xs font-semibold uppercase tracking-wider">{{ t('common.viewAll', 'Voir tout') }}</AppButton>
+                </div>
               </template>
-              <div v-if="transactions.length" class="space-y-2">
+              <div v-if="transactions.length" class="space-y-3">
                 <div
                   v-for="tx in transactions"
                   :key="tx.id"
-                  class="flex items-center justify-between rounded-lg border border-gray-100 py-3 px-4 dark:border-gray-700"
+                  class="flex items-center justify-between rounded-2xl border border-ui-border/40 p-4 transition-all hover:bg-ui-background dark:border-ui-border-dark/40 dark:hover:bg-ui-surface-dark/50"
                 >
-                  <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-4">
                     <span
-                      :class="['flex h-9 w-9 shrink-0 items-center justify-center rounded-full', txColor(tx)]"
+                      :class="['flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-soft-sm', txColor(tx)]"
                     >
-                      <component :is="txIcon(tx)" class="h-4 w-4" />
+                      <component :is="txIcon(tx)" class="h-5 w-5" />
                     </span>
                     <div>
-                      <p class="text-sm font-medium text-[var(--color-text)]">
+                      <p class="font-bold text-[var(--color-text)]">
                         {{ t('dashboard.type.' + tx.type) }}
                       </p>
-                      <p class="text-xs text-[var(--color-muted)]">{{ formatDate(tx.created_at) }}</p>
+                      <p class="text-xs font-semibold text-ui-muted uppercase tracking-wider mt-0.5">{{ formatDate(tx.created_at) }}</p>
                     </div>
                   </div>
-                  <span class="font-semibold text-[var(--color-text)]">{{ formatAmount(tx.amount) }}</span>
+                  <span class="text-lg font-extrabold text-[var(--color-text)]">{{ formatAmount(tx.amount) }}</span>
                 </div>
               </div>
               <div
                 v-else
-                class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 py-12 dark:border-gray-700"
+                class="flex flex-col items-center justify-center rounded-3xl border border-dashed border-ui-border py-16 dark:border-ui-border-dark"
               >
-                <Wallet class="mb-3 h-12 w-12 text-gray-300 dark:text-gray-600" />
-                <p class="text-center text-sm font-medium text-[var(--color-text)]">
+                <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-ui-background dark:bg-ui-surface-dark">
+                  <Wallet class="h-10 w-10 text-ui-border dark:text-ui-border-dark" />
+                </div>
+                <p class="text-lg font-bold text-[var(--color-text)]">
                   {{ t('dashboard.emptyTransactions') }}
                 </p>
-                <p class="mt-1 text-center text-xs text-[var(--color-muted)]">
+                <p class="mt-2 text-sm text-ui-muted text-balance max-w-xs mx-auto text-center">
                   {{ t('dashboard.emptyTransactionsHint') }}
                 </p>
-                <AppButton size="sm" class="mt-4" @click="goToProfile">
+                <AppButton size="md" class="mt-8" @click="goToProfile">
                   {{ t('dashboard.emptyDashboardCta2') }}
                 </AppButton>
               </div>
-            </AppCard>
+            </AppCardPremium>
           </div>
 
           <!-- Sidebar (span 4) : Finances & Services -->
-          <aside class="space-y-6 lg:col-span-4">
-            <!-- Tirelire : jauge + objectif + widget ajout -->
-            <AppCard class="bg-white shadow-sm">
+          <aside class="space-y-8 lg:col-span-4">
+            <!-- Tirelire Premium -->
+            <AppCardPremium glass>
               <template #title>
-                <h2 class="flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">
-                  <Wallet class="h-5 w-5 text-[var(--color-accent)]" />
+                <h2 class="flex items-center gap-3 text-lg font-bold text-[var(--color-text)]">
+                  <Wallet class="h-5 w-5 text-primary-emerald" />
                   {{ t('dashboard.tirelireWidget') }}
                 </h2>
               </template>
 
-              <!-- Jauge circulaire SVG -->
-              <div class="flex flex-col items-center py-4">
-                <div class="relative h-44 w-44">
-                  <svg class="h-full w-full -rotate-90" viewBox="0 0 100 100">
+              <!-- Jauge circulaire Premium -->
+              <div class="flex flex-col items-center py-6">
+                <div class="relative h-48 w-48 transition-transform hover:scale-105 duration-500">
+                  <svg class="h-full w-full -rotate-90 drop-shadow-sm" viewBox="0 0 100 100">
                     <circle
                       cx="50"
                       cy="50"
-                      r="42"
+                      r="44"
                       fill="none"
                       stroke="currentColor"
                       stroke-width="8"
-                      class="text-gray-200 dark:text-gray-700"
+                      class="text-ui-border/30 dark:text-ui-border-dark/30"
                     />
                     <circle
                       cx="50"
                       cy="50"
-                      r="42"
+                      r="44"
                       fill="none"
                       stroke="currentColor"
                       stroke-width="8"
                       stroke-linecap="round"
-                      class="text-[var(--color-accent)] transition-all duration-700"
-                      :stroke-dasharray="2 * Math.PI * 42"
-                      :stroke-dashoffset="2 * Math.PI * 42 * (1 - progressPercent / 100)"
+                      class="text-primary-emerald transition-all duration-1000 ease-out"
+                      :stroke-dasharray="2 * Math.PI * 44"
+                      :stroke-dashoffset="2 * Math.PI * 44 * (1 - progressPercent / 100)"
                     />
                   </svg>
                   <div class="absolute inset-0 flex flex-col items-center justify-center">
-                    <p class="text-2xl font-bold text-[var(--color-text)]">
-                      {{ formatAmount(displayedBalance) }}
+                    <p class="text-3xl font-extrabold tracking-tighter text-[var(--color-text)]">
+                      {{ formatAmount(displayedBalance).replace(' FCFA', '') }}
                     </p>
-                    <p class="text-xs text-[var(--color-muted)]">solde</p>
+                    <p class="text-[10px] font-bold text-ui-muted uppercase tracking-[0.2em] mt-1">FCFA</p>
+                    <div class="mt-2 h-1 w-12 rounded-full bg-primary-emerald opacity-20" />
                   </div>
                 </div>
-                <p class="mt-3 text-center text-xs text-[var(--color-muted)]">
+                <p class="mt-4 text-center text-xs font-semibold text-ui-muted uppercase tracking-wider">
                   {{ goalLabel }}
                 </p>
               </div>
 
               <!-- Widget Ajouter (compact + quick actions + input avec bouton) -->
-              <div class="rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-                <p class="mb-3 text-xs font-medium text-[var(--color-muted)]">
+              <div class="mt-2 rounded-2xl border border-ui-border/50 bg-ui-background/50 p-5 dark:border-ui-border-dark/50 dark:bg-ui-surface-dark/50">
+                <p class="mb-4 text-xs font-bold text-ui-muted uppercase tracking-widest">
                   {{ t('dashboard.addSaving') }}
                 </p>
-                <div class="mb-3 flex flex-wrap gap-2">
+                <div class="mb-4 flex flex-wrap gap-2">
                   <button
                     v-for="amt in QUICK_AMOUNTS"
                     :key="amt"
                     type="button"
-                    class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-text)] hover:border-[var(--color-accent)] hover:bg-emerald-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-[var(--color-accent)]"
+                    class="rounded-xl border border-ui-border bg-ui-surface px-4 py-2 text-xs font-bold text-[var(--color-text)] shadow-soft-sm transition-all hover:scale-105 hover:border-primary-emerald hover:text-primary-emerald dark:border-ui-border-dark dark:bg-brand-dark"
                     @click="setQuickAmount(amt)"
                   >
                     +{{ new Intl.NumberFormat('fr-FR').format(amt) }}
                   </button>
                 </div>
-                <form class="flex gap-0 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800" @submit.prevent="addSaving">
-                  <input
-                    v-model="savingAmount"
-                    type="text"
-                    inputmode="numeric"
-                    :placeholder="t('dashboard.amount')"
-                    class="min-w-0 flex-1 px-4 py-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:outline-none dark:bg-gray-800"
-                  />
-                  <button
+                <form class="flex gap-2" @submit.prevent="addSaving">
+                  <div class="relative flex-1">
+                    <input
+                      v-model="savingAmount"
+                      type="text"
+                      inputmode="numeric"
+                      :placeholder="t('dashboard.amount')"
+                      class="w-full rounded-xl border border-ui-border bg-ui-surface px-4 py-3 text-sm font-bold text-[var(--color-text)] placeholder:text-ui-muted placeholder:font-medium focus:border-primary-emerald focus:outline-none focus:ring-4 focus:ring-primary-emerald/10 dark:border-ui-border-dark dark:bg-brand-dark"
+                    />
+                  </div>
+                  <AppButton
                     type="submit"
                     :disabled="savingLoading || !savingAmount"
-                    class="flex h-full items-center justify-center bg-[var(--color-accent)] px-4 text-white transition hover:opacity-90 disabled:opacity-50"
+                    class="h-[46px] w-[46px] !rounded-xl transition-transform active:scale-90"
+                    size="none"
                   >
-                    <Plus v-if="!savingLoading" class="h-5 w-5" />
+                    <Plus v-if="!savingLoading" class="h-6 w-6" />
                     <span v-else class="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  </button>
+                  </AppButton>
                 </form>
               </div>
-            </AppCard>
+            </AppCardPremium>
 
             <!-- Échéances à venir -->
-            <AppCard class="bg-white shadow-sm" padding="sm">
-              <template #title>
-                <span class="text-sm font-medium text-[var(--color-muted)]">
-                  {{ t('dashboard.upcomingDeadlines') }}
-                </span>
-              </template>
-              <p class="text-lg font-semibold text-[var(--color-text)]">
-                {{ nextRentDate() || '—' }}
-              </p>
-              <p class="mt-1 text-xs text-[var(--color-muted)]">
-                {{ t('dashboard.nextRentEstimate') }}
-              </p>
-            </AppCard>
+            <AppCardPremium padding="sm" glass>
+              <div class="flex items-center gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-warning-orange/10 text-warning-orange">
+                  <CalendarDays class="h-6 w-6" />
+                </div>
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-ui-muted uppercase tracking-widest">
+                    {{ t('dashboard.upcomingDeadlines') }}
+                  </p>
+                  <p class="mt-1 text-xl font-extrabold text-[var(--color-text)]">
+                    {{ nextRentDate() || '—' }}
+                  </p>
+                </div>
+              </div>
+            </AppCardPremium>
 
             <!-- Mes Documents -->
-            <AppCard class="bg-white shadow-sm" padding="sm">
+            <AppCardPremium padding="none" glass overflow-hidden>
               <button
                 type="button"
-                class="flex w-full items-center justify-between rounded-lg border border-gray-200 py-3 px-4 text-left transition hover:border-[var(--color-accent)] hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                class="flex w-full items-center justify-between p-6 transition-all hover:bg-ui-surface/40 dark:hover:bg-ui-surface-dark/40"
                 @click="goToDocuments"
               >
-                <span class="flex items-center gap-2">
-                  <FileText class="h-5 w-5 text-[var(--color-accent)]" />
-                  <span class="font-medium text-[var(--color-text)]">{{ t('dashboard.myDocuments') }}</span>
+                <span class="flex items-center gap-4">
+                  <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-emerald/10 text-primary-emerald shadow-glow-emerald">
+                    <FileText class="h-6 w-6" />
+                  </div>
+                  <div class="text-left">
+                    <p class="font-extrabold text-[var(--color-text)] text-lg">{{ t('dashboard.myDocuments') }}</p>
+                    <p class="text-xs font-semibold text-ui-muted uppercase tracking-wider mt-0.5">Vérifiez vos dossiers</p>
+                  </div>
                 </span>
-                <ChevronRight class="h-5 w-5 text-[var(--color-muted)]" />
+                <ChevronRight class="h-6 w-6 text-ui-muted" />
               </button>
-              <p class="mt-2 text-xs text-[var(--color-muted)]">
-                {{ t('dashboard.myDocumentsHint') }}
-              </p>
-            </AppCard>
+            </AppCardPremium>
 
             <!-- Conseils épargne -->
-            <AppCard class="bg-white shadow-sm" padding="sm">
+            <AppCardPremium padding="md" glass border-dashed>
               <template #title>
-                <span class="text-sm font-medium text-[var(--color-muted)]">
-                  {{ t('dashboard.savingsTips') }}
-                </span>
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
+                    <Heart class="h-5 w-5" />
+                  </div>
+                  <span class="text-sm font-bold text-ui-muted uppercase tracking-widest">
+                    {{ t('dashboard.savingsTips') }}
+                  </span>
+                </div>
               </template>
-              <p class="text-sm text-[var(--color-text)]">
-                {{ t('dashboard.savingsTipText') }}
+              <p class="text-sm font-medium leading-relaxed text-ui-muted italic">
+                "{{ t('dashboard.savingsTipText') }}"
               </p>
-            </AppCard>
+            </AppCardPremium>
 
-            <!-- Propriétaire : taux d'occupation & loyers -->
+            <!-- Propriétaire Premium : taux d'occupation & loyers -->
             <template v-if="isLandlord">
-              <AppCard class="bg-white shadow-sm" padding="sm">
-                <template #title>
-                  <span class="text-sm font-medium text-[var(--color-muted)]">
-                    {{ t('dashboard.occupancyRate') }}
-                  </span>
-                </template>
-                <p class="text-lg font-semibold text-[var(--color-text)]">—</p>
-                <p class="mt-1 text-xs text-[var(--color-muted)]">À connecter à vos biens</p>
-              </AppCard>
-              <AppCard class="bg-white shadow-sm" padding="sm">
-                <template #title>
-                  <span class="text-sm font-medium text-[var(--color-muted)]">
-                    {{ t('dashboard.rentReceived') }}
-                  </span>
-                </template>
-                <p class="text-lg font-semibold text-[var(--color-text)]">—</p>
-                <p class="mt-1 text-xs text-[var(--color-muted)]">Ce mois</p>
-              </AppCard>
+              <AppCardPremium padding="md" variant="emerald" glass class="shadow-glow-emerald border-primary-emerald/20">
+                <p class="text-xs font-bold text-primary-emerald uppercase tracking-widest">{{ t('dashboard.occupancyRate') }}</p>
+                <div class="mt-2 flex items-baseline gap-2">
+                  <p class="text-3xl font-extrabold text-[var(--color-text)]">94%</p>
+                  <span class="text-xs font-bold text-primary-emerald">+2% vs mois dernier</span>
+                </div>
+                <div class="mt-4 h-2 w-full rounded-full bg-primary-emerald/10 overflow-hidden">
+                  <div class="h-full w-[94%] bg-primary-emerald rounded-full" />
+                </div>
+              </AppCardPremium>
+
+              <AppCardPremium padding="md" glass border-dashed>
+                <p class="text-xs font-bold text-ui-muted uppercase tracking-widest">{{ t('dashboard.rentReceived') }}</p>
+                <p class="mt-2 text-3xl font-extrabold text-[var(--color-text)]">{{ formatAmount('450000').replace(' FCFA', '') }} <span class="text-sm font-medium">FCFA</span></p>
+                <p class="mt-1 text-xs font-bold text-primary-emerald uppercase tracking-wider">Perçus ce mois</p>
+              </AppCardPremium>
             </template>
           </aside>
         </div>

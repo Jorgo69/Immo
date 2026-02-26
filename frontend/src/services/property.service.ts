@@ -31,6 +31,8 @@ export interface PropertyListItemDto {
   title?: string
   /** @deprecated Utiliser units[0].price */
   price_monthly?: string
+  /** Date de disponibilité pour le statut 'coming_soon'. */
+  available_from?: string | null
 }
 
 export interface PropertyDetailDto {
@@ -61,6 +63,8 @@ export interface PropertyDetailDto {
   district?: string | null
   address_details?: string | null
   description_translations?: Record<string, string> | null
+  /** Date de disponibilité pour le statut 'coming_soon'. */
+  available_from?: string | null
 }
 
 /** Alias pour compatibilité (ancien Room = Unit). */
@@ -307,6 +311,7 @@ export interface UpdatePropertyPayload {
   description?: Record<string, string>
   images?: PropertyImageItemDto[]
   status?: string
+  available_from?: string | null
 }
 
 export async function updateProperty(id: string, payload: UpdatePropertyPayload) {

@@ -1,6 +1,27 @@
 {
-  "app": { "name": "Immo Bénin", "tagline": "Location sereine, paiement en toute confiance", "offline": "Vous êtes hors ligne. Certaines fonctionnalités peuvent être limitées." },
-  "nav": { "home": "Accueil", "homePro": "Accueil", "auth": "Connexion", "search": "Recherche", "reels": "Découvrir", "dashboard": "Tableau de bord", "admin": "Dashboard", "profile": "Mon compte", "logout": "Déconnexion", "themeLight": "Passer en mode clair", "themeDark": "Passer en mode sombre", "explorer": "Explorer", "favorites": "Favoris", "map": "Carte", "ai": "IA", "devenirLandlord": "Devenir Landlord" },
+  "app": {
+    "name": "Immo Bénin",
+    "tagline": "Location sereine, paiement en toute confiance",
+    "offline": "Vous êtes hors ligne. Certaines fonctionnalités peuvent être limitées."
+  },
+  "nav": {
+    "home": "Accueil",
+    "homePro": "Accueil",
+    "auth": "Connexion",
+    "search": "Recherche",
+    "reels": "Découvrir",
+    "dashboard": "Tableau de bord",
+    "admin": "Dashboard",
+    "profile": "Mon compte",
+    "logout": "Déconnexion",
+    "themeLight": "Passer en mode clair",
+    "themeDark": "Passer en mode sombre",
+    "explorer": "Explorer",
+    "favorites": "Favoris",
+    "map": "Carte",
+    "ai": "IA",
+    "devenirLandlord": "Devenir Landlord"
+  },
   "common": {
     "cancel": "Annuler",
     "collapse": "Réduire la barre latérale",
@@ -10,7 +31,16 @@
     "viewTable": "Vue tableau",
     "viewCompact": "Vue compacte",
     "prev": "Précédent",
-    "next": "Suivant"
+    "next": "Suivant",
+    "add": "Ajouter",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "rooms": "chambres",
+    "months": "mois",
+    "unit": "unité",
+    "floor": "étage",
+    "surface": "surface"
   },
   "landlord": {
     "myProperties": "Mes biens",
@@ -37,6 +67,8 @@
     "city": "Ville",
     "countryPlaceholder": "Choisir un pays",
     "cityPlaceholder": "Choisir une ville",
+    "units": "unités",
+    "unitsSelected": "{count} unités sélectionnées",
     "dropzoneHint": "Glissez des photos ici ou cliquez pour sélectionner.",
     "stepInfo": "Informations générales",
     "stepLocation": "Localisation",
@@ -63,6 +95,7 @@
     "unitType": "Type",
     "unitTypeStudio": "Studio",
     "unitTypeChambreSalon": "Chambre-Salon",
+    "unitTypeChambre_salon": "Chambre-Salon",
     "unitType2Chambres": "2 Chambres-Salon",
     "unitType3Chambres": "3 Chambres-Salon",
     "unitType4Chambres": "4 Chambres-Salon",
@@ -88,6 +121,18 @@
     "featureCompteur": "Compteur personnel",
     "submitUnit": "Créer l'unité",
     "skipForNow": "Passer pour l'instant",
+    "assetTypeUnit": "Unité indépendante",
+    "assetTypeBuilding": "Bâtiment / Immeuble",
+    "assetTabs": {
+      "overview": "Aperçu",
+      "units": "Unités",
+      "conditions": "Conditions"
+    },
+    "assetSectionDescription": "Description",
+    "assetSectionFeatures": "Équipements & Détails",
+    "noDescription": "Aucune description fournie.",
+    "unitsList": "Liste des unités",
+    "editAsset": "Modifier l'actif",
     "description": "Description",
     "descriptionFr": "Description (français)",
     "descriptionEn": "Description (anglais)",
@@ -115,6 +160,13 @@
     "viewList": "Liste",
     "viewCompact": "Compact",
     "searchPlaceholder": "Rechercher un bien…",
+    "common": {
+      "add": "Ajouter",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "cancel": "Annuler",
+      "confirm": "Confirmer"
+    },
     "filterCity": "Ville",
     "filterCityAll": "Toutes les villes",
     "filterVacancies": "Avec vacances locatives",
@@ -139,7 +191,14 @@
       "vacantUnits": "Unités vacantes",
       "pendingPayments": "Paiements en attente",
       "households": "ménages",
-      "vehicleAccess": "Accès véhicule"
+      "vehicleAccess": "Accès véhicule",
+      "revenuePotential": "Potentiel mensuel",
+      "monthlyPotential": "Potentiel mensuel",
+      "MONTHLYPOTENTIAL": "Potentiel mensuel",
+      "occupancy": "Occupation",
+      "OCCUPATION": "Occupation",
+      "estMonthly": "Est. Mensuel",
+      "leaseConditions": "Conditions de bail"
     },
     "conditions": {
       "tab": "Conditions",
@@ -311,7 +370,12 @@
     "occupancyRate": "Taux d'occupation",
     "rentReceived": "Loyers perçus",
     "savingsTipText": "Épargnez régulièrement pour atteindre votre objectif loyer sans stress.",
-    "type": { "saving": "Épargne", "rent": "Loyer", "commission": "Commission", "withdrawal": "Retrait" }
+    "type": {
+      "saving": "Épargne",
+      "rent": "Loyer",
+      "commission": "Commission",
+      "withdrawal": "Retrait"
+    }
   },
   "profile": {
     "title": "Mon profil",

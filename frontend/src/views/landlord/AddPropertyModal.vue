@@ -1,14 +1,11 @@
 <script setup lang="ts">
 /**
- * Modal d'ajout de bien (Property) — Stepper, validation stricte (alignée CreatePropertyCommand).
- * - Champs i18n : description avec onglets FR/EN (défaut fr).
- * - Localisation : chargement dynamique Pays → Villes (/location).
- * - Images : AppDropzone + pour chaque image : toggle Image principale, rang, description i18n.
- * @emits close - avec result { created, propertyId?, propertyName? } si création OK.
+ * Modal d'ajout de bien (Property) — Stepper, validation stricte.
+ * DESIGN: Ultra-Premium Apple Glass / MallOS.
  */
 import { ref, watch, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { X, ChevronRight, MapPin } from 'lucide-vue-next'
+import { X, ChevronRight, ChevronLeft, Building2, Map, Camera, Save } from 'lucide-vue-next'
 import { getCountries, getCities, type CountryDto, type CityDto } from '../../services/location.service'
 import { useReferenceStore } from '../../stores/references'
 import { createProperty, uploadPropertyImage, type CreatePropertyPayload, type PropertyImageItemDto } from '../../services/property.service'
@@ -50,12 +47,12 @@ const form = ref({
   title_deed: '',
   gps_latitude: '' as string | number,
   gps_longitude: '' as string | number,
-  /** Description i18n (défaut fr). */
   description: { fr: '', en: '' } as Record<string, string>,
 })
+
 const descriptionLangTab = ref<'fr' | 'en'>('fr')
 const photoFiles = ref<File[]>([])
-/** Pour chaque fichier : preview, rank, is_primary, description i18n. URLs réelles après upload. */
+
 interface ImageItemState {
   file: File
   previewUrl: string
@@ -65,20 +62,18 @@ interface ImageItemState {
 }
 const imageItems = ref<ImageItemState[]>([])
 
-const stepTitles = [
-  { key: 'landlord.stepInfo', icon: MapPin },
-  { key: 'landlord.stepLocation', icon: MapPin },
-  { key: 'landlord.stepDocuments', icon: MapPin },
+const steps = [
+  { id: 1, label: 'landlord.stepInfo', icon: Building2 },
+  { id: 2, label: 'landlord.stepLocation', icon: Map },
+  { id: 3, label: 'landlord.stepDocuments', icon: Camera },
 ]
 
-/** Validation alignée CreatePropertyCommand : name (ou défaut), building_type, address, city_id obligatoires à l'étape 1. */
 const step1Valid = computed(() => {
   const f = form.value
   const nameVal = (f.name?.trim() || 'Sans nom')
   return (
     typeof f.name === 'string' &&
     nameVal.length > 0 &&
-    nameVal.length <= 255 &&
     referenceStore.propertyTypes.some((r) => r.code === f.building_type) &&
     typeof f.address === 'string' &&
     f.address.trim().length > 0 &&
@@ -109,7 +104,6 @@ const buildingTypeOptions = computed(() =>
   }))
 )
 
-/** Suggestion pour la carte (étape 2) : ville + pays choisis à l'étape 1 — au Bénin l'adresse est peu fiable, on privilégie ville et pays. */
 const suggestedMapQuery = computed(() => {
   const country = countries.value.find((c) => c.id === form.value.country_id)
   const city = cities.value.find((c) => c.id === form.value.city_id)
@@ -118,11 +112,7 @@ const suggestedMapQuery = computed(() => {
 })
 
 async function loadCountries() {
-  try {
-    countries.value = await getCountries()
-  } catch {
-    countries.value = []
-  }
+  try { countries.value = await getCountries() } catch { countries.value = [] }
 }
 
 async function loadCities(countryId: string) {
@@ -140,15 +130,11 @@ async function loadCities(countryId: string) {
   }
 }
 
-watch(
-  () => form.value.country_id,
-  (id) => {
-    if (id) loadCities(id)
-    else cities.value = []
-  }
-)
+watch(() => form.value.country_id, (id) => {
+  if (id) loadCities(id)
+  else cities.value = []
+})
 
-/** Synchronise imageItems avec photoFiles : crée previews, premier = principale, revoke anciens URLs. */
 watch(photoFiles, (files) => {
   imageItems.value.forEach((it) => URL.revokeObjectURL(it.previewUrl))
   if (!files.length) {
@@ -162,15 +148,12 @@ watch(photoFiles, (files) => {
     is_primary: i === 0,
     description: { fr: '', en: '' },
   }))
-  if (imageItems.value.length === 1) imageItems.value[0].is_primary = true
 }, { deep: true })
 
 function updateImageItem(index: number, payload: Partial<ImageItemState>) {
   const item = imageItems.value[index]
   if (!item) return
-  if (payload.is_primary !== undefined) {
-    imageItems.value.forEach((x, i) => { x.is_primary = i === index })
-  }
+  if (payload.is_primary !== undefined) imageItems.value.forEach((x, i) => { x.is_primary = i === index })
   Object.assign(item, payload)
 }
 
@@ -188,16 +171,13 @@ function next() {
 
 function back() {
   if (currentStep.value > 1) currentStep.value--
-  else emit('close')
+  else close()
 }
 
 function close() {
   emit('close')
 }
 
-/**
- * Upload des photos sélectionnées puis création du bien avec les URLs (ARCHITECTURE §2, §6 — image is_primary).
- */
 async function submit() {
   errorMessage.value = ''
   submitting.value = true
@@ -216,10 +196,10 @@ async function submit() {
     }
 
     const desc = form.value.description
-    const descriptionNorm =
-      (desc?.fr?.trim() || desc?.en?.trim())
-        ? { fr: desc?.fr?.trim() || desc?.en?.trim() || '', en: desc?.en?.trim() || desc?.fr?.trim() || '' }
-        : undefined
+    const descriptionNorm = (desc?.fr?.trim() || desc?.en?.trim())
+      ? { fr: desc?.fr?.trim() || desc?.en?.trim() || '', en: desc?.en?.trim() || desc?.fr?.trim() || '' }
+      : undefined
+    
     const payload: CreatePropertyPayload = {
       name: form.value.name?.trim() || 'Sans nom',
       building_type: form.value.building_type || 'villa',
@@ -234,8 +214,10 @@ async function submit() {
     const lng = form.value.gps_longitude !== '' ? Number(form.value.gps_longitude) : undefined
     if (lat != null && !Number.isNaN(lat)) payload.gps_latitude = lat
     if (lng != null && !Number.isNaN(lng)) payload.gps_longitude = lng
+    
     const created = await createProperty(payload)
     emit('close', { created: true, propertyId: created.id, propertyName: created.name })
+    toast.success(t('landlord.toast.propertyCreated'))
   } catch (e) {
     const msg = getApiErrorMessage(e)
     errorMessage.value = msg
@@ -245,226 +227,201 @@ async function submit() {
   }
 }
 
-watch(
-  () => props.show,
-  (visible) => {
-    if (visible) {
-      currentStep.value = 1
-      form.value = {
-        name: 'Sans nom',
-        building_type: 'villa',
-        address: '',
-        country_id: '',
-        city_id: '',
-        status: 'available',
-        title_deed: '',
-        gps_latitude: '',
-        gps_longitude: '',
-        description: { fr: '', en: '' },
-      }
-      descriptionLangTab.value = 'fr'
-      cities.value = []
-      photoFiles.value = []
-      imageItems.value.forEach((it) => URL.revokeObjectURL(it.previewUrl))
-      imageItems.value = []
-      errorMessage.value = ''
-      loadCountries()
+watch(() => props.show, (visible) => {
+  if (visible) {
+    currentStep.value = 1
+    form.value = {
+      name: 'Sans nom',
+      building_type: 'villa',
+      address: '',
+      country_id: '',
+      city_id: '',
+      status: 'available',
+      title_deed: '',
+      gps_latitude: '',
+      gps_longitude: '',
+      description: { fr: '', en: '' },
     }
+    photoFiles.value = []
+    imageItems.value.forEach((it) => URL.revokeObjectURL(it.previewUrl))
+    imageItems.value = []
+    errorMessage.value = ''
+    loadCountries()
   }
-)
-
-onMounted(() => {
-  if (props.show) loadCountries()
 })
+
+onMounted(() => { if (props.show) loadCountries() })
 </script>
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="show"
-      class="fixed inset-0 z-[75] flex items-center justify-center p-4 bg-black/60"
-      @click.self="close"
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
     >
       <div
-        class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-property-title"
+        v-if="show"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md"
+        @click.self="close"
       >
-        <header class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <AppTitle id="add-property-title" :level="3">{{ t('landlord.addProperty') }}</AppTitle>
-          <button
-            type="button"
-            class="p-2 rounded-lg text-[var(--color-muted)] hover:bg-gray-100 dark:hover:bg-gray-700"
-            :aria-label="t('common.cancel')"
-            @click="close"
-          >
-            <X class="w-5 h-5" />
-          </button>
-        </header>
+        <div
+          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-8xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-300"
+          role="dialog"
+          aria-modal="true"
+        >
+          <!-- Internal Glow Effects -->
+          <div class="absolute -top-[10%] -right-[10%] w-[40%] h-[30%] bg-primary-emerald/10 blur-mesh-glow rounded-full pointer-events-none" />
+          <div class="absolute bottom-[5%] -left-[10%] w-[30%] h-[20%] bg-blue-500/10 blur-mesh-glow rounded-full pointer-events-none" />
 
-        <div class="flex border-b border-gray-200 dark:border-gray-700 px-4 gap-4 py-3">
-          <span
-            v-for="(step, i) in stepTitles"
-            :key="i"
-            :class="[
-              'flex items-center gap-2 text-sm font-medium',
-              currentStep === i + 1 ? 'text-[var(--color-accent)]' : 'text-[var(--color-muted)]',
-            ]"
-          >
-            {{ t(step.key) }}
-          </span>
-        </div>
+          <!-- Header -->
+          <header class="flex items-center justify-between p-8 pb-4 shrink-0 relative z-10">
+            <div class="space-y-1">
+              <AppTitle id="add-property-title" :level="3" class="text-3xl font-black tracking-tighter">{{ t('landlord.addProperty') }}</AppTitle>
+               <p class="text-[10px] font-black uppercase tracking-widest-xl text-primary-emerald opacity-70">Création d'un nouveau patrimoine</p>
+            </div>
+            <button
+              type="button"
+              class="w-12 h-12 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-all group"
+              @click="close"
+            >
+              <X class="w-6 h-6 text-slate-400 group-hover:rotate-90 transition-transform duration-300" />
+            </button>
+          </header>
 
-        <div class="flex-1 overflow-y-auto p-6">
-          <!-- Step 1: Nom, type, adresse, pays, ville -->
-          <div v-show="currentStep === 1" class="space-y-4">
-            <AppInput
-              v-model="form.name"
-              :label="t('landlord.name')"
-              :placeholder="t('landlord.namePlaceholder')"
-            />
-            <AppSelect
-              v-model="form.building_type"
-              :label="t('landlord.propertyType')"
-              :options="buildingTypeOptions"
-              :placeholder="t('landlord.propertyType')"
-            />
-            <p class="text-xs text-[var(--color-muted)] -mt-2">{{ t('landlord.propertyTypeDefaultHint') }}</p>
-            <AppInput
-              v-model="form.address"
-              :label="t('landlord.address')"
-              :placeholder="t('landlord.addressPlaceholder')"
-            />
-            <AppSelect
-              v-model="form.country_id"
-              :label="t('landlord.country')"
-              :options="countryOptions"
-              :placeholder="t('landlord.countryPlaceholder')"
-            />
-            <AppSelect
-              v-model="form.city_id"
-              :label="t('landlord.city')"
-              :options="cityOptions"
-              :placeholder="t('landlord.cityPlaceholder')"
-              :disabled="!form.country_id || loadingCities"
-            />
-            <div>
-              <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('landlord.status') }}</label>
-              <select
-                v-model="form.status"
-                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800 focus:ring-2 focus:ring-[var(--color-accent)]"
+          <!-- Glass Stepper -->
+          <div class="px-8 py-4 shrink-0 relative z-10">
+            <div class="flex items-center justify-between bg-black/5 dark:bg-white/5 p-2 rounded-[2rem] border border-white/10">
+              <button
+                v-for="step in steps"
+                :key="step.id"
+                class="flex-1 flex items-center justify-center gap-2 py-3 rounded-3xl transition-all relative overflow-hidden"
+                :class="currentStep === step.id ? 'bg-white dark:bg-white/10 shadow-glass text-slate-900 dark:text-white' : 'text-slate-400 opacity-60'"
+                @click="currentStep >= step.id ? (step1Valid || step.id === 1 ? currentStep = step.id : null) : (step1Valid ? currentStep = step.id : null)"
               >
-                <option v-for="s in referenceStore.propertyStatuses" :key="s.code" :value="s.code">
-                  {{ locale === 'fr' ? s.label_fr : s.label_en || s.label_fr }}
-                </option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-[var(--color-text)] mb-2">{{ t('landlord.description') }}</label>
-              <div class="flex gap-2 mb-2">
-                <button
-                  type="button"
-                  :class="['px-3 py-1.5 rounded-lg text-sm font-medium', descriptionLangTab === 'fr' ? 'bg-[var(--color-accent)] text-white' : 'bg-gray-100 dark:bg-gray-700 text-[var(--color-text)]']"
-                  @click="descriptionLangTab = 'fr'"
-                >
-                  {{ t('landlord.langFr') }}
-                </button>
-                <button
-                  type="button"
-                  :class="['px-3 py-1.5 rounded-lg text-sm font-medium', descriptionLangTab === 'en' ? 'bg-[var(--color-accent)] text-white' : 'bg-gray-100 dark:bg-gray-700 text-[var(--color-text)]']"
-                  @click="descriptionLangTab = 'en'"
-                >
-                  {{ t('landlord.langEn') }}
-                </button>
-              </div>
-              <textarea
-                v-if="descriptionLangTab === 'fr'"
-                v-model="form.description.fr"
-                rows="3"
-                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800 focus:ring-2 focus:ring-[var(--color-accent)]"
-                :placeholder="t('landlord.descriptionFr')"
-              />
-              <textarea
-                v-else
-                v-model="form.description.en"
-                rows="3"
-                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-[var(--color-text)] bg-white dark:bg-gray-800 focus:ring-2 focus:ring-[var(--color-accent)]"
-                :placeholder="t('landlord.descriptionEn')"
-              />
+                <component :is="step.icon" :size="18" :class="currentStep === step.id ? 'text-primary-emerald' : ''" />
+                <span class="text-[10px] font-black uppercase tracking-widest hidden md:inline">{{ t(step.label) }}</span>
+                <div v-if="currentStep === step.id" class="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-primary-emerald rounded-full" />
+              </button>
             </div>
           </div>
 
-          <!-- Step 2: Position sur la carte (optionnel) — pré-rempli selon ville + pays, guide utilisateur -->
-          <div v-show="currentStep === 2" class="space-y-4">
-            <label class="block text-sm font-medium text-[var(--color-text)]">{{ t('landlord.mapLocationTitle') }}</label>
-            <p class="text-sm text-[var(--color-muted)]">
-              {{ t('landlord.mapStep2Guide', { example: suggestedMapQuery || t('landlord.mapStep2Example') }) }}
-            </p>
-            <MapLocationPicker
-              v-if="currentStep === 2"
-              :latitude="form.gps_latitude"
-              :longitude="form.gps_longitude"
-              :suggested-query="suggestedMapQuery"
-              :suggested-hint-text="suggestedMapQuery ? t('landlord.mapSuggestedHint') : ''"
-              height="320px"
-              :placeholder="t('landlord.mapSearchPlaceholder')"
-              :search-button-label="t('landlord.mapSearch')"
-              :clear-label="t('landlord.mapClear')"
-              :hint-text="t('landlord.mapClickHint')"
-              :error-no-results="t('landlord.mapErrorNoResults')"
-              :error-search="t('landlord.mapErrorSearch')"
-              @update:latitude="(v) => (form.gps_latitude = v)"
-              @update:longitude="(v) => (form.gps_longitude = v)"
-            />
-          </div>
+          <!-- Content -->
+          <div class="flex-1 overflow-y-auto p-8 pt-4 custom-scrollbar relative z-10">
+            <!-- Step 1: Info -->
+            <div v-if="currentStep === 1" class="space-y-8 animate-in slide-in-from-right-10 duration-500">
+               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <AppInput v-model="form.name" :label="t('landlord.name')" :placeholder="t('landlord.namePlaceholder')" />
+                 <AppSelect v-model="form.building_type" :label="t('landlord.propertyType')" :options="buildingTypeOptions" />
+               </div>
 
-          <!-- Step 3: Documents & photos + images avec métadonnées -->
-          <div v-show="currentStep === 3" class="space-y-4">
-            <AppInput
-              v-model="form.title_deed"
-              :label="t('landlord.titleDeed')"
-              :placeholder="t('landlord.titleDeedPlaceholder')"
-            />
-            <AppUpload
-              :label="t('landlord.stepDocuments')"
-              :max-files="10"
-              @update:files="photoFiles = $event"
-            />
-            <div v-if="imageItems.length" class="space-y-3">
-              <p class="text-sm font-medium text-[var(--color-text)]">{{ t('landlord.imageDescription') }}</p>
-              <ImageWithMeta
-                v-for="(item, idx) in imageItems"
-                :key="idx"
-                :item="item"
-                :index="idx"
-                :can-remove="true"
-                @update:item="(p) => updateImageItem(idx, p)"
-                @remove="removeImageItem(idx)"
-              />
+               <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 <div class="md:col-span-2">
+                    <AppInput v-model="form.address" :label="t('landlord.address')" :placeholder="t('landlord.addressPlaceholder')" />
+                 </div>
+                 <AppSelect v-model="form.status" :label="t('landlord.status')" :options="referenceStore.propertyStatuses.map(s => ({ value: s.code, label: locale === 'fr' ? s.label_fr : s.label_en || s.label_fr }))" />
+               </div>
+
+               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <AppSelect v-model="form.country_id" :label="t('landlord.country')" :options="countryOptions" />
+                 <AppSelect v-model="form.city_id" :label="t('landlord.city')" :options="cityOptions" :disabled="!form.country_id || loadingCities" />
+               </div>
+
+               <div class="space-y-4">
+                  <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{{ t('landlord.description') }}</label>
+                  <div class="p-2 bg-black/5 dark:bg-white/5 rounded-2xl flex gap-1 w-fit">
+                    <button v-for="lang in ['fr', 'en'] as const" :key="lang" class="px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all" :class="descriptionLangTab === lang ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-sm' : 'text-slate-400'" @click="descriptionLangTab = lang">
+                      {{ lang }}
+                    </button>
+                  </div>
+                  <textarea v-model="form.description[descriptionLangTab]" rows="3" class="w-full p-6 rounded-4xl bg-white/40 dark:bg-white/5 border border-white/10 focus:border-primary-emerald/50 outline-none transition-all text-sm font-bold placeholder:text-slate-400" :placeholder="descriptionLangTab === 'fr' ? t('landlord.descriptionFr') : t('landlord.descriptionEn')" />
+               </div>
+            </div>
+
+            <!-- Step 2: Map -->
+            <div v-if="currentStep === 2" class="space-y-6 animate-in slide-in-from-right-10 duration-500">
+               <div class="bg-primary-emerald/5 p-6 rounded-4xl border border-primary-emerald/10">
+                 <p class="text-xs font-bold text-slate-600 dark:text-slate-300 italic">
+                   {{ t('landlord.mapStep2Guide', { example: suggestedMapQuery || t('landlord.mapStep2Example') }) }}
+                 </p>
+               </div>
+               
+               <div class="rounded-5xl overflow-hidden border border-white/10 shadow-glass relative group">
+                  <MapLocationPicker
+                    :latitude="form.gps_latitude"
+                    :longitude="form.gps_longitude"
+                    :suggested-query="suggestedMapQuery"
+                    :suggested-hint-text="suggestedMapQuery ? t('landlord.mapSuggestedHint') : ''"
+                    height="400px"
+                    @update:latitude="(v) => (form.gps_latitude = v)"
+                    @update:longitude="(v) => (form.gps_longitude = v)"
+                  />
+                  <div class="absolute bottom-4 left-4 right-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-3 rounded-2xl border border-white/20 text-[10px] font-black uppercase tracking-widest text-center">
+                    {{ t('landlord.mapClickHint') }}
+                  </div>
+               </div>
+            </div>
+
+            <!-- Step 3: Documents -->
+            <div v-if="currentStep === 3" class="space-y-8 animate-in slide-in-from-right-10 duration-500">
+               <AppInput v-model="form.title_deed" :label="t('landlord.titleDeed')" :placeholder="t('landlord.titleDeedPlaceholder')" />
+               
+               <AppUpload :label="t('landlord.stepDocuments')" :max-files="10" @update:files="photoFiles = $event" />
+               
+               <div v-if="imageItems.length" class="space-y-6">
+                 <p class="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">{{ t('landlord.imageDescription') }}</p>
+                 <div class="grid grid-cols-1 gap-4">
+                   <ImageWithMeta v-for="(item, idx) in imageItems" :key="idx" :item="item" :index="idx" :can-remove="true" @update:item="(p) => updateImageItem(idx, p)" @remove="removeImageItem(idx)" />
+                 </div>
+               </div>
             </div>
           </div>
+
+          <!-- Error Alert -->
+          <div v-if="errorMessage" class="px-8 py-3 bg-rose-500/10 border-y border-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-widest text-center">
+            {{ errorMessage }}
+          </div>
+
+          <!-- Footer -->
+          <footer class="p-8 pt-4 flex items-center justify-between shrink-0 relative z-10 bg-white/30 dark:bg-white/[0.02] backdrop-blur-xl border-t border-white/10">
+            <AppButton variant="ghost" size="lg" class="h-16 rounded-4xl font-black text-slate-500" @click="back">
+              <ChevronLeft v-if="currentStep > 1" class="mr-2" />
+              {{ currentStep === 1 ? t('common.cancel') : t('landlord.back') }}
+            </AppButton>
+            
+            <div class="flex gap-4 flex-1 ml-4">
+              <AppButton 
+                variant="primary" 
+                size="lg" 
+                class="h-16 flex-1 rounded-4xl font-black text-lg tracking-tighter shadow-emerald-500/20 shadow-lg"
+                :loading="submitting" 
+                :disabled="!canNext" 
+                @click="next"
+              >
+                <Save v-if="currentStep === totalSteps" :size="20" class="mr-2" />
+                {{ currentStep === totalSteps ? t('landlord.submitCreate') : t('landlord.next') }}
+                <ChevronRight v-if="currentStep < totalSteps" class="ml-2" />
+              </AppButton>
+            </div>
+          </footer>
         </div>
-
-        <div v-if="errorMessage" class="px-6 py-2 text-sm text-red-600">
-          {{ errorMessage }}
-        </div>
-
-        <footer class="flex items-center justify-between gap-4 p-4 border-t border-gray-200 dark:border-gray-700">
-          <AppButton variant="ghost" @click="back">
-            {{ currentStep === 1 ? t('common.cancel') : t('landlord.back') }}
-          </AppButton>
-          <AppButton
-            variant="primary"
-            :loading="submitting && currentStep === totalSteps"
-            :disabled="!canNext"
-            @click="next"
-          >
-            {{ currentStep === totalSteps ? t('landlord.submitCreate') : t('landlord.next') }}
-            <ChevronRight v-if="currentStep < totalSteps" class="w-4 h-4" />
-          </AppButton>
-        </footer>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.1);
+  border-radius: 10px;
+}
+</style>
