@@ -21,6 +21,12 @@ export interface AdminUserDto {
     kyc_reviewed_at: string | null
     kyc_rejection_reason: string | null
   } | null
+  is_verified?: boolean
+  is_profile_complete?: boolean
+  avatar_url?: string | null
+  email?: string | null
+  first_name?: string | null
+  last_name?: string | null
   rbac_role?: {
     id: string
     name: string
@@ -41,6 +47,8 @@ export interface GetUsersFilters {
   role?: UserRole
   status?: string
   search?: string
+  kycStatus?: 'pending' | 'verified' | 'rejected'
+  isVerified?: boolean
 }
 
 export async function getUsers(filters: GetUsersFilters = {}): Promise<PaginatedUsersResult> {
@@ -50,6 +58,8 @@ export async function getUsers(filters: GetUsersFilters = {}): Promise<Paginated
   if (filters.role) params.set('role', filters.role)
   if (filters.status && filters.status !== 'all') params.set('status', filters.status)
   if (filters.search != null && filters.search.trim() !== '') params.set('search', filters.search.trim())
+  if (filters.kycStatus) params.set('kycStatus', filters.kycStatus)
+  if (filters.isVerified != null) params.set('isVerified', String(filters.isVerified))
   const { data } = await http.get<PaginatedUsersResult>(`/user/all?${params.toString()}`)
   return data
 }

@@ -337,6 +337,37 @@
       "abomey": "Abomey-Calavi"
     }
   },
+  "kyc": {
+    "title": "Validation KYC",
+    "subtitle": "Examinez et validez les dossiers d'identité en attente",
+    "filterPending": "En attente",
+    "filterVerified": "Vérifiés",
+    "filterRejected": "Rejetés",
+    "statusPending": "En attente",
+    "statusVerified": "Vérifié",
+    "statusRejected": "Rejeté",
+    "empty": "Aucun dossier dans cette catégorie 🎉",
+    "registeredOn": "Inscrit le",
+    "submittedOn": "Soumis le",
+    "rejectionReason": "Motif rejet",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "rejectModalTitle": "Rejeter le dossier KYC",
+    "rejectModalSubtitle": "Le motif sera communiqué à l'utilisateur et enregistré dans l'audit.",
+    "rejectReasonPlaceholder": "Motif du rejet (obligatoire)…",
+    "cancel": "Annuler",
+    "confirmReject": "Confirmer le rejet",
+    "approvedSuccess": "KYC approuvé avec succès ✅",
+    "rejectedSuccess": "KYC rejeté",
+    "viewProfile": "Voir le profil",
+    "totalResults": "{count} dossier(s) trouvé(s)",
+    "role": {
+      "agent": "Agent",
+      "landlord": "Propriétaire",
+      "tenant": "Locataire",
+      "admin": "Admin"
+    }
+  },
   "dashboard": {
     "title": "Tableau de bord",
     "welcome": "Bonjour {name}, voici l'état de vos projets immobiliers.",

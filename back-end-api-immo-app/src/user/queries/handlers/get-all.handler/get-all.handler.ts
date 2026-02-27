@@ -29,6 +29,7 @@ export class GetAllHandler implements IQueryHandler<GetAllQuery> {
         'u.avatar_url',
         'u.is_profile_complete',
         'u.is_verified',
+        'u.is_profile_complete',
         'u.preferred_lang',
         'u.role',
         'u.status',
@@ -36,6 +37,8 @@ export class GetAllHandler implements IQueryHandler<GetAllQuery> {
         'u.updated_at',
         'p.id',
         'p.kyc_status',
+        'p.kyc_submitted_at',
+        'p.kyc_reviewed_at',
       ])
       .orderBy('u.created_at', 'DESC')
       .skip(skip)
@@ -44,6 +47,17 @@ export class GetAllHandler implements IQueryHandler<GetAllQuery> {
     if (query.status != null) qb.andWhere('u.status = :status', { status: query.status });
     if (query.search != null && query.search.trim() !== '') {
       qb.andWhere('u.phone_number ILIKE :search', { search: `%${query.search.trim()}%` });
+    }
+    if (query.kycStatus != null) {
+      // Pour 'pending' : inclure aussi les profils inexistants (NULL = pending par défaut)
+      if (query.kycStatus === 'pending') {
+        qb.andWhere('(p.kyc_status = :kycStatus OR p.kyc_status IS NULL)', { kycStatus: query.kycStatus });
+      } else {
+        qb.andWhere('p.kyc_status = :kycStatus', { kycStatus: query.kycStatus });
+      }
+    }
+    if (query.isVerified != null) {
+      qb.andWhere('u.is_verified = :isVerified', { isVerified: query.isVerified });
     }
     const [data, total] = await qb.getManyAndCount();
     return buildPaginatedResult(data, total, page, limit);
