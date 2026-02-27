@@ -34,7 +34,6 @@ function formatPrice(val: any) {
   if (!val && val !== 0) return formatPriceC(0)
   const v = Number(val)
   return isNaN(v) ? formatPriceC(0) : formatPriceC(v)
-}).format(Number(price)) + ' FCFA'
 }
 
 function formatDate(iso: string | undefined) {

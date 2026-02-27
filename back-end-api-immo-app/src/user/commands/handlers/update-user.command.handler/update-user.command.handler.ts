@@ -35,7 +35,7 @@ export class UpdateUserCommandHandler implements ICommandHandler<UpdateUserComma
       if (command.preferred_currency !== undefined) user.preferred_currency = command.preferred_currency;
       if (command.preferred_theme !== undefined) user.preferred_theme = command.preferred_theme;
       if (command.role !== undefined) user.role = command.role;
-      if (command.is_active !== undefined) user.is_active = command.is_active;
+      if (command.status !== undefined) user.status = command.status;
 
       user.is_profile_complete = !!(user.first_name?.trim() && user.last_name?.trim());
 
@@ -55,7 +55,7 @@ export class UpdateUserCommandHandler implements ICommandHandler<UpdateUserComma
         preferred_currency: updated.preferred_currency,
         preferred_theme: updated.preferred_theme,
         role: updated.role,
-        is_active: updated.is_active,
+        status: updated.status,
         created_at: updated.created_at,
         updated_at: updated.updated_at,
       };

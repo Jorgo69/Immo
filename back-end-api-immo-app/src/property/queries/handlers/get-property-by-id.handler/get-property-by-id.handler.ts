@@ -15,13 +15,13 @@ export class GetPropertyByIdHandler implements IQueryHandler<GetPropertyByIdQuer
   async execute(query: GetPropertyByIdQuery): Promise<PropertyDetailResult> {
     const property = await this.dataSource.getRepository(PropertyEntity).findOne({
       where: { id: query.id },
-      relations: ['media', 'units', 'units.ref_type', 'city'],
+      relations: ['media', 'units', 'units.ref_type', 'city', 'neighborhood', 'units.neighborhood'],
     });
     if (property) return property;
 
     const unit = await this.dataSource.getRepository(UnitEntity).findOne({
       where: { id: query.id, property_id: null },
-      relations: ['ref_type', 'city'],
+      relations: ['ref_type', 'city', 'neighborhood'],
     });
     if (!unit) throw new NotFoundException('Property not found');
 
@@ -37,6 +37,8 @@ export class GetPropertyByIdHandler implements IQueryHandler<GetPropertyByIdQuer
       address: unit.address ?? '',
       city_id: unit.city_id,
       city: unit.city,
+      neighborhood_id: unit.neighborhood_id,
+      neighborhood: unit.neighborhood,
       gps_latitude: unit.gps_latitude,
       gps_longitude: unit.gps_longitude,
       main_image: mainImage,

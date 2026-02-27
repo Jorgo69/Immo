@@ -25,7 +25,7 @@ const ME_SELECT: (keyof UserModel)[] = [
   'preferred_currency',
   'preferred_theme',
   'role',
-  'is_active',
+  'status',
   'created_at',
   'updated_at',
 ];
@@ -45,7 +45,7 @@ export interface AuthMeResult {
   preferred_currency: string;
   preferred_theme: string;
   role: string;
-  is_active: boolean;
+  status: string;
   created_at: Date;
   updated_at: Date;
   profile: { id: string; user_id: string; kyc_status: string } | null;

@@ -7,6 +7,7 @@ import {
   Controller,
   Delete,
   Get,
+  Patch,
   Post,
   Query,
   Request,
@@ -21,11 +22,16 @@ import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nes
 import { GetAllQuery } from './queries/impl/get-all.query/get-all.query';
 import { FindByIdQuery } from './queries/impl/find-by-id.query/find-by-id.query';
 import { GetUserDetailQuery } from './queries/impl/get-user-detail.query/get-user-detail.query';
+import { GetAdminStatsQuery } from './queries/impl/get-admin-stats.query/get-admin-stats.query';
 import { CreateUserCommand } from './commands/impl/create-user.command/create-user.command';
 import { UpdateProfileCommand } from './commands/impl/update-profile.command/update-profile.command';
 import { UpdateUserCommand } from './commands/impl/update-user.command/update-user.command';
 import { DeleteUserCommand } from './commands/impl/delete-user.command/delete-user.command';
 import { ReviewKycCommand } from './commands/impl/review-kyc.command/review-kyc.command';
+import { ChangeStatusDto } from './dto/change-status.dto';
+import { ChangeStatusCommand } from './commands/impl/change-status.command/change-status.command';
+import { AssignRbacRoleDto } from './dto/assign-rbac-role.dto';
+import { AssignRbacRoleCommand } from './commands/impl/assign-rbac-role.command/assign-rbac-role.command';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 import { RolesGuard } from '../auth/strategy/roles.guard';
 import { Roles } from '../auth/strategy/roles.decorator';
@@ -67,6 +73,15 @@ export class UserController {
   @ApiOperation({ summary: 'Get user by ID (admin)' })
   async getById(@Query() query: FindByIdQuery) {
     return this.queryBus.execute(query);
+  }
+
+  @Get('admin-stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'KPIs du tableau de bord admin (utilisateurs, KYC, inscriptions)' })
+  async getAdminStats() {
+    return this.queryBus.execute(new GetAdminStatsQuery());
   }
 
   @Get('detail')
@@ -130,6 +145,24 @@ export class UserController {
   async update(@Body() command: UpdateUserCommand, @Request() req) {
     command.id = req.user.id;
     return this.commandBus.execute(command);
+  }
+
+  @Patch(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Changer le statut d\'un compte (Bannir, Restreindre) (admin)' })
+  async changeStatus(@Param('id') userId: string, @Body() dto: ChangeStatusDto) {
+    return this.commandBus.execute(new ChangeStatusCommand(userId, dto.status, dto.reason));
+  }
+
+  @Patch(':id/rbac-role')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Assigner un rôle RBAC à un compte (admin)' })
+  async assignRbacRole(@Param('id') userId: string, @Body() dto: AssignRbacRoleDto) {
+    return this.commandBus.execute(new AssignRbacRoleCommand(userId, dto.roleId || null, dto.reason));
   }
 
   @Post('avatar')

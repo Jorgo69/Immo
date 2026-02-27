@@ -38,6 +38,8 @@ export class ProfileController {
     command.id_card = body.id_card;
     command.profession = body.profession;
     command.company = body.company;
+    command.ifu = body.ifu;
+    command.rccm = body.rccm;
     command.emergency_contact = body.emergency_contact;
     command.preferred_zone = body.preferred_zone;
     command.preferred_zones = body.preferred_zones;

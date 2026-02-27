@@ -1,194 +1,339 @@
-// === IDENTITÉ & AUTH ===
+// ============================================================
+// SCHÉMA BASE DE DONNÉES — Immo Bénin Platform
+// Mis à jour : 2026-02-27
+// Inclut : Auth, Profils KYC, RBAC, Wallet, Immobilier,
+//          Location, Référentiels, Audit, Paramètres Système
+// ============================================================
+
+// ============================================================
+// SECTION 1 : IDENTITÉ & AUTH
+// ============================================================
+
 Table users {
-  id uuid [pk]
-  phone_number varchar [unique, note: 'Identifiant principal']
-  first_name varchar
-  last_name varchar
-  email varchar [unique]
-  avatar_url text
-  is_profile_complete boolean [default: false]
-  is_verified boolean [default: false]
-  id_card_url text
-  phone_verified boolean [default: false]
-  metadata jsonb
-  encryption_salt varchar [length: 64]
-  preferred_lang varchar [default: 'fr']
-  role enum [note: 'tenant, landlord, agent, admin']
-  is_active boolean [default: true]
-  created_at timestamp
-  updated_at timestamp
-  deleted_at timestamp
+  id                   uuid        [pk, note: 'UUID v4 auto-généré']
+  phone_number         varchar     [unique, not null, note: 'Identifiant principal. Format : format local + validation']
+  first_name           varchar     [null]
+  last_name            varchar     [null]
+  email                varchar     [unique, null]
+  avatar_url           text        [null, note: 'URL CDN/local de la photo de profil']
+  id_card_url          text        [null, note: 'URL de la pièce d\'identité — utilisé pour KYC']
+  is_profile_complete  boolean     [default: false, note: 'true quand first_name + last_name sont renseignés']
+  is_verified          boolean     [default: false, note: 'Vérification manuelle ou automatique']
+  phone_verified       boolean     [default: false, note: 'Téléphone validé par OTP']
+  metadata             jsonb       [null, note: 'Données complémentaires flexibles']
+  encryption_salt      varchar(64) [null, note: 'Sel unique par user pour chiffrer les données sensibles du profil']
+  preferred_lang       varchar(5)  [default: 'fr', note: 'Langue UI : fr | en']
+  preferred_currency   varchar(10) [default: 'XOF', note: 'Devise affichée']
+  preferred_theme      varchar(10) [default: 'dark', note: 'Thème UI : dark | light']
+  role                 enum        [default: 'tenant', note: 'tenant | landlord | agent | admin — Type de compte global (non granulaire)']
+  status               enum        [default: 'active', note: 'active | restricted | banned — Lifecycle du compte']
+  last_login_at        timestamp   [null, note: 'Dernière connexion réussie — utilisé par le cron d\'inactivité']
+  rbac_role_id         uuid        [null, ref: > roles.id, note: 'Rôle RBAC fin (optionnel) — ex: Validateur KYC, Support Client']
+  created_at           timestamp   [default: `now()`]
+  updated_at           timestamp
+  deleted_at           timestamp   [null, note: 'Soft-delete : le compte est masqué mais les données restent 30j puis hard-delete']
 }
 
 Table profiles {
-  id uuid [pk]
-  user_id uuid [ref: - users.id]
-  full_name_enc text
-  id_card_enc text
-  profession_enc text
-  company_enc text
-  emergency_contact_enc text
-  preferred_zone varchar
-  preferred_zones jsonb
-  budget_min_enc text
-  budget_max_enc text
-  kyc_status enum [default: 'pending']
-  deleted_at timestamp
+  id                      uuid      [pk]
+  user_id                 uuid      [unique, not null, ref: - users.id, note: 'Relation 1-1 avec users']
+  full_name_enc           text      [null, note: 'Nom complet chiffré (AES-256 avec clé dérivée du salt utilisateur)']
+  id_card_enc             text      [null, note: 'Données carte d\'identité chiffrées']
+  profession_enc          text      [null, note: 'Profession chiffrée']
+  company_enc             text      [null, note: 'Société chiffrée']
+  ifu_enc                 text      [null, note: 'Numéro IFU (Identificateur Fiscal) chiffré — Agent/Proprio']
+  ifu_hash                varchar(64) [null, unique, note: 'Hash SHA-256 de l\'IFU pour la recherche unique sans déchiffrer']
+  rccm_enc                text      [null, note: 'Numéro RCCM chiffré — Agents légaux']
+  rccm_hash               varchar(64) [null, unique, note: 'Hash SHA-256 du RCCM pour la recherche unique']
+  emergency_contact_enc   text      [null, note: 'Contact d\'urgence chiffré']
+  preferred_zone          varchar(100) [null, note: 'Zone préférée (quartier) — Locataires']
+  preferred_zones         jsonb     [null, note: 'Zones multiples — Locataires (sélection avancée)']
+  budget_min_enc          text      [null, note: 'Budget minimum chiffré — Locataires']
+  budget_max_enc          text      [null, note: 'Budget maximum chiffré — Locataires']
+  kyc_status              enum      [default: 'pending', note: 'pending | verified | rejected — Process de validation identité']
+  kyc_submitted_at        timestamp [null, note: 'Date de soumission du dossier KYC']
+  kyc_reviewed_at         timestamp [null, note: 'Date de validation ou rejet par un admin']
+  kyc_rejection_reason    text      [null, note: 'Motif du rejet — communiqué à l\'utilisateur']
+  deleted_at              timestamp [null]
 }
 
-// === FINANCES ===
+// ============================================================
+// SECTION 2 : RBAC — RÔLES & PERMISSIONS DYNAMIQUES
+// ============================================================
+
+Table roles {
+  id          uuid      [pk]
+  name        varchar   [unique, not null, note: 'Ex: "System Admin", "Validateur KYC", "Support Client"']
+  description text      [null]
+  is_system   boolean   [default: false, note: 'Si true : rôle non supprimable (SeedData)']
+  created_at  timestamp [default: `now()`]
+  updated_at  timestamp
+}
+
+Table permissions {
+  id          uuid      [pk]
+  name        varchar   [unique, not null, note: 'Format action:ressource — ex: manage:users, view:kyc, manage:settings']
+  description text      [null]
+}
+
+Table role_permissions {
+  role_id       uuid [ref: > roles.id, note: 'Clé de jonction']
+  permission_id uuid [ref: > permissions.id]
+
+  indexes {
+    (role_id, permission_id) [pk]
+  }
+}
+
+// ============================================================
+// SECTION 3 : FINANCES — WALLETS & TRANSACTIONS
+// ============================================================
+
 Table wallets {
-  id uuid [pk]
-  user_id uuid [ref: - users.id]
-  balance_total decimal [default: 0]
-  balance_savings decimal [default: 0]
-  created_at timestamp
-  deleted_at timestamp
+  id               uuid    [pk]
+  user_id          uuid    [unique, ref: - users.id, note: 'Un wallet par utilisateur']
+  balance_total    decimal [default: 0, note: 'Solde disponible total (FCFA)']
+  balance_savings  decimal [default: 0, note: 'Sous-compte épargne (tirelire loyer)']
+  created_at       timestamp
+  deleted_at       timestamp [null]
 }
 
 Table transactions {
-  id uuid [pk]
-  wallet_id uuid [ref: > wallets.id]
-  amount decimal
-  type enum [note: 'rent, saving, commission, withdrawal']
-  status enum [default: 'pending']
-  gateway_ref varchar
-  created_at timestamp
-  deleted_at timestamp
+  id           uuid    [pk]
+  wallet_id    uuid    [ref: > wallets.id]
+  amount       decimal [note: 'Montant en FCFA. Peut être négatif (retrait)']
+  type         enum    [note: 'rent | saving | commission | withdrawal | refund']
+  status       enum    [default: 'pending', note: 'pending | completed | failed | cancelled']
+  gateway_ref  varchar [null, note: 'Référence opérateur mobile money (MTN, Moov)']
+  created_at   timestamp
+  deleted_at   timestamp [null]
 }
 
-// === IMMOBILIER ===
-Table properties {
-  id uuid [pk]
-  owner_id uuid [ref: > users.id]
-  agent_id uuid [ref: > users.id]
-  created_by uuid [ref: > users.id]
-  name varchar [default: 'Sans nom']
-  building_type enum [note: 'villa, immeuble, bureau, boutique, magasin, terrain, maison_de_ville']
-  address text
-  city_id uuid [ref: > cities.id]
-  gps_latitude decimal
-  gps_longitude decimal
-  main_image varchar
-  gallery jsonb
-  description jsonb [note: 'i18n: {fr, en}']
-  title_deed_enc text
-  status enum [note: 'available, occupied, maintenance, coming_soon']
+Table payment_methods {
+  id         uuid    [pk]
+  user_id    uuid    [ref: > users.id]
+  type       varchar [note: 'mobile_money | card | bank']
+  provider   varchar [null, note: 'MTN | Moov | ...']
+  details_enc text   [null, note: 'Données chiffrées (numéro, etc.)']
+  is_default boolean [default: false]
   created_at timestamp
-  updated_at timestamp
-  deleted_at timestamp
+}
+
+// ============================================================
+// SECTION 4 : IMMOBILIER — PROPERTIES & UNITÉS
+// ============================================================
+
+Table properties {
+  id            uuid    [pk]
+  owner_id      uuid    [ref: > users.id, note: 'Propriétaire du bien']
+  agent_id      uuid    [null, ref: > users.id, note: 'Agent mandaté (optionnel)']
+  created_by    uuid    [ref: > users.id, note: 'Peut être l\'admin ou l\'agent']
+  name          varchar [default: 'Sans nom']
+  building_type enum    [note: 'villa | immeuble | bureau | boutique | magasin | terrain | maison_de_ville']
+  address       text    [null]
+  city_id       uuid    [ref: > cities.id]
+  gps_latitude  decimal [null]
+  gps_longitude decimal [null]
+  main_image    varchar [null, note: 'URL image principale']
+  gallery       jsonb   [null, note: 'Array d\'URLs images supplémentaires']
+  description   jsonb   [null, note: 'Internationalisation : { fr: "...", en: "..." }']
+  title_deed_enc text   [null, note: 'Titre foncier chiffré']
+  status        enum    [note: 'available | occupied | maintenance | coming_soon']
+  created_at    timestamp
+  updated_at    timestamp
+  deleted_at    timestamp [null]
 }
 
 Table units {
-  id uuid [pk]
-  property_id uuid [ref: > properties.id, note: 'Null si unité autonome']
-  owner_id uuid [ref: > users.id]
-  ref_type_id uuid [ref: > ref_types.id]
-  created_by uuid [ref: > users.id]
-  name varchar
-  price decimal
-  description jsonb [note: 'i18n: {fr, en}']
-  features jsonb [note: 'Codes des ref_features']
-  images jsonb
-  management_docs_enc text
-  unit_status enum [note: 'available, occupied, notice_given']
-  available_from date
-  address text
-  city_id uuid [ref: > cities.id]
-  gps_latitude decimal
-  gps_longitude decimal
-  surface_m2 int
-  floor int
-  caution_months int
-  avance_months int
-  frais_dossier decimal
+  id              uuid    [pk]
+  property_id     uuid    [null, ref: > properties.id, note: 'Null si chambre autonome sans bien parent']
+  owner_id        uuid    [ref: > users.id]
+  ref_type_id     uuid    [null, ref: > ref_types.id, note: 'Type de logement (Studio, F2, Villa...)']
+  created_by      uuid    [ref: > users.id]
+  name            varchar [note: 'Ex: Appartement A, Studio 3B']
+  price           decimal [note: 'Loyer mensuel en FCFA']
+  description     jsonb   [null, note: '{ fr, en }']
+  features        jsonb   [null, note: 'Codes ref_features : ["wifi", "parking", ...]']
+  images          jsonb   [null, note: 'Array d\'URLs']
+  management_docs_enc text [null, note: 'Documents de gestion chiffrés']
+  unit_status     enum    [note: 'available | occupied | notice_given']
+  available_from  date    [null]
+  address         text    [null]
+  city_id         uuid    [null, ref: > cities.id]
+  gps_latitude    decimal [null]
+  gps_longitude   decimal [null]
+  surface_m2      int     [null]
+  floor           int     [null]
+  caution_months  int     [null, note: 'Nombre de mois de caution']
+  avance_months   int     [null, note: 'Nombre de mois de loyer en avance']
+  frais_dossier   decimal [null, note: 'Frais de dossier en FCFA']
   prepaid_electricity boolean [default: false]
-  water_included boolean [default: false]
-  created_at timestamp
-  updated_at timestamp
-  deleted_at timestamp
+  water_included  boolean [default: false]
+  created_at      timestamp
+  updated_at      timestamp
+  deleted_at      timestamp [null]
+}
+
+Table rental_requests {
+  id                uuid   [pk]
+  unit_id           uuid   [ref: > units.id, note: 'Chambre demandée']
+  tenant_id         uuid   [ref: > users.id, note: 'Locataire candidat']
+  status            enum   [default: 'pending', note: 'pending | accepted | rejected']
+  message           text   [null, note: 'Message optionnel du locataire']
+  desired_move_in_at date  [null, note: 'Date d\'entrée souhaitée']
+  responded_at      timestamp [null, note: 'Date de réponse du propriétaire/agent']
+  responded_by      uuid   [null, note: 'ID du répondant (proprio ou agent)']
+  created_at        timestamp
+  updated_at        timestamp
 }
 
 Table media {
-  id uuid [pk]
-  property_id uuid [ref: > properties.id]
-  url text
-  rank int
-  is_primary boolean
-  description jsonb
+  id          uuid    [pk]
+  property_id uuid    [ref: > properties.id]
+  url         text
+  rank        int     [note: 'Ordre d\'affichage (1 = image principale)']
+  is_primary  boolean [default: false]
+  description jsonb   [null, note: '{ fr, en }']
 }
 
-// === RÉFÉRENTIELS (MOTEUR) ===
+// ============================================================
+// SECTION 5 : RÉFÉRENTIELS (MOTEUR IMMO)
+// ============================================================
+
 Table ref_categories {
-  id uuid [pk]
-  code varchar [unique]
-  label_fr varchar
-  label_en varchar
+  id         uuid    [pk]
+  code       varchar [unique, note: 'Ex: APARTMENT_TYPE, UNIT_FEATURE']
+  label_fr   varchar
+  label_en   varchar
   sort_order int
 }
 
 Table ref_types {
-  id uuid [pk]
-  ref_category_id uuid [ref: > ref_categories.id]
-  code varchar
-  label_fr varchar
-  label_en varchar
-  sort_order int
+  id              uuid   [pk]
+  ref_category_id uuid   [ref: > ref_categories.id]
+  code            varchar
+  label_fr        varchar
+  label_en        varchar
+  sort_order      int
 }
 
 Table ref_features {
-  id uuid [pk]
-  ref_type_id uuid [ref: > ref_types.id]
-  code varchar
-  label_fr varchar
-  label_en varchar
-  sort_order int
+  id          uuid   [pk]
+  ref_type_id uuid   [ref: > ref_types.id]
+  code        varchar [note: 'Ex: wifi, parking, balcony, generator']
+  label_fr    varchar
+  label_en    varchar
+  sort_order  int
 }
 
 Table property_types {
-  id uuid [pk]
-  code varchar [unique]
-  label_fr varchar
-  label_en varchar
+  id         uuid    [pk]
+  code       varchar [unique]
+  label_fr   varchar
+  label_en   varchar
   sort_order int
 }
 
 Table unit_types {
-  id uuid [pk]
-  property_type_id uuid [ref: > property_types.id]
-  code varchar [unique]
-  label_fr varchar
-  label_en varchar
+  id               uuid   [pk]
+  property_type_id uuid   [ref: > property_types.id]
+  code             varchar [unique]
+  label_fr         varchar
+  label_en         varchar
+  sort_order       int
+}
+
+Table unit_features {
+  id         uuid   [pk]
+  code       varchar [unique]
+  label_fr   varchar
+  label_en   varchar
   sort_order int
 }
 
 Table property_statuses {
-  id uuid [pk]
-  code varchar [unique]
-  label_fr varchar
-  label_en varchar
-  color varchar
+  id         uuid   [pk]
+  code       varchar [unique]
+  label_fr   varchar
+  label_en   varchar
+  color      varchar [note: 'Code hex pour l\'affichage UI']
   sort_order int
 }
 
-// === LOCALISATION ===
+// ============================================================
+// SECTION 6 : LOCALISATION
+// ============================================================
+
 Table countries {
-  id uuid [pk]
-  code varchar [unique]
+  id   uuid   [pk]
+  code varchar [unique, note: 'ISO 3166-1 alpha-2 : BJ, FR, SN...']
   name varchar
 }
 
 Table cities {
-  id uuid [pk]
-  country_id uuid [ref: > countries.id]
-  name varchar
+  id         uuid   [pk]
+  country_id uuid   [ref: > countries.id]
+  name       varchar
 }
 
-// === SERVICES & NOTIFS ===
-Table notifications {
-  id uuid [pk]
-  user_id uuid [ref: > users.id]
-  channel enum [note: 'whatsapp, sms, push, in_app']
-  content text
-  sent_at timestamp
+Table neighborhoods {
+  id      uuid   [pk]
+  city_id uuid   [ref: > cities.id]
+  name    varchar
+}
+
+// ============================================================
+// SECTION 7 : AUDIT — TRACE D'ACTIVITÉ
+// ============================================================
+
+Table activity_logs {
+  id          uuid      [pk]
+  user_id     uuid      [null, ref: > users.id, note: 'Peut être null si action système']
+  action      enum      [note: 'CREATE | UPDATE | DELETE | LOGIN | BAN | RESTRICT | CUSTOM']
+  entity_type varchar(100) [null, note: 'Ex: User, Property, RentalRequest']
+  entity_id   varchar(255) [null, note: 'UUID de l\'entité affectée']
+  old_values  jsonb     [null, note: 'Snapshot avant modification']
+  new_values  jsonb     [null, note: 'Snapshot après modification']
+  description text      [null, note: 'Message lisible pour l\'audit humain']
+  ip_address  varchar(45) [null]
+  user_agent  text      [null]
+  created_at  timestamp [default: `now()`]
+}
+
+// ============================================================
+// SECTION 8 : PARAMÈTRES SYSTÈME & NOTIFICATIONS
+// ============================================================
+
+Table system_configs {
+  id         uuid    [pk]
+  key        varchar [unique, note: 'Ex: whatsapp_enabled, sms_gateway, maintenance_mode']
+  value      jsonb   [note: 'Valeur flexible (bool, string, objet)']
+  is_active  boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table notification_preferences {
+  id           uuid    [pk]
+  user_id      uuid    [ref: > users.id, note: 'Préférences de notification par utilisateur']
+  channel      varchar [note: 'whatsapp | sms | email | push']
+  enabled      boolean [default: true]
+  created_at   timestamp
+  updated_at   timestamp
+
+  indexes {
+    (user_id, channel) [unique]
+  }
+}
+
+// ============================================================
+// SECTION 9 : DEVISES
+// ============================================================
+
+Table currency_rates {
+  id         uuid    [pk]
+  from_code  varchar [note: 'Code ISO devise source (ex: EUR)']
+  to_code    varchar [note: 'Code ISO devise cible (ex: XOF)']
+  rate       decimal [note: 'Taux de conversion']
+  updated_at timestamp
 }

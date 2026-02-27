@@ -11,6 +11,8 @@ export interface GetProfileByUserResult {
   id_card_masked: string | null;
   profession_masked: string | null;
   company_masked: string | null;
+  ifu_masked: string | null;
+  rccm_masked: string | null;
   emergency_contact_masked: string | null;
   preferred_zone: string | null;
   preferred_zones: string[] | null;
@@ -35,6 +37,8 @@ export class GetProfileByUserHandler implements IQueryHandler<GetProfileByUserQu
       id_card_masked: profile.id_card_enc ? MASKED_PLACEHOLDER : null,
       profession_masked: profile.profession_enc ? MASKED_PLACEHOLDER : null,
       company_masked: profile.company_enc ? MASKED_PLACEHOLDER : null,
+      ifu_masked: profile.ifu_enc ? MASKED_PLACEHOLDER : null,
+      rccm_masked: profile.rccm_enc ? MASKED_PLACEHOLDER : null,
       emergency_contact_masked: profile.emergency_contact_enc ? MASKED_PLACEHOLDER : null,
       preferred_zone: profile.preferred_zone,
       preferred_zones: profile.preferred_zones ?? (profile.preferred_zone ? [profile.preferred_zone] : null),

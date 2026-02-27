@@ -20,7 +20,7 @@ const totalPages = ref(0)
 const currentPage = ref(1)
 const loading = ref(true)
 const filterRole = ref<UserRole | ''>('')
-const filterStatus = ref<'all' | true | false>('all')
+const filterStatus = ref<'all' | 'active' | 'restricted' | 'banned'>('all')
 const searchQuery = ref('')
 
 const roleOptions: { value: '' | UserRole; labelKey: string }[] = [
@@ -39,7 +39,7 @@ async function fetchList(page = 1) {
       page,
       limit: PAGE_SIZE,
       role: filterRole.value || undefined,
-      is_active: filterStatus.value === 'all' ? undefined : filterStatus.value,
+      status: filterStatus.value === 'all' ? undefined : filterStatus.value,
       search: searchQuery.value.trim() || undefined,
     })
     users.value = result.data
@@ -68,8 +68,11 @@ function roleLabel(role: UserRole): string {
   return t(`admin.users.role${role.charAt(0).toUpperCase() + role.slice(1)}` as 'admin.users.roleTenant')
 }
 
-function statusLabel(active: boolean): string {
-  return active ? t('admin.users.statusActive') : t('admin.users.statusInactive')
+function statusLabel(status: string): string {
+  if (status === 'active') return 'Actif'
+  if (status === 'restricted') return 'Restreint'
+  if (status === 'banned') return 'Banni'
+  return 'Inconnu'
 }
 
 function formatDate(iso: string) {
@@ -126,8 +129,9 @@ fetchList(1)
           class="rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
         >
           <option value="all">{{ t('admin.users.filterStatusAll') }}</option>
-          <option :value="true">{{ t('admin.users.filterStatusActive') }}</option>
-          <option :value="false">{{ t('admin.users.filterStatusInactive') }}</option>
+          <option value="active">Actif</option>
+          <option value="restricted">Restreint</option>
+          <option value="banned">Banni</option>
         </select>
       </div>
     </div>
@@ -186,9 +190,13 @@ fetchList(1)
               <td class="px-4 py-3">
                 <span
                   class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"
-                  :class="u.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                  :class="{
+                    'bg-green-100 text-green-800': u.status === 'active',
+                    'bg-yellow-100 text-yellow-800': u.status === 'restricted',
+                    'bg-red-100 text-red-800': u.status === 'banned'
+                  }"
                 >
-                  {{ statusLabel(u.is_active) }}
+                  {{ statusLabel(u.status) }}
                 </span>
               </td>
               <td class="px-4 py-3">

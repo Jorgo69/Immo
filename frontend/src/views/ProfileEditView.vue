@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { ArrowLeft, User, Upload, CreditCard, Pencil } from 'lucide-vue-next'
 import { getMyProfile, updateMyProfile, getMyPaymentMethods } from '../services/profile.service'
+import { getMyNotificationPreferences, updateMyNotificationPreference } from '../services/settings.service'
 import { updateUser, uploadAvatar, uploadIdCard } from '../services/auth.service'
 import { useAppStore } from '../stores/app'
 import { getApiErrorMessage } from '../services/http'
@@ -42,6 +43,12 @@ const company = ref('')
 const emergencyContactUnlocked = ref(false)
 const emergencyContact = ref('')
 
+const notifPrefs = ref<Record<string, boolean>>({
+  email: true,
+  sms: true,
+  whatsapp: true,
+})
+
 const displayEmail = computed(() => user.value?.email ?? '')
 
 const kycStatusClass = computed(() => {
@@ -71,14 +78,16 @@ const companyPlaceholder = computed(() =>
 async function fetchData() {
   loading.value = true
   try {
-    const [profileData, me, methods] = await Promise.all([
+    const [profileData, me, methods, prefs] = await Promise.all([
       getMyProfile(),
       appStore.refreshMe(),
       getMyPaymentMethods().catch(() => []),
+      getMyNotificationPreferences().catch(() => ({ email: true, sms: true, whatsapp: true })),
     ])
     if (profileData) profile.value = profileData
     user.value = me ?? null
     paymentMethods.value = Array.isArray(methods) ? methods : []
+    notifPrefs.value = prefs as Record<string, boolean>
     if (me) {
       firstName.value = me.first_name ?? ''
       lastName.value = me.last_name ?? ''
@@ -130,6 +139,18 @@ async function saveAndRedirect() {
 
 function cancel() {
   router.push({ name: 'profile' })
+}
+
+async function toggleNotif(channel: string) {
+  const newVal = !notifPrefs.value[channel]
+  notifPrefs.value[channel] = newVal
+  try {
+    await updateMyNotificationPreference(channel, newVal)
+    toast.success(`Préférence '${channel}' mise à jour.`)
+  } catch (err) {
+    notifPrefs.value[channel] = !newVal // rollback visuel
+    toast.error(getApiErrorMessage(err))
+  }
 }
 
 function onAvatarUpload() {
@@ -454,6 +475,70 @@ onMounted(fetchData)
                   {{ t('profile.prefCurrency') }}
                 </label>
                 <CurrencySwitcher />
+              </div>
+            </div>
+
+            <hr class="my-6 border-gray-100 dark:border-gray-800" />
+            
+            <h4 class="mb-4 text-sm font-semibold text-[var(--color-text)]">
+              Notifications & Alertes
+            </h4>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-[var(--color-text)]">Par Email</p>
+                  <p class="text-xs text-[var(--color-muted)]">Reçus fin de mois, annonces</p>
+                </div>
+                <button 
+                  type="button"
+                  @click="toggleNotif('email')"
+                  class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-2"
+                  :class="notifPrefs.email ? 'bg-[var(--color-accent)]' : 'bg-gray-200 dark:bg-gray-700'"
+                >
+                  <span
+                    aria-hidden="true"
+                    class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                    :class="notifPrefs.email ? 'translate-x-5' : 'translate-x-0'"
+                  />
+                </button>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-[var(--color-text)]">Par SMS</p>
+                  <p class="text-xs text-[var(--color-muted)]">Rappels urgents, quittances</p>
+                </div>
+                <button 
+                  type="button"
+                  @click="toggleNotif('sms')"
+                  class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-2"
+                  :class="notifPrefs.sms ? 'bg-[var(--color-accent)]' : 'bg-gray-200 dark:bg-gray-700'"
+                >
+                  <span
+                    aria-hidden="true"
+                    class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                    :class="notifPrefs.sms ? 'translate-x-5' : 'translate-x-0'"
+                  />
+                </button>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-[var(--color-text)]">Par WhatsApp</p>
+                  <p class="text-xs text-[var(--color-muted)]">Support rapide (Si activé par l'Admin)</p>
+                </div>
+                <button 
+                  type="button"
+                  @click="toggleNotif('whatsapp')"
+                  class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-2"
+                  :class="notifPrefs.whatsapp ? 'bg-[var(--color-accent)]' : 'bg-gray-200 dark:bg-gray-700'"
+                >
+                  <span
+                    aria-hidden="true"
+                    class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                    :class="notifPrefs.whatsapp ? 'translate-x-5' : 'translate-x-0'"
+                  />
+                </button>
               </div>
             </div>
           </AppCard>

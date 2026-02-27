@@ -12,7 +12,6 @@ import { UserRole } from '../auth/models/user.model/user.model';
 export class CurrencyController {
   constructor(private readonly currencyService: CurrencyService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Get('active')
   findActive() {
     return this.currencyService.findActive();

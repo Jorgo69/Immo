@@ -6,7 +6,7 @@
 import { ref, watch, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { X, ChevronRight, ChevronLeft, Building2, Map, Camera, Save } from 'lucide-vue-next'
-import { getCountries, getCities, type CountryDto, type CityDto } from '../../services/location.service'
+import { getCountries, getCities, getNeighborhoods, type CountryDto, type CityDto, type NeighborhoodDto } from '../../services/location.service'
 import { useReferenceStore } from '../../stores/references'
 import { createProperty, uploadPropertyImage, type CreatePropertyPayload, type PropertyImageItemDto } from '../../services/property.service'
 import { getApiErrorMessage } from '../../services/http'
@@ -41,7 +41,7 @@ const form = ref({
   name: 'Sans nom',
   building_type: 'villa' as string,
   address: '',
-  neighborhood: '' as string,
+  neighborhood_id: '' as string,
   country_id: '',
   city_id: '',
   status: 'available' as string,
@@ -98,6 +98,9 @@ const countryOptions = computed(() =>
 const cityOptions = computed(() =>
   cities.value.map((c) => ({ value: c.id, label: c.name }))
 )
+const neighborhoodOptions = computed(() =>
+  neighborhoods.value.map((n) => ({ value: n.id, label: n.name }))
+)
 const buildingTypeOptions = computed(() =>
   referenceStore.propertyTypes.map((r) => ({
     value: r.code,
@@ -134,6 +137,29 @@ async function loadCities(countryId: string) {
 watch(() => form.value.country_id, (id) => {
   if (id) loadCities(id)
   else cities.value = []
+})
+
+const neighborhoods = ref<NeighborhoodDto[]>([])
+const loadingNeighborhoods = ref(false)
+
+async function loadNeighborhoods(cityId: string) {
+  if (!cityId) {
+    neighborhoods.value = []
+    form.value.neighborhood_id = ''
+    return
+  }
+  loadingNeighborhoods.value = true
+  try {
+    neighborhoods.value = await getNeighborhoods(cityId)
+    form.value.neighborhood_id = ''
+  } finally {
+    loadingNeighborhoods.value = false
+  }
+}
+
+watch(() => form.value.city_id, (id) => {
+  if (id) loadNeighborhoods(id)
+  else neighborhoods.value = []
 })
 
 watch(photoFiles, (files) => {
@@ -205,7 +231,7 @@ async function submit() {
       name: form.value.name?.trim() || 'Sans nom',
       building_type: form.value.building_type || 'villa',
       address: form.value.address.trim(),
-      neighborhood: form.value.neighborhood?.trim() || null,
+      neighborhood_id: form.value.neighborhood_id || undefined,
       city_id: form.value.city_id,
       status: form.value.status,
       title_deed: form.value.title_deed?.trim() || undefined,
@@ -236,7 +262,7 @@ watch(() => props.show, (visible) => {
       name: 'Sans nom',
       building_type: 'villa',
       address: '',
-      neighborhood: '',
+      neighborhood_id: '',
       country_id: '',
       city_id: '',
       status: 'available',
@@ -333,7 +359,13 @@ onMounted(() => { if (props.show) loadCountries() })
                  <AppSelect v-model="form.city_id" :label="t('landlord.city')" :options="cityOptions" :disabled="!form.country_id || loadingCities" />
                </div>
 
-               <AppInput v-model="form.neighborhood" label="Quartier (facultatif)" placeholder="Ex: Cadjehoun, Gbegamey, Zogbo" />
+                <AppSelect
+                  v-model="form.neighborhood_id"
+                  label="Quartier (facultatif)"
+                  :options="neighborhoodOptions"
+                  :disabled="loadingNeighborhoods || !form.city_id"
+                  placeholder="Sélectionner..."
+                />
 
                <div class="space-y-4">
                   <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{{ t('landlord.description') }}</label>

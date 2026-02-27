@@ -56,7 +56,7 @@ export class GetUserDetailHandler implements IQueryHandler<GetUserDetailQuery> {
         'is_verified',
         'preferred_lang',
         'role',
-        'is_active',
+        'status',
         'created_at',
         'updated_at',
       ],

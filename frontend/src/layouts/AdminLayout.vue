@@ -24,6 +24,8 @@ import {
   MapPin,
   BookOpen,
   Banknote,
+  History,
+  ShieldCheck,
 } from 'lucide-vue-next'
 import { useAppStore } from '../stores/app'
 import AppLink from '../components/ui/AppLink.vue'
@@ -114,10 +116,14 @@ const navItems = computed(() => {
       label: t('admin.navSettings'),
       icon: Settings2,
       children: [
+        { path: '/admin/settings', label: 'Paramètres globaux', icon: Settings2 },
         { path: '/admin/location', label: t('admin.navLocation'), icon: MapPin },
         { path: '/admin/references', label: t('admin.navReferences'), icon: BookOpen },
         { path: '/admin/currencies', label: 'Devises', icon: Banknote },
         { path: '/admin/users', label: t('admin.navUsers'), icon: Users },
+        { path: '/admin/kyc', label: 'Validation KYC', icon: ShieldCheck },
+        { path: '/admin/roles', label: 'Rôles & Permissions', icon: Key },
+        { path: '/admin/activity-logs', label: "Trace d'Audit", icon: History },
       ],
     }] : []),
 

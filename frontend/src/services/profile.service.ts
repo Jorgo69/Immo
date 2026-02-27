@@ -24,6 +24,8 @@ export async function updateMyProfile(payload: {
   id_card?: string
   profession?: string
   company?: string
+  ifu?: string
+  rccm?: string
   emergency_contact?: string
   preferred_zone?: string
   /** Plusieurs zones (sélection multiple, comme sujets d’intérêt). */

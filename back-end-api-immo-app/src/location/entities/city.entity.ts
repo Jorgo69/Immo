@@ -8,10 +8,12 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { CountryEntity } from './country.entity';
+import { NeighborhoodEntity } from './neighborhood.entity';
 
 @Entity('cities')
 export class CityEntity {
@@ -27,6 +29,9 @@ export class CityEntity {
 
   @Column({ type: 'varchar', length: 150 })
   name: string;
+
+  @OneToMany(() => NeighborhoodEntity, (n) => n.city)
+  neighborhoods: NeighborhoodEntity[];
 
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;

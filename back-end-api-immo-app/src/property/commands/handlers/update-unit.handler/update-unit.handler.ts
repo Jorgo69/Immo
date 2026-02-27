@@ -55,7 +55,7 @@ export class UpdateUnitHandler implements ICommandHandler<UpdateUnitCommand> {
       if (command.unit_status !== undefined) existing.unit_status = command.unit_status;
       if (command.available_from !== undefined) existing.available_from = command.available_from ?? null;
       if (command.address !== undefined) existing.address = command.address ?? null;
-      if (command.neighborhood !== undefined) existing.neighborhood = command.neighborhood ?? null;
+      if (command.neighborhood_id !== undefined) existing.neighborhood_id = command.neighborhood_id ?? null;
       if (command.city_id !== undefined) existing.city_id = command.city_id ?? null;
       if (command.gps_latitude !== undefined) existing.gps_latitude = command.gps_latitude ?? null;
       if (command.gps_longitude !== undefined) existing.gps_longitude = command.gps_longitude ?? null;

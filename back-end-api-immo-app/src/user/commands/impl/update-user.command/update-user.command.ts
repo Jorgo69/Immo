@@ -3,7 +3,7 @@
  */
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsEnum, IsBoolean, IsEmail, IsUrl, MaxLength } from 'class-validator';
-import { UserRole } from '../../../../auth/models/user.model/user.model';
+import { UserRole, UserStatus } from '../../../../auth/models/user.model/user.model';
 
 export class UpdateUserCommand {
   id: string; // Renseigné depuis le JWT
@@ -50,8 +50,8 @@ export class UpdateUserCommand {
   @IsEnum(UserRole)
   role?: UserRole;
 
-  @ApiProperty({ description: 'Compte actif', required: false })
+  @ApiProperty({ description: 'Statut du compte', enum: UserStatus, required: false })
   @IsOptional()
-  @IsBoolean()
-  is_active?: boolean;
+  @IsEnum(UserStatus)
+  status?: UserStatus;
 }

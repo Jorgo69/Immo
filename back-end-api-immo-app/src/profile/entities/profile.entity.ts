@@ -41,6 +41,18 @@ export class ProfileEntity {
   @Column({ type: 'text', nullable: true, name: 'company_enc' })
   company_enc: string | null;
 
+  @Column({ type: 'text', nullable: true, name: 'ifu_enc' })
+  ifu_enc: string | null;
+
+  @Column({ type: 'varchar', length: 64, nullable: true, unique: true, name: 'ifu_hash' })
+  ifu_hash: string | null;
+
+  @Column({ type: 'text', nullable: true, name: 'rccm_enc' })
+  rccm_enc: string | null;
+
+  @Column({ type: 'varchar', length: 64, nullable: true, unique: true, name: 'rccm_hash' })
+  rccm_hash: string | null;
+
   @Column({ type: 'text', nullable: true, name: 'emergency_contact_enc' })
   emergency_contact_enc: string | null;
 

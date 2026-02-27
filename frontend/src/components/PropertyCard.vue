@@ -6,7 +6,6 @@ import { useCurrency } from '../composables/useCurrency'
  */
 import { ref, computed } from 'vue'
 import { MapPin, Heart } from 'lucide-vue-next'
-import { useAppStore } from '../stores/app'
 import { getUploadUrl } from '../config/api'
 import AppImage from './ui/AppImage.vue'
 
@@ -24,8 +23,6 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{ click: [id: string]; favorite: [id: string] }>()
-
-const appStore = useAppStore()
 
 const currentImageIndex = ref(0)
 

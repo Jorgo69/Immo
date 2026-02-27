@@ -27,7 +27,7 @@ export class UpdatePropertyCommand {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(255) name?: string;
   @ApiPropertyOptional() @IsOptional() @IsEnum(PropertyBuildingType) building_type?: PropertyBuildingType;
   @ApiPropertyOptional() @IsOptional() @IsString() address?: string;
-  @ApiPropertyOptional({ description: 'Quartier (ex: Cadjehoun, Gbegamey)' }) @IsOptional() @IsString() @MaxLength(150) neighborhood?: string | null;
+  @ApiPropertyOptional({ description: 'ID du quartier (optionnel)' }) @IsOptional() @IsUUID() neighborhood_id?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsUUID() city_id?: string;
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsNumber() gps_latitude?: number;
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsNumber() gps_longitude?: number;

@@ -16,6 +16,7 @@ import {
 } from 'typeorm';
 import { UserModel } from '../../auth/models/user.model/user.model';
 import { CityEntity } from '../../location/entities/city.entity';
+import { NeighborhoodEntity } from '../../location/entities/neighborhood.entity';
 import { MediaEntity } from './media.entity';
 import { UnitEntity } from './unit.entity';
 
@@ -69,9 +70,13 @@ export class PropertyEntity {
   @Column({ type: 'text', default: '' })
   address: string;
 
-  /** Quartier (facultatif) — précision de localisation utile au Benin (ex: Cadjehoun, Gbegamey, Zogbo). */
-  @Column({ type: 'varchar', length: 150, nullable: true })
-  neighborhood: string | null;
+  /** Quartier ID — précision de localisation liée à la table Neighborhood. */
+  @Column({ type: 'uuid', name: 'neighborhood_id', nullable: true })
+  neighborhood_id: string | null;
+
+  @ManyToOne(() => NeighborhoodEntity, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'neighborhood_id' })
+  neighborhood: NeighborhoodEntity | null;
 
   @Column({ type: 'uuid', name: 'city_id', nullable: true })
   city_id: string | null;

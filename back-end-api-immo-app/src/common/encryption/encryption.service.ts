@@ -103,6 +103,17 @@ export class EncryptionService implements OnModuleInit {
     }
   }
 
+  /**
+   * Crée une empreinte (hash déterministe) pour permettre 
+   * la recherche d'unicité (Blind Index) sur des données chiffrées.
+   */
+  hash(plaintext: string): string {
+    if (!this.masterKey) return plaintext;
+    const hmac = crypto.createHmac('sha256', this.masterKey);
+    hmac.update(plaintext, 'utf8');
+    return hmac.digest('hex');
+  }
+
   isConfigured(): boolean {
     return this.masterKey !== null;
   }

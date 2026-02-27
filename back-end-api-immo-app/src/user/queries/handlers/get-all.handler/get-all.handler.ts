@@ -31,7 +31,7 @@ export class GetAllHandler implements IQueryHandler<GetAllQuery> {
         'u.is_verified',
         'u.preferred_lang',
         'u.role',
-        'u.is_active',
+        'u.status',
         'u.created_at',
         'u.updated_at',
         'p.id',
@@ -41,7 +41,7 @@ export class GetAllHandler implements IQueryHandler<GetAllQuery> {
       .skip(skip)
       .take(limit);
     if (query.role != null) qb.andWhere('u.role = :role', { role: query.role });
-    if (query.is_active != null) qb.andWhere('u.is_active = :is_active', { is_active: query.is_active });
+    if (query.status != null) qb.andWhere('u.status = :status', { status: query.status });
     if (query.search != null && query.search.trim() !== '') {
       qb.andWhere('u.phone_number ILIKE :search', { search: `%${query.search.trim()}%` });
     }

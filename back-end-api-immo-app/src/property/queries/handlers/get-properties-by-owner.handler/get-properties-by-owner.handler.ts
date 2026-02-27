@@ -32,7 +32,8 @@ export class GetPropertiesByOwnerHandler implements IQueryHandler<GetPropertiesB
     qb.leftJoinAndSelect('p.media', 'media');
     qb.leftJoinAndSelect('p.units', 'units');
     qb.leftJoinAndSelect('units.ref_type', 'unit_ref_type');
-    qb.leftJoin('p.city', 'city');
+    qb.leftJoinAndSelect('p.city', 'city');
+    qb.leftJoinAndSelect('p.neighborhood', 'neighborhood');
     qb.andWhere('p.owner_id = :owner_id', { owner_id: query.owner_id });
     if (query.city) qb.andWhere('city.name = :city', { city: query.city });
     if (query.status) qb.andWhere('p.status = :status', { status: query.status });
@@ -49,6 +50,7 @@ export class GetPropertiesByOwnerHandler implements IQueryHandler<GetPropertiesB
     const unitQb = unitRepo.createQueryBuilder('u');
     unitQb.leftJoinAndSelect('u.ref_type', 'ref_type');
     unitQb.leftJoinAndSelect('u.city', 'city');
+    unitQb.leftJoinAndSelect('u.neighborhood', 'neighborhood');
     unitQb.andWhere('u.property_id IS NULL');
     unitQb.andWhere('u.owner_id = :owner_id', { owner_id: query.owner_id });
     unitQb.andWhere('u.deleted_at IS NULL');
@@ -71,6 +73,8 @@ export class GetPropertiesByOwnerHandler implements IQueryHandler<GetPropertiesB
         address: unit.address ?? '',
         city_id: unit.city_id,
         city: unit.city,
+        neighborhood_id: unit.neighborhood_id,
+        neighborhood: unit.neighborhood,
         gps_latitude: unit.gps_latitude,
         gps_longitude: unit.gps_longitude,
         main_image: mainImage,

@@ -8,13 +8,22 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn
 } from 'typeorm';
+import { RoleEntity } from '../../../rbac/entities/role.entity';
 
 export enum UserRole {
   TENANT = 'tenant',
   LANDLORD = 'landlord',
   AGENT = 'agent',
   ADMIN = 'admin',
+}
+
+export enum UserStatus {
+  ACTIVE = 'active',
+  RESTRICTED = 'restricted',
+  BANNED = 'banned',
 }
 
 @Entity('users')
@@ -71,8 +80,15 @@ export class UserModel {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.TENANT })
   role: UserRole;
 
-  @Column({ type: 'boolean', default: true })
-  is_active: boolean;
+  @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
+  status: UserStatus;
+
+  @Column({ type: 'timestamp', nullable: true })
+  last_login_at: Date | null;
+
+  @ManyToOne(() => RoleEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'rbac_role_id' })
+  rbac_role: RoleEntity;
 
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;

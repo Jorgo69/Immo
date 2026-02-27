@@ -179,6 +179,30 @@ export const router = createRouter({
           meta: { title: 'Configuration référentiels', requiresRole: ['admin'] },
         },
         {
+          path: 'activity-logs',
+          name: 'admin-activity-logs',
+          component: () => import('../views/admin/AdminActivityLogsView.vue'),
+          meta: { title: "Trace d'Audit", requiresRole: ['admin'] },
+        },
+        {
+          path: 'kyc',
+          name: 'admin-kyc',
+          component: () => import('../views/admin/AdminKycView.vue'),
+          meta: { title: 'Validation KYC', requiresRole: ['admin'] },
+        },
+        {
+          path: 'roles',
+          name: 'admin-roles',
+          component: () => import('../views/admin/AdminRolesView.vue'),
+          meta: { title: 'Rôles & Permissions', requiresRole: ['admin'] },
+        },
+        {
+          path: 'settings',
+          name: 'admin-settings',
+          component: () => import('../views/admin/AdminSettingsView.vue'),
+          meta: { title: 'Paramètres système', requiresRole: ['admin'] },
+        },
+        {
           path: 'profile',
           name: 'profile',
           component: () => import('../views/ProfileView.vue'),

@@ -7,7 +7,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserModel } from '../models/user.model/user.model';
+import { UserModel, UserStatus } from '../models/user.model/user.model';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -44,13 +44,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         'preferred_currency',
         'preferred_theme',
         'role',
-        'is_active',
+        'status',
         'created_at',
         'updated_at',
       ],
     });
 
-    if (!user) {
+    if (!user || user.status === UserStatus.BANNED) {
       throw new UnauthorizedException('Unauthorized');
     }
 

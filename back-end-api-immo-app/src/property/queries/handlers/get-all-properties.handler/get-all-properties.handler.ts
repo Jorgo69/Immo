@@ -17,6 +17,7 @@ export class GetAllPropertiesHandler implements IQueryHandler<GetAllPropertiesQu
     qb.leftJoinAndSelect('p.media', 'media');
     qb.leftJoinAndSelect('p.units', 'units');
     qb.leftJoinAndSelect('p.city', 'city');
+    qb.leftJoinAndSelect('p.neighborhood', 'neighborhood');
     if (query.city) qb.andWhere('city.name = :city', { city: query.city });
     if (query.status) qb.andWhere('p.status = :status', { status: query.status });
     if (query.min_price != null) {

@@ -5,9 +5,9 @@
  */
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Globe, MapPin, Plus } from 'lucide-vue-next'
-import { getCountries, getCities, createCountry, createCity } from '../../services/location.service'
-import type { CountryDto, CityDto } from '../../services/location.service'
+import { Globe, MapPin, Plus, Trash2 } from 'lucide-vue-next'
+import { getCountries, getCities, createCountry, createCity, getNeighborhoods, createNeighborhood, deleteNeighborhood } from '../../services/location.service'
+import type { CountryDto, CityDto, NeighborhoodDto } from '../../services/location.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
 import { AppButton, AppCard, AppInput, AppTitle, AppParagraph } from '../../components/ui'
@@ -20,8 +20,14 @@ const error = ref('')
 
 const newCountry = ref({ name: '', iso_code: '' })
 const newCity = ref({ country_id: '', name: '' })
+const newNeighborhood = ref({ city_id: '', name: '' })
+
 const creatingCountry = ref(false)
 const creatingCity = ref(false)
+const creatingNeighborhood = ref(false)
+const deletingNeighborhoodId = ref<string | null>(null)
+
+const neighborhoodsByCity = ref<Record<string, NeighborhoodDto[]>>({})
 
 async function load() {
   loading.value = true
@@ -29,8 +35,13 @@ async function load() {
   try {
     countries.value = await getCountries()
     citiesByCountry.value = {}
+    neighborhoodsByCity.value = {}
     for (const c of countries.value) {
-      citiesByCountry.value[c.id] = await getCities(c.id)
+      const cities = await getCities(c.id)
+      citiesByCountry.value[c.id] = cities
+      for (const city of cities) {
+        neighborhoodsByCity.value[city.id] = await getNeighborhoods(city.id)
+      }
     }
   } catch (e) {
     error.value = getApiErrorMessage(e)
@@ -82,6 +93,44 @@ async function addCity() {
 
 function citiesFor(countryId: string): CityDto[] {
   return citiesByCountry.value[countryId] ?? []
+}
+
+function neighborhoodsFor(cityId: string): NeighborhoodDto[] {
+  return neighborhoodsByCity.value[cityId] ?? []
+}
+
+async function addNeighborhood() {
+  const city_id = newNeighborhood.value.city_id
+  const name = newNeighborhood.value.name?.trim()
+  if (!city_id || !name) {
+    toast.error(t('admin.location.neighborhoodRequired', 'Une ville et un nom sont requis'))
+    return
+  }
+  creatingNeighborhood.value = true
+  try {
+    await createNeighborhood({ city_id, name })
+    toast.success(t('admin.location.neighborhoodCreated', 'Quartier ajouté avec succès'))
+    newNeighborhood.value = { city_id: newNeighborhood.value.city_id, name: '' }
+    await load()
+  } catch (e) {
+    toast.error(getApiErrorMessage(e))
+  } finally {
+    creatingNeighborhood.value = false
+  }
+}
+
+async function removeNeighborhood(id: string) {
+  if (!confirm(t('admin.location.confirmDeleteNeighborhood', 'Voulez-vous vraiment supprimer ce quartier ?'))) return
+  deletingNeighborhoodId.value = id
+  try {
+    await deleteNeighborhood(id)
+    toast.success(t('admin.location.neighborhoodDeleted', 'Quartier supprimé avec succès'))
+    await load()
+  } catch (e) {
+    toast.error(getApiErrorMessage(e))
+  } finally {
+    deletingNeighborhoodId.value = null
+  }
 }
 
 onMounted(load)
@@ -161,6 +210,41 @@ onMounted(load)
         </form>
       </AppCard>
 
+      <!-- Ajouter un quartier -->
+      <AppCard class="p-4">
+        <h3 class="text-sm font-semibold text-[var(--color-text)] mb-3 flex items-center gap-2">
+          <Plus class="w-4 h-4" />
+          {{ t('admin.location.addNeighborhood', 'Ajouter un quartier') }}
+        </h3>
+        <form class="flex flex-wrap items-end gap-3" @submit.prevent="addNeighborhood">
+          <div class="min-w-[200px]">
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ t('admin.location.city', 'Ville') }}</label>
+            <select
+              v-model="newNeighborhood.city_id"
+              class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-[var(--color-text)]"
+            >
+              <option value="">{{ t('admin.location.selectCity', 'Sélectionner une ville...') }}</option>
+              <template v-for="c in countries" :key="c.id">
+                <optgroup :label="c.name">
+                  <option v-for="city in citiesFor(c.id)" :key="city.id" :value="city.id">
+                    {{ city.name }}
+                  </option>
+                </optgroup>
+              </template>
+            </select>
+          </div>
+          <AppInput
+            v-model="newNeighborhood.name"
+            :label="t('admin.location.neighborhoodName', 'Nom du quartier')"
+            :placeholder="t('admin.location.neighborhoodNamePlaceholder', 'Ex: Fidjrossè')"
+            class="min-w-[180px]"
+          />
+          <AppButton type="submit" variant="primary" size="sm" :loading="creatingNeighborhood" :disabled="!newNeighborhood.city_id">
+            {{ t('admin.location.create', 'Créer') }}
+          </AppButton>
+        </form>
+      </AppCard>
+
       <!-- Liste pays et villes -->
       <AppCard class="p-4">
         <h3 class="text-sm font-semibold text-[var(--color-text)] mb-4">{{ t('admin.location.list') }}</h3>
@@ -174,10 +258,33 @@ onMounted(load)
               <Globe class="w-4 h-4 text-[var(--color-accent)]" />
               {{ c.name }} ({{ c.iso_code }})
             </p>
-            <ul v-if="citiesFor(c.id).length" class="mt-2 pl-6 flex flex-wrap gap-2 text-sm text-[var(--color-muted)]">
-              <li v-for="city in citiesFor(c.id)" :key="city.id" class="flex items-center gap-1">
-                <MapPin class="w-3.5 h-3.5" />
-                {{ city.name }}
+            <ul v-if="citiesFor(c.id).length" class="mt-2 pl-6 flex flex-col gap-3 text-sm text-[var(--color-muted)]">
+              <li v-for="city in citiesFor(c.id)" :key="city.id" class="flex flex-col gap-1">
+                <div class="flex items-center gap-1 font-medium text-[var(--color-text)]">
+                  <MapPin class="w-4 h-4 text-[var(--color-accent)]" />
+                  {{ city.name }}
+                </div>
+                <div v-if="neighborhoodsFor(city.id).length" class="pl-5 flex flex-wrap gap-2">
+                  <div
+                    v-for="n in neighborhoodsFor(city.id)"
+                    :key="n.id"
+                    class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-2 py-1 rounded-md text-xs text-[var(--color-text)]"
+                  >
+                    {{ n.name }}
+                    <button
+                      type="button"
+                      @click="removeNeighborhood(n.id)"
+                      class="text-red-500 hover:text-red-700 ml-1 transition-colors disabled:opacity-50"
+                      :disabled="deletingNeighborhoodId === n.id"
+                      title="Supprimer"
+                    >
+                      <Trash2 class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <div v-else class="pl-5 text-xs text-gray-400 dark:text-gray-500">
+                  {{ t('admin.location.noNeighborhoods', 'Aucun quartier') }}
+                </div>
               </li>
             </ul>
             <p v-else class="mt-2 pl-6 text-sm text-[var(--color-muted)]">{{ t('admin.location.noCities') }}</p>

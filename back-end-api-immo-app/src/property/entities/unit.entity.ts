@@ -17,6 +17,7 @@ import { UserModel } from '../../auth/models/user.model/user.model';
 import { PropertyEntity } from './property.entity';
 import { RefTypeEntity } from '../../references/entities/ref-type.entity';
 import { CityEntity } from '../../location/entities/city.entity';
+import { NeighborhoodEntity } from '../../location/entities/neighborhood.entity';
 
 /** Statut de disponibilité. NOTICE_GIVEN exige available_from renseigné. */
 export enum UnitStatus {
@@ -91,9 +92,13 @@ export class UnitEntity {
   @Column({ type: 'text', nullable: true })
   address: string | null;
 
-  /** Quartier (facultatif) — précision géographique locale (ex: Cadjehoun, Gbegamey). */
-  @Column({ type: 'varchar', length: 150, nullable: true })
-  neighborhood: string | null;
+  /** Quartier ID — précision géographique locale reliée à NeighborhoodEntity. */
+  @Column({ type: 'uuid', name: 'neighborhood_id', nullable: true })
+  neighborhood_id: string | null;
+
+  @ManyToOne(() => NeighborhoodEntity, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'neighborhood_id' })
+  neighborhood: NeighborhoodEntity | null;
 
   @Column({ type: 'uuid', name: 'city_id', nullable: true })
   city_id: string | null;

@@ -9,12 +9,15 @@ import { User, ArrowLeft, Building2, DoorOpen, Wallet, Receipt, Shield } from 'l
 import {
   getUserDetail,
   getUserDetailTransactions,
+  changeUserStatus,
   reviewKyc,
+  assignRbacRoleToUser,
   type AdminUserDto,
   type UserRole,
   type UserDetailResultDto,
   type PaginatedTransactionsResult,
 } from '../../services/user.service'
+import { getAllRoles, type RoleDto } from '../../services/rbac.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
 import { AppTitle, AppButton, AppCard } from '../../components/ui'
@@ -33,6 +36,17 @@ const transactionsLoading = ref(false)
 const kycReviewing = ref(false)
 const rejectionReason = ref('')
 
+const roles = ref<RoleDto[]>([])
+const showRoleModal = ref(false)
+const selectedRoleId = ref<string | null>(null)
+const roleReason = ref('')
+const roleChanging = ref(false)
+
+const showStatusModal = ref(false)
+const targetStatus = ref<'active' | 'restricted' | 'banned'>('active')
+const statusReason = ref('')
+const statusChanging = ref(false)
+
 const user = computed<AdminUserDto | null>(() => detail.value?.user ?? null)
 const stats = computed(() => detail.value?.stats ?? null)
 
@@ -40,8 +54,11 @@ function roleLabel(role: UserRole): string {
   return t(`admin.users.role${role.charAt(0).toUpperCase() + role.slice(1)}` as 'admin.users.roleTenant')
 }
 
-function statusLabel(active: boolean): string {
-  return active ? t('admin.users.statusActive') : t('admin.users.statusInactive')
+function statusLabel(status: string): string {
+  if (status === 'active') return 'Actif'
+  if (status === 'restricted') return 'Restreint'
+  if (status === 'banned') return 'Banni'
+  return 'Inconnu'
 }
 
 function formatDate(iso: string) {
@@ -78,6 +95,14 @@ async function fetchDetail() {
   }
 }
 
+async function fetchRoles() {
+  try {
+    roles.value = await getAllRoles()
+  } catch (err) {
+    console.error('Erreur chargement rôles:', err)
+  }
+}
+
 async function handleKycReview(action: 'approve' | 'reject') {
   if (!user.value?.id) return
   if (action === 'reject' && !rejectionReason.value.trim()) {
@@ -98,12 +123,62 @@ async function handleKycReview(action: 'approve' | 'reject') {
   }
 }
 
+function openStatusModal(newStatus: 'active' | 'restricted' | 'banned') {
+  targetStatus.value = newStatus
+  statusReason.value = ''
+  showStatusModal.value = true
+}
+
+async function confirmStatusChange() {
+  if (!id.value || !statusReason.value.trim()) return
+  statusChanging.value = true
+  try {
+    const updatedUser = await changeUserStatus(id.value, targetStatus.value, statusReason.value)
+    if (detail.value) detail.value.user = updatedUser
+    toast.success('Statut du compte mis à jour.')
+    showStatusModal.value = false
+  } catch (err) {
+    toast.error(getApiErrorMessage(err))
+  } finally {
+    statusChanging.value = false
+  }
+}
+
 function goBack() {
   router.push({ name: 'admin-users' })
 }
 
-onMounted(() => fetchDetail())
-watch(id, () => fetchDetail())
+function openRoleModal() {
+  selectedRoleId.value = user.value?.rbac_role?.id || null
+  roleReason.value = ''
+  showRoleModal.value = true
+}
+
+async function confirmRoleChange() {
+  if (!id.value || !roleReason.value.trim()) return
+  roleChanging.value = true
+  try {
+    const updatedUser = await assignRbacRoleToUser(id.value, selectedRoleId.value, roleReason.value)
+    if (detail.value) detail.value.user = updatedUser
+    toast.success('Rôle RBAC mis à jour.')
+    showRoleModal.value = false
+  } catch (err) {
+    toast.error(getApiErrorMessage(err))
+  } finally {
+    roleChanging.value = false
+  }
+}
+
+
+
+onMounted(() => {
+  fetchDetail()
+  fetchRoles()
+})
+watch(id, () => {
+  fetchDetail()
+  fetchRoles()
+})
 </script>
 
 <template>
@@ -148,9 +223,13 @@ watch(id, () => fetchDetail())
         </p>
         <span
           class="mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"
-          :class="user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+          :class="{
+            'bg-green-100 text-green-800': user.status === 'active',
+            'bg-amber-100 text-amber-800': user.status === 'restricted',
+            'bg-red-100 text-red-800': user.status === 'banned'
+          }"
         >
-          {{ statusLabel(user.is_active) }}
+          {{ statusLabel(user.status) }}
         </span>
         <p class="mt-2 text-xs text-[var(--color-muted)]">
           {{ t('admin.users.tableCreated') }} : {{ formatDate(user.created_at) }}
@@ -339,7 +418,7 @@ watch(id, () => fetchDetail())
         </div>
       </AppCard>
 
-      <!-- Connexion / Sécurité (placeholder) -->
+      <!-- Connexion / Sécurité -->
       <AppCard class="p-4">
         <template #title>
           <span class="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
@@ -347,10 +426,109 @@ watch(id, () => fetchDetail())
             {{ t('admin.userDetail.securityTitle') }}
           </span>
         </template>
-        <p class="text-sm text-[var(--color-muted)]">
-          {{ t('admin.userDetail.securityPlaceholder') }}
-        </p>
+        
+        <div class="space-y-4 text-sm text-[var(--color-text)] mt-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p class="font-medium mb-1">Statut actuel du compte :</p>
+              <p class="text-sm font-semibold" :class="{
+                'text-green-600': user.status === 'active',
+                'text-yellow-600': user.status === 'restricted',
+                'text-red-600': user.status === 'banned'
+               }">
+                {{ statusLabel(user.status) }}
+              </p>
+            </div>
+            
+            <div class="flex flex-wrap gap-2">
+              <AppButton v-if="user.status !== 'active'" size="sm" variant="outline" @click="openStatusModal('active')">
+                Réactiver
+              </AppButton>
+              <AppButton v-if="user.status !== 'restricted'" size="sm" variant="outline" class="text-amber-600 border-amber-200 hover:bg-amber-50" @click="openStatusModal('restricted')">
+                Restreindre
+              </AppButton>
+              <AppButton v-if="user.status !== 'banned'" size="sm" variant="outline" class="text-red-600 border-red-200 hover:bg-red-50" @click="openStatusModal('banned')">
+                Bannir définitivement
+              </AppButton>
+            </div>
+          </div>
+
+          <!-- Rôle RBAC -->
+          <div class="pt-4 border-t border-gray-100 mt-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <p class="font-medium mb-1">Rôle RBAC (Permissions fines) :</p>
+                <div class="flex items-center gap-2">
+                  <span v-if="user.rbac_role" class="px-2 py-0.5 bg-[var(--color-accent)]/10 text-[var(--color-accent)] rounded text-xs font-bold">
+                    {{ user.rbac_role.name }}
+                  </span>
+                  <span v-else class="text-gray-400 italic text-xs">Aucun rôle spécifique</span>
+                </div>
+              </div>
+              <AppButton size="sm" variant="outline" @click="openRoleModal">
+                Modifier le rôle
+              </AppButton>
+            </div>
+          </div>
+        </div>
       </AppCard>
     </template>
+  </div>
+
+  <!-- Modal Changement Statut -->
+  <div v-if="showStatusModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
+      <h3 class="mb-4 text-lg font-bold text-[var(--color-text)]">Modifier le statut</h3>
+      <p class="mb-4 text-sm text-[var(--color-text)]">
+        Nouveau statut : <strong>{{ statusLabel(targetStatus) }}</strong>
+      </p>
+      <textarea
+        v-model="statusReason"
+        class="w-full rounded-lg border border-gray-200 p-3 text-sm text-[var(--color-text)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+        placeholder="Motif de la décision (obligatoire, loggué pour audit)"
+        rows="3"
+      ></textarea>
+      <div class="mt-5 flex justify-end gap-3">
+        <AppButton type="button" variant="ghost" @click="showStatusModal = false">Annuler</AppButton>
+        <AppButton type="button" :loading="statusChanging" :disabled="!statusReason.trim()" @click="confirmStatusChange">Valider</AppButton>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Changement Rôle RBAC -->
+  <div v-if="showRoleModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800 border dark:border-gray-700">
+      <h3 class="mb-4 text-lg font-bold text-[var(--color-text)]">Assigner un rôle RBAC</h3>
+      
+      <div class="space-y-4">
+        <div class="space-y-1">
+          <label class="text-xs font-semibold text-[var(--color-muted)] uppercase">Choisir le rôle</label>
+          <select 
+            v-model="selectedRoleId"
+            class="w-full rounded-lg border border-gray-200 p-2.5 text-sm bg-transparent dark:border-gray-700"
+          >
+            <option :value="null">-- Aucun (Standard) --</option>
+            <option v-for="role in roles" :key="role.id" :value="role.id">
+              {{ role.name }} {{ role.is_system ? '(Système)' : '' }}
+            </option>
+          </select>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-xs font-semibold text-[var(--color-muted)] uppercase">Motif de l'assignation</label>
+          <textarea
+            v-model="roleReason"
+            class="w-full rounded-lg border border-gray-200 p-2.5 text-sm text-[var(--color-text)] bg-transparent focus:ring-2 focus:ring-[var(--color-accent)] dark:border-gray-700"
+            placeholder="Ex: Promotion, Changement d'équipe..."
+            rows="2"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-3">
+        <AppButton type="button" variant="ghost" @click="showRoleModal = false">Annuler</AppButton>
+        <AppButton type="button" :loading="roleChanging" :disabled="!roleReason.trim()" @click="confirmRoleChange">Enregistrer</AppButton>
+      </div>
+    </div>
   </div>
 </template>

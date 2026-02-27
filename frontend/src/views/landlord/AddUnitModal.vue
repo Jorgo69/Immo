@@ -12,7 +12,7 @@ import { createUnit, type CreateUnitPayload } from '../../services/property.serv
 import { getRefTypes, getRefFeaturesByTypeId, type RefTypeDto, type RefFeatureDto } from '../../services/references.service'
 import { getMyProperties } from '../../services/property.service'
 import type { PropertyListItemDto } from '../../services/property.service'
-import { getCities } from '../../services/location.service'
+import { getCities, getNeighborhoods, type NeighborhoodDto } from '../../services/location.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
 import { AppButton, AppInput, AppSelect, AppTitle, AppUpload } from '../../components/ui'
@@ -53,7 +53,7 @@ const form = ref({
   features: [] as string[],
   description: { fr: '', en: '' } as Record<string, string>,
   address: '' as string,
-  neighborhood: '' as string,
+  neighborhood_id: '' as string,
   city_id: '' as string,
   gps_latitude: '' as string,
   gps_longitude: '' as string,
@@ -102,6 +102,32 @@ const propertyOptions = computed(() =>
 
 const cityOptionsForSelect = computed(() =>
   cities.value.map((c) => ({ value: c.id, label: c.name }))
+)
+
+const neighborhoods = ref<NeighborhoodDto[]>([])
+const loadingNeighborhoods = ref(false)
+
+async function loadNeighborhoods(cityId: string | null) {
+  if (!cityId) {
+    neighborhoods.value = []
+    form.value.neighborhood_id = ''
+    return
+  }
+  loadingNeighborhoods.value = true
+  try {
+    neighborhoods.value = await getNeighborhoods(cityId)
+    form.value.neighborhood_id = ''
+  } finally {
+    loadingNeighborhoods.value = false
+  }
+}
+
+watch(() => form.value.city_id, (id) => {
+  loadNeighborhoods(id || null)
+})
+
+const neighborhoodOptions = computed(() =>
+  neighborhoods.value.map((n) => ({ value: n.id, label: n.name }))
 )
 
 const statusOptions = computed(() => [
@@ -238,7 +264,7 @@ async function submit() {
     }
     if (showStandaloneFields.value) {
       payload.address = form.value.address?.trim() || undefined
-      payload.neighborhood = form.value.neighborhood?.trim() || undefined
+      payload.neighborhood_id = form.value.neighborhood_id || undefined
       payload.city_id = form.value.city_id || undefined
       payload.gps_latitude = form.value.gps_latitude?.trim() || undefined
       payload.gps_longitude = form.value.gps_longitude?.trim() || undefined
@@ -277,7 +303,7 @@ watch(
         features: [],
         description: { fr: '', en: '' },
         address: '',
-        neighborhood: '',
+        neighborhood_id: '',
         city_id: '',
         gps_latitude: '',
         gps_longitude: '',
@@ -401,7 +427,13 @@ watch(
                       :label="t('landlord.city')"
                       :options="cityOptionsForSelect"
                     />
-                    <AppInput v-model="form.neighborhood" label="Quartier (facultatif)" placeholder="Ex: Cadjehoun, Gbegamey" />
+                  <AppSelect
+                    v-model="form.neighborhood_id"
+                    label="Quartier (facultatif)"
+                    :options="neighborhoodOptions"
+                    :disabled="loadingNeighborhoods || !form.city_id"
+                    placeholder="Sélectionner..."
+                  />
                     <div class="grid grid-cols-2 gap-4">
                       <AppInput v-model="form.gps_latitude" label="Lat" />
                       <AppInput v-model="form.gps_longitude" label="Long" />

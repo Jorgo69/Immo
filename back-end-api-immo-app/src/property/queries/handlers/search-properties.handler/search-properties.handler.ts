@@ -25,7 +25,8 @@ export class SearchPropertiesHandler implements IQueryHandler<SearchPropertiesQu
     const qb = propRepo.createQueryBuilder('p');
     qb.leftJoinAndSelect('p.media', 'media');
     qb.leftJoinAndSelect('p.units', 'units');
-    qb.leftJoin('p.city', 'city');
+    qb.leftJoinAndSelect('p.city', 'city');
+    qb.leftJoinAndSelect('p.neighborhood', 'neighborhood');
     if (query.q?.trim()) {
       const term = `%${query.q.trim().replace(/%/g, '\\%')}%`;
       qb.andWhere(
@@ -52,6 +53,7 @@ export class SearchPropertiesHandler implements IQueryHandler<SearchPropertiesQu
     const unitQb = unitRepo.createQueryBuilder('u');
     unitQb.leftJoinAndSelect('u.ref_type', 'ref_type');
     unitQb.leftJoinAndSelect('u.city', 'city');
+    unitQb.leftJoinAndSelect('u.neighborhood', 'neighborhood');
     unitQb.andWhere('u.property_id IS NULL');
     unitQb.andWhere('u.deleted_at IS NULL');
     if (query.q?.trim()) {
@@ -87,6 +89,8 @@ export class SearchPropertiesHandler implements IQueryHandler<SearchPropertiesQu
         address: unit.address ?? '',
         city_id: unit.city_id,
         city: unit.city,
+        neighborhood_id: unit.neighborhood_id,
+        neighborhood: unit.neighborhood,
         gps_latitude: unit.gps_latitude,
         gps_longitude: unit.gps_longitude,
         main_image: mainImage,

@@ -6,7 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConflictException, Logger } from '@nestjs/common';
 import { CreateUserCommand } from '../../impl/create-user.command/create-user.command';
-import { UserModel, UserRole } from '../../../../auth/models/user.model/user.model';
+import { UserModel, UserRole, UserStatus } from '../../../../auth/models/user.model/user.model';
 
 @CommandHandler(CreateUserCommand)
 export class CreateUserCommandHandler implements ICommandHandler<CreateUserCommand> {
@@ -42,7 +42,7 @@ export class CreateUserCommandHandler implements ICommandHandler<CreateUserComma
         email: command.email ?? null,
         preferred_lang: command.preferred_lang ?? 'fr',
         role: command.role ?? UserRole.TENANT,
-        is_active: true,
+        status: UserStatus.ACTIVE,
       });
 
       const saved = await this.userRepository.save(user);
@@ -56,7 +56,7 @@ export class CreateUserCommandHandler implements ICommandHandler<CreateUserComma
         email: saved.email ?? undefined,
         preferred_lang: saved.preferred_lang,
         role: saved.role,
-        is_active: saved.is_active,
+        status: saved.status,
         created_at: saved.created_at,
         updated_at: saved.updated_at,
       };

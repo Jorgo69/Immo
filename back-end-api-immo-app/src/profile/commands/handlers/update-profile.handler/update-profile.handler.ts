@@ -59,6 +59,32 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
             ? this.encryption.encrypt(command.company, user.encryption_salt)
             : null;
         }
+        if (command.ifu !== undefined) {
+          const ifuHash = command.ifu ? this.encryption.hash(command.ifu) : null;
+          if (ifuHash && ifuHash !== profile.ifu_hash) {
+            const existing = await pRepo.findOne({ where: { ifu_hash: ifuHash } });
+            if (existing && existing.user_id !== profile.user_id) {
+              throw new ForbiddenException('Cet IFU est déjà enregistré sur un autre compte.');
+            }
+          }
+          profile.ifu_hash = ifuHash;
+          profile.ifu_enc = command.ifu
+            ? this.encryption.encrypt(command.ifu, user.encryption_salt)
+            : null;
+        }
+        if (command.rccm !== undefined) {
+          const rccmHash = command.rccm ? this.encryption.hash(command.rccm) : null;
+          if (rccmHash && rccmHash !== profile.rccm_hash) {
+            const existing = await pRepo.findOne({ where: { rccm_hash: rccmHash } });
+            if (existing && existing.user_id !== profile.user_id) {
+              throw new ForbiddenException('Ce RCCM est déjà enregistré sur un autre compte.');
+            }
+          }
+          profile.rccm_hash = rccmHash;
+          profile.rccm_enc = command.rccm
+            ? this.encryption.encrypt(command.rccm, user.encryption_salt)
+            : null;
+        }
         if (command.emergency_contact !== undefined) {
           profile.emergency_contact_enc = command.emergency_contact
             ? this.encryption.encrypt(command.emergency_contact, user.encryption_salt)
@@ -93,6 +119,8 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
           id_card_masked: profile.id_card_enc ? '********' : null,
           profession_masked: profile.profession_enc ? '********' : null,
           company_masked: profile.company_enc ? '********' : null,
+          ifu_masked: profile.ifu_enc ? '********' : null,
+          rccm_masked: profile.rccm_enc ? '********' : null,
           emergency_contact_masked: profile.emergency_contact_enc ? '********' : null,
           preferred_zone: profile.preferred_zone,
           preferred_zones: profile.preferred_zones ?? (profile.preferred_zone ? [profile.preferred_zone] : null),

@@ -11,7 +11,7 @@ export interface AdminUserDto {
   preferred_lang: string
   id_card_url?: string | null
   role: UserRole
-  is_active: boolean
+  status: string
   created_at: string
   updated_at: string
   profile?: {
@@ -20,6 +20,10 @@ export interface AdminUserDto {
     kyc_submitted_at: string | null
     kyc_reviewed_at: string | null
     kyc_rejection_reason: string | null
+  } | null
+  rbac_role?: {
+    id: string
+    name: string
   } | null
 }
 
@@ -35,7 +39,7 @@ export interface GetUsersFilters {
   page?: number
   limit?: number
   role?: UserRole
-  is_active?: boolean
+  status?: string
   search?: string
 }
 
@@ -44,7 +48,7 @@ export async function getUsers(filters: GetUsersFilters = {}): Promise<Paginated
   if (filters.page != null) params.set('page', String(filters.page))
   if (filters.limit != null) params.set('limit', String(filters.limit))
   if (filters.role) params.set('role', filters.role)
-  if (filters.is_active !== undefined && filters.is_active !== null) params.set('is_active', String(filters.is_active))
+  if (filters.status && filters.status !== 'all') params.set('status', filters.status)
   if (filters.search != null && filters.search.trim() !== '') params.set('search', filters.search.trim())
   const { data } = await http.get<PaginatedUsersResult>(`/user/all?${params.toString()}`)
   return data
@@ -113,3 +117,25 @@ export async function reviewKyc(
   })
   return data
 }
+
+export async function changeUserStatus(
+  id: string,
+  status: 'active' | 'restricted' | 'banned',
+  reason: string
+): Promise<AdminUserDto> {
+  const { data } = await http.patch<AdminUserDto>(`/user/${encodeURIComponent(id)}/status`, { status, reason })
+  return data
+}
+
+export async function assignRbacRoleToUser(
+  userId: string,
+  roleId: string | null,
+  reason: string
+): Promise<AdminUserDto> {
+  const { data } = await http.patch<AdminUserDto>(`/user/${encodeURIComponent(userId)}/rbac-role`, {
+    roleId,
+    reason
+  })
+  return data
+}
+

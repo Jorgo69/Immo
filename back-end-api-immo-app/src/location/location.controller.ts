@@ -3,7 +3,7 @@
  * GET : tout le monde (pour select propriétaire).
  * POST : Admin uniquement.
  */
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
@@ -14,6 +14,10 @@ import { CreateCountryCommand } from './commands/impl/create-country.command/cre
 import { CreateCityCommand } from './commands/impl/create-city.command/create-city.command';
 import { GetCountriesQuery } from './queries/impl/get-countries.query/get-countries.query';
 import { GetCitiesQuery } from './queries/impl/get-cities.query/get-cities.query';
+
+import { CreateNeighborhoodCommand } from './commands/impl/create-neighborhood.command/create-neighborhood.command';
+import { DeleteNeighborhoodCommand } from './commands/impl/delete-neighborhood.command/delete-neighborhood.command';
+import { GetNeighborhoodsQuery } from './queries/impl/get-neighborhoods.query/get-neighborhoods.query';
 
 @ApiTags('Location')
 @Controller('location')
@@ -49,5 +53,27 @@ export class LocationController {
   @ApiOperation({ summary: 'Créer une ville (Admin)' })
   async createCity(@Body() command: CreateCityCommand) {
     return this.commandBus.execute(command);
+  }
+
+  @Get('neighborhoods')
+  @ApiOperation({ summary: 'Liste des quartiers (optionnel: city_id)' })
+  async getNeighborhoods(@Query() query: GetNeighborhoodsQuery) {
+    return this.queryBus.execute(query);
+  }
+
+  @Post('neighborhoods')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Créer un quartier (Admin)' })
+  async createNeighborhood(@Body() command: CreateNeighborhoodCommand) {
+    return this.commandBus.execute(command);
+  }
+
+  @Delete('neighborhoods/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Supprimer un quartier (Admin)' })
+  async deleteNeighborhood(@Param('id') id: string) {
+    return this.commandBus.execute(new DeleteNeighborhoodCommand(id));
   }
 }

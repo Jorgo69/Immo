@@ -49,7 +49,7 @@ export class UpdateProfileCommandHandler implements ICommandHandler<UpdateProfil
         is_verified: updated.is_verified,
         preferred_lang: updated.preferred_lang,
         role: updated.role,
-        is_active: updated.is_active,
+        status: updated.status,
         created_at: updated.created_at,
         updated_at: updated.updated_at,
       };

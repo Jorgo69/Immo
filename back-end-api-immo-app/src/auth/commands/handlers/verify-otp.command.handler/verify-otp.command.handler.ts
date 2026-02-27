@@ -8,7 +8,7 @@ import { VerifyOtpCommand } from '../../impl/verify-otp.command/verify-otp.comma
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException, Logger } from '@nestjs/common';
-import { UserModel, UserRole } from '../../../models/user.model/user.model';
+import { UserModel, UserRole, UserStatus } from '../../../models/user.model/user.model';
 import { OtpStoreService } from '../../../services/otp-store.service';
 import { ProfileEntity } from '../../../../profile/entities/profile.entity';
 import * as crypto from 'crypto';
@@ -44,6 +44,10 @@ export class VerifyOtpCommandHandler implements ICommandHandler<VerifyOtpCommand
         where: { phone_number: command.phone_number },
       });
 
+      if (user && user.status === UserStatus.BANNED) {
+        throw new UnauthorizedException('Votre compte a été suspendu par l\'administration.');
+      }
+
       let is_new_user = false;
       if (!user) {
         user = await this.dataSource.manager.transaction(async (manager) => {
@@ -55,7 +59,7 @@ export class VerifyOtpCommandHandler implements ICommandHandler<VerifyOtpCommand
             email: command.email ?? undefined,
             preferred_lang: command.preferred_lang ?? 'fr',
             role: UserRole.TENANT,
-            is_active: true,
+            status: UserStatus.ACTIVE,
             encryption_salt,
           });
           const savedUser = await userRepo.save(newUser);
@@ -67,6 +71,9 @@ export class VerifyOtpCommandHandler implements ICommandHandler<VerifyOtpCommand
         });
         is_new_user = true;
         this.logger.log(`Utilisateur et profil créés: ${user.phone_number}`);
+      } else {
+        user.last_login_at = new Date();
+        user = await this.userRepository.save(user);
       }
 
       const is_profile_complete = user.is_profile_complete === true;
@@ -103,7 +110,7 @@ export class VerifyOtpCommandHandler implements ICommandHandler<VerifyOtpCommand
       is_verified: user.is_verified,
       preferred_lang: user.preferred_lang,
       role: user.role,
-      is_active: user.is_active,
+      status: user.status,
       created_at: user.created_at,
       updated_at: user.updated_at,
     };
