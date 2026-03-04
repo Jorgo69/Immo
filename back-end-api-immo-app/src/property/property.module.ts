@@ -6,9 +6,15 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LocationModule } from '../location/location.module';
 import { PropertyController } from './property.controller';
+import { LeaseController } from './lease.controller';
 import { PropertyEntity } from './entities/property.entity';
 import { MediaEntity } from './entities/media.entity';
 import { UnitEntity } from './entities/unit.entity';
+import { LeaseEntity } from './entities/lease.entity';
+import { InvoiceEntity } from '../wallet/entities/invoice.entity';
+import { NotificationModule } from '../notification/notification.module';
+import { ProfileModule } from '../profile/profile.module';
+import { UserModel } from '../auth/models/user.model/user.model';
 import { CreatePropertyHandler } from './commands/handlers/create-property.handler/create-property.handler';
 import { CreateUnitHandler } from './commands/handlers/create-unit.handler/create-unit.handler';
 import { UpdatePropertyHandler } from './commands/handlers/update-property.handler/update-property.handler';
@@ -22,16 +28,22 @@ import { GetMediaByPropertyHandler } from './queries/handlers/get-media-by-prope
 import { SearchPropertiesHandler } from './queries/handlers/search-properties.handler/search-properties.handler';
 import { SearchSemanticPropertiesHandler } from './queries/handlers/search-semantic-properties.handler/search-semantic-properties.handler';
 import { GetPropertiesByOwnerHandler } from './queries/handlers/get-properties-by-owner.handler/get-properties-by-owner.handler';
+import { GetMyLeasesQueryHandler } from './queries/handlers/get-my-leases.query.handler/get-my-leases.query.handler';
 import { SemanticSearchService } from './services/semantic-search.service';
 import { UploadPropertyImageService } from './services/upload-property-image.service';
+import { CreateLeaseCommandHandler } from './commands/handlers/create-lease.command.handler/create-lease.command.handler';
+import { SignLeaseCommandHandler } from './commands/handlers/sign-lease.command.handler/sign-lease.command.handler';
+import { LeaseCronService } from './services/lease-cron.service';
 
 @Module({
   imports: [
     CqrsModule,
-    TypeOrmModule.forFeature([PropertyEntity, MediaEntity, UnitEntity]),
+    TypeOrmModule.forFeature([PropertyEntity, MediaEntity, UnitEntity, LeaseEntity, InvoiceEntity, UserModel]),
     LocationModule,
+    NotificationModule,
+    ProfileModule,
   ],
-  controllers: [PropertyController],
+  controllers: [PropertyController, LeaseController],
   providers: [
     UploadPropertyImageService,
     CreatePropertyHandler,
@@ -48,6 +60,10 @@ import { UploadPropertyImageService } from './services/upload-property-image.ser
     SearchPropertiesHandler,
     SearchSemanticPropertiesHandler,
     SemanticSearchService,
+    CreateLeaseCommandHandler,
+    SignLeaseCommandHandler,
+    GetMyLeasesQueryHandler,
+    LeaseCronService,
   ],
 })
 export class PropertyModule {}

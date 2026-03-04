@@ -979,7 +979,30 @@
     "confirm_clear": "Voulez-vous supprimer toutes vos notifications ?",
     "clear_all_success": "Historique vidé",
     "clear_all_error": "Erreur lors du nettoyage",
-    "deposit_success_msg": "Votre dépôt de {amount} a été validé. Votre tirelire a été rechargée."
+    "deposit_success_msg": "Votre dépôt de {amount} a été validé. Votre tirelire a été rechargée.",
+    "kyc_approved_title": "Compte vérifié !",
+    "kyc_approved_msg": "Félicitations, votre identité a été validée par nos services. Vous avez maintenant accès à toutes les fonctionnalités.",
+    "kyc_rejected_title": "KYC refusé",
+    "kyc_rejected_msg": "Malheureusement, vos documents n'ont pas été validés : {reason}. Veuillez soumettre de nouveaux documents."
+  },
+  "leases": {
+    "title": "Mes Locations",
+    "subtitle": "Gérez vos contrats de bail et suivez vos paiements de loyer.",
+    "no_leases": "Aucun contrat trouvé",
+    "no_leases_hint": "Vous n'avez pas encore de contrat de bail actif ou en attente sur la plateforme.",
+    "monthly_rent": "Loyer mensuel",
+    "deposit": "Dépôt de garantie",
+    "auto_debit": "Débit automatique",
+    "status": {
+      "draft": "Brouillon",
+      "pending_signature": "Attente signature",
+      "active": "Actif",
+      "terminated": "Terminé"
+    },
+    "actions": {
+      "sign": "Signer le contrat",
+      "view_details": "Détails"
+    }
   },
   "pagination": {
     "range": "{start} – {end} sur {total}",

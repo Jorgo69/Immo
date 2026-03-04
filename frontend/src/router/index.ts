@@ -232,6 +232,12 @@ export const router = createRouter({
           component: () => import('../views/notifications/NotificationsView.vue'),
           meta: { title: 'Mes Notifications', requiresAuth: true },
         },
+        {
+          path: 'leases',
+          name: 'leases',
+          component: () => import('../views/LeasesView.vue'),
+          meta: { title: 'Mes Locations', requiresAuth: true },
+        },
       ],
     },
   ],

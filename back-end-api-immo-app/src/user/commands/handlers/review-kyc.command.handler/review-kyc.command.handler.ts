@@ -7,6 +7,8 @@ import { ProfileEntity, KycStatus } from '../../../../profile/entities/profile.e
 import { UserModel } from '../../../../auth/models/user.model/user.model';
 
 import { ReputationService } from '../../../../profile/services/reputation.service';
+import { NotificationService } from '../../../../notification/services/notification.service';
+import { NotificationType } from '../../../../notification/entities/notification.entity';
 
 @CommandHandler(ReviewKycCommand)
 export class ReviewKycCommandHandler implements ICommandHandler<ReviewKycCommand> {
@@ -18,6 +20,7 @@ export class ReviewKycCommandHandler implements ICommandHandler<ReviewKycCommand
     @InjectRepository(UserModel)
     private readonly userRepository: Repository<UserModel>,
     private readonly reputationService: ReputationService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async execute(command: ReviewKycCommand): Promise<{ success: boolean; status: string }> {
@@ -33,13 +36,35 @@ export class ReviewKycCommandHandler implements ICommandHandler<ReviewKycCommand
       profile.kyc_status = KycStatus.VERIFIED;
       profile.kyc_rejection_reason = null;
       profile.kyc_reviewed_at = now;
-      // Optionnel : on pourrait aussi mettre à jour user.is_verified = true
       user.is_verified = true;
       await this.userRepository.save(user);
+
+      // Notification de succès
+      await this.notificationService.notify(user.id, {
+        title_fr: 'Compte vérifié !',
+        title_en: 'Account Verified!',
+        message_fr: 'Félicitations, votre identité a été validée par nos services. Vous avez maintenant accès à toutes les fonctionnalités.',
+        message_en: 'Congratulations, your identity has been validated. You now have access to all features.',
+        type: NotificationType.SUCCESS,
+        metadata: { msgKey: 'kyc_approved' }
+      });
     } else {
       profile.kyc_status = KycStatus.REJECTED;
       profile.kyc_rejection_reason = command.rejection_reason ?? null;
       profile.kyc_reviewed_at = now;
+
+      // Notification d'échec
+      await this.notificationService.notify(user.id, {
+        title_fr: 'KYC refusé',
+        title_en: 'KYC Rejected',
+        message_fr: `Votre dossier d'identité a été rejeté pour la raison suivante : ${profile.kyc_rejection_reason}. Veuillez soumettre à nouveau vos documents.`,
+        message_en: `Your identity documents were rejected for the following reason: ${profile.kyc_rejection_reason}. Please resubmit your documents.`,
+        type: NotificationType.CRITICAL,
+        metadata: { 
+          msgKey: 'kyc_rejected',
+          reason: profile.kyc_rejection_reason 
+        }
+      });
     }
 
     await this.profileRepository.save(profile);

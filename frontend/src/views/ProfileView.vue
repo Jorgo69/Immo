@@ -25,6 +25,7 @@ import gsap from 'gsap'
 import { getMyWallet, getMyTransactions } from '../services/wallet.service'
 import { getMyPaymentMethods } from '../services/profile.service'
 import { useAppStore } from '../stores/app'
+import { useCurrency } from '../composables/useCurrency'
 import { AppCard, AppImage, LanguageSwitcher, ThemeToggle } from '../components/ui'
 import DepositModal from '../components/profile/DepositModal.vue'
 import PushNotificationManager from '../components/notifications/PushNotificationManager.vue'
@@ -36,6 +37,7 @@ import type { PaymentMethodDto } from '../services/profile.service'
 const { t } = useI18n()
 const router = useRouter()
 const appStore = useAppStore()
+const { formatPrice, loadRates } = useCurrency()
 
 const user = ref<AuthUserDto | null>(null)
 const wallet = ref<WalletDto | null>(null)
@@ -86,8 +88,8 @@ const currentActions = computed(() =>
   profileViewRole.value === 'tenant' ? tenantActions : landlordActions,
 )
 
-function formatAmount(value: string) {
-  return new Intl.NumberFormat('fr-FR').format(Number(value)) + ' FCFA'
+function formatAmount(value: string | number) {
+  return formatPrice(Number(value))
 }
 
 function formatDate(dateStr: string) {
@@ -110,6 +112,7 @@ async function load() {
       getMyWallet().catch(() => null),
       getMyTransactions(1, 10).catch(() => ({ data: [], total: 0, page: 1, limit: 10, totalPages: 0 })),
       getMyPaymentMethods().catch(() => []),
+      loadRates(),
     ])
     user.value = me ?? null
     wallet.value = walletData ?? null

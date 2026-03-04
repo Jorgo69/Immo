@@ -193,7 +193,8 @@
 - ✅ Entité `wallets` + `transactions`
 - ✅ Wallet principal + Tirelire (épargne loyer)
 - ✅ Historique transactions pour admins
-- 📋 Intégration Mobile Money (MTN, Moov Bénin)
+- ✅ Simulateur Mobile Money (MTN, Moov Bénin) avec Webhook
+- 🔧 Intégration réelle FedaPay / KKiapya
 - 📋 Calcul automatique commissions agents
 - 📋 Reçus PDF téléchargeables
 
@@ -236,7 +237,8 @@
 
 - ✅ Configuration PWA (Service Worker, manifest)
 - ✅ Mode hors-ligne partiel
-- 📋 Notifications push (loyer dû, demande acceptée...)
+- ✅ Centre de notifications (In-app + Historique)
+- 🔧 Notifications push natives (Infrastructure OK, alertes de base OK)
 - 📋 App React Native ou Capacitor.js (phase 2)
 
 ---
@@ -246,9 +248,9 @@
 > À faire lors de la prochaine session de travail
 
 1. **🔜 Score de Confiance (Réputation)** — Système de notation basé sur l'historique (Rigueur)
-2. **🔜 Mobile Money** — Intégration technique (MTN/Moov Bénin)
-3. **🔜 OCR KYC** — test de reconnaissance optique sur les pièces d'identité
-4. **🔜 Notifications Push** — alertes loyer et validation KYC
+2. **🔜 Automatisation Système** — Intégrer Notifications/Audits sur KYC, Loyers et Rôles
+3. **🔜 Mobile Money** — Intégration réelle des clés API (FedaPay/KKiapya)
+4. **🔜 OCR KYC** — test de reconnaissance optique sur les pièces d'identité
 
 ---
 

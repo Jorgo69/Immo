@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { WalletController } from './wallet.controller';
 import { WalletEntity } from './entities/wallet.entity';
 import { TransactionEntity } from './entities/transaction.entity';
+import { InvoiceEntity } from './entities/invoice.entity';
 import { GetOrCreateWalletHandler } from './commands/handlers/get-or-create-wallet.handler/get-or-create-wallet.handler';
 import { RecordTransactionHandler } from './commands/handlers/record-transaction.handler/record-transaction.handler';
 import { GetWalletByUserHandler } from './queries/handlers/get-wallet-by-user.handler/get-wallet-by-user.handler';
@@ -16,7 +17,7 @@ import { GetAllTransactionsAuditHandler } from './queries/handlers/get-all-trans
 @Module({
   imports: [
     CqrsModule,
-    TypeOrmModule.forFeature([WalletEntity, TransactionEntity]),
+    TypeOrmModule.forFeature([WalletEntity, TransactionEntity, InvoiceEntity]),
   ],
   controllers: [WalletController],
   providers: [

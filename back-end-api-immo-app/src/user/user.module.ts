@@ -26,9 +26,17 @@ import { UserCronService } from './services/user-cron.service';
 import { RoleEntity } from '../rbac/entities/role.entity';
 
 import { ProfileModule } from '../profile/profile.module';
+import { AuditModule } from '../audit/audit.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [CqrsModule, ProfileModule, TypeOrmModule.forFeature([UserModel, ProfileEntity, RoleEntity])],
+  imports: [
+    CqrsModule, 
+    ProfileModule, 
+    AuditModule,
+    NotificationModule,
+    TypeOrmModule.forFeature([UserModel, ProfileEntity, RoleEntity])
+  ],
   controllers: [UserController],
   providers: [
     UploadAvatarService,

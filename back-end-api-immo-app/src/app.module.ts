@@ -60,6 +60,8 @@ import { PaymentGatewayEntity } from './payment/entities/payment-gateway.entity'
 import { NotificationEntity } from './notification/entities/notification.entity';
 import { PushSubscriptionEntity } from './notification/entities/push-subscription.entity';
 import { NotificationModule } from './notification/notification.module';
+import { LeaseEntity } from './property/entities/lease.entity';
+import { InvoiceEntity } from './wallet/entities/invoice.entity';
 
 @Module({
   imports: [
@@ -80,7 +82,7 @@ import { NotificationModule } from './notification/notification.module';
         username: configService.get('database.username'),
         password: configService.get('database.password'),
         database: configService.get('database.database'),
-        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, UnitEntity, CountryEntity, CityEntity, NeighborhoodEntity, ProfileEntity, PaymentMethodEntity, PropertyTypeEntity, PropertyStatusEntity, UnitTypeEntity, UnitFeatureEntity, RefCategoryEntity, RefTypeEntity, RefFeatureEntity, RentalRequestEntity, CurrencyRateEntity, ActivityLogEntity, SystemConfigEntity, NotificationPreferenceEntity, RoleEntity, PermissionEntity, PaymentGatewayEntity, NotificationEntity, PushSubscriptionEntity],
+        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, UnitEntity, CountryEntity, CityEntity, NeighborhoodEntity, ProfileEntity, PaymentMethodEntity, PropertyTypeEntity, PropertyStatusEntity, UnitTypeEntity, UnitFeatureEntity, RefCategoryEntity, RefTypeEntity, RefFeatureEntity, RentalRequestEntity, CurrencyRateEntity, ActivityLogEntity, SystemConfigEntity, NotificationPreferenceEntity, RoleEntity, PermissionEntity, PaymentGatewayEntity, NotificationEntity, PushSubscriptionEntity, LeaseEntity, InvoiceEntity],
         synchronize: configService.get('database.synchronize'),
         logging: configService.get('database.logging'),
       }),

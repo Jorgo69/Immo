@@ -926,10 +926,33 @@
     "test_sent": "Test notification sent!",
     "test_error": "Failed to send test notification.",
     "mark_as_read_error": "Error marking as read",
-    "confirm_clear": "Do you want to clear all notifications?",
+    "confirm_clear": "Do you want to delete all your notifications?",
     "clear_all_success": "History cleared",
-    "clear_all_error": "Error clearing history",
-    "deposit_success_msg": "Your deposit of {amount} has been validated. Your wallet has been topped up."
+    "clear_all_error": "Error during cleanup",
+    "deposit_success_msg": "Your deposit of {amount} has been validated. Your wallet has been topped up.",
+    "kyc_approved_title": "Account verified!",
+    "kyc_approved_msg": "Congratulations, your identity has been validated. you now have full access to all features.",
+    "kyc_rejected_title": "KYC rejected",
+    "kyc_rejected_msg": "Unfortunately, your documents were not validated: {reason}. Please submit new documents."
+  },
+  "leases": {
+    "title": "My Leases",
+    "subtitle": "Manage your lease agreements and track your rent payments.",
+    "no_leases": "No contracts found",
+    "no_leases_hint": "You don't have any active or pending lease agreements on the platform yet.",
+    "monthly_rent": "Monthly Rent",
+    "deposit": "Security Deposit",
+    "auto_debit": "Auto-debit",
+    "status": {
+      "draft": "Draft",
+      "pending_signature": "Awaiting signature",
+      "active": "Active",
+      "terminated": "Terminated"
+    },
+    "actions": {
+      "sign": "Sign Agreement",
+      "view_details": "Details"
+    }
   },
   "pagination": {
     "range": "{start} – {end} of {total}",
