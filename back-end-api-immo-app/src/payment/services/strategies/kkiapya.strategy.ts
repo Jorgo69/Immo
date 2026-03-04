@@ -12,12 +12,14 @@ export class KKiapyaStrategy implements PaymentStrategy {
     return { url, externalId };
   }
 
-  async handleWebhook(payload: any, config: any): Promise<{ success: boolean, externalId: string, amount: number }> {
+  async handleWebhook(payload: any, config: any): Promise<{ success: boolean, externalId: string, amount: number, userId?: string, currency?: string }> {
     // Simulation KKiapya Webhook
     return {
       success: payload.status === 'SUCCESS',
       externalId: payload.transaction_id,
       amount: payload.amount,
+      userId: payload.userId,
+      currency: payload.currency || 'XOF',
     };
   }
 }

@@ -27,6 +27,7 @@ import { getMyPaymentMethods } from '../services/profile.service'
 import { useAppStore } from '../stores/app'
 import { AppCard, AppImage, LanguageSwitcher, ThemeToggle } from '../components/ui'
 import DepositModal from '../components/profile/DepositModal.vue'
+import PushNotificationManager from '../components/notifications/PushNotificationManager.vue'
 import type { AuthUserDto } from '../services/auth.service'
 import type { WalletDto } from '../services/wallet.service'
 import type { WalletTransactionDto } from '../services/wallet.service'
@@ -285,7 +286,13 @@ watch(
                   {{ t('profile.roleLandlord') }}
                 </button>
               </div>
-              <div class="mt-4 space-y-3">
+              <!-- Paramètres Mobiles / Notifications -->
+      <div class="max-w-2xl mx-auto mt-6">
+        <PushNotificationManager />
+      </div>
+
+      <!-- Logout Button (Mobile & Desktop) -->
+      <div class="max-w-2xl mx-auto mt-12 pb-12">
                 <div>
                   <p class="text-xs font-medium text-[var(--color-muted)]">{{ t('profile.sectionLanguage') }}</p>
                   <div class="mt-1"><LanguageSwitcher /></div>

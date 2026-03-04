@@ -57,6 +57,9 @@ import { RoleEntity } from './rbac/entities/role.entity';
 import { PermissionEntity } from './rbac/entities/permission.entity';
 import { RbacModule } from './rbac/rbac.module';
 import { PaymentGatewayEntity } from './payment/entities/payment-gateway.entity';
+import { NotificationEntity } from './notification/entities/notification.entity';
+import { PushSubscriptionEntity } from './notification/entities/push-subscription.entity';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -77,7 +80,7 @@ import { PaymentGatewayEntity } from './payment/entities/payment-gateway.entity'
         username: configService.get('database.username'),
         password: configService.get('database.password'),
         database: configService.get('database.database'),
-        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, UnitEntity, CountryEntity, CityEntity, NeighborhoodEntity, ProfileEntity, PaymentMethodEntity, PropertyTypeEntity, PropertyStatusEntity, UnitTypeEntity, UnitFeatureEntity, RefCategoryEntity, RefTypeEntity, RefFeatureEntity, RentalRequestEntity, CurrencyRateEntity, ActivityLogEntity, SystemConfigEntity, NotificationPreferenceEntity, RoleEntity, PermissionEntity, PaymentGatewayEntity],
+        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, UnitEntity, CountryEntity, CityEntity, NeighborhoodEntity, ProfileEntity, PaymentMethodEntity, PropertyTypeEntity, PropertyStatusEntity, UnitTypeEntity, UnitFeatureEntity, RefCategoryEntity, RefTypeEntity, RefFeatureEntity, RentalRequestEntity, CurrencyRateEntity, ActivityLogEntity, SystemConfigEntity, NotificationPreferenceEntity, RoleEntity, PermissionEntity, PaymentGatewayEntity, NotificationEntity, PushSubscriptionEntity],
         synchronize: configService.get('database.synchronize'),
         logging: configService.get('database.logging'),
       }),
@@ -101,6 +104,7 @@ import { PaymentGatewayEntity } from './payment/entities/payment-gateway.entity'
     AuditModule,
     SettingsModule,
     RbacModule,
+    NotificationModule,
     PaymentModule,
   ],
   controllers: [AppController],

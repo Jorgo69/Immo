@@ -51,3 +51,9 @@ app:
   # URL du microservice Python d'embeddings sémantiques (optionnel).
   # Exemple en local : http://localhost:8001
   semanticUrl: ""
+
+# Configuration des Notifications Web Push (VAPID)
+# Généré via `npx web-push generate-vapid-keys`
+notifications:
+  vapidPublicKey: "BP0XZcMRUEpC4ACfsb14-zwICYGVCbb7WnB2QWrfEOITDqLGtQi364RhOxGRXlwDEoOzOzrXzmMiZoJ8D1JuAyU"
+  vapidPrivateKey: "HNhv9pTqJLH7Wp8uVBZwBjJflG40uvXiKG8wZ7s3SGc"

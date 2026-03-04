@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CommandBus } from '@nestjs/cqrs';
@@ -9,9 +9,12 @@ import { KKiapyaStrategy } from './strategies/kkiapya.strategy';
 import { GsmMockStrategy } from './strategies/gsm-mock.strategy';
 import { RecordTransactionCommand } from '../../wallet/commands/impl/record-transaction.command/record-transaction.command';
 import { TransactionType } from '../../wallet/entities/transaction.entity';
+import { ModuleRef } from '@nestjs/core';
+import { NotificationService } from '../../notification/services/notification.service';
+import { NotificationType } from '../../notification/entities/notification.entity';
 
 @Injectable()
-export class PaymentService {
+export class PaymentService implements OnModuleInit {
   private readonly logger = new Logger(PaymentService.name);
   private readonly strategies: Record<PaymentGatewayType, PaymentStrategy> = {
     [PaymentGatewayType.FEDAPAY]: new FedaPayStrategy(),
@@ -25,6 +28,8 @@ export class PaymentService {
     @InjectRepository(PaymentGatewayEntity)
     private readonly gatewayRepo: Repository<PaymentGatewayEntity>,
     private readonly commandBus: CommandBus,
+    private readonly moduleRef: ModuleRef, // Injected ModuleRef
+    private readonly notificationService: NotificationService, // Injected NotificationService
   ) {}
 
   async onModuleInit() {
@@ -91,20 +96,39 @@ export class PaymentService {
       return false;
     }
 
+    // Exécuter la stratégie correspondante
     const strategy = this.strategies[type];
-    const { success, externalId, amount } = await strategy.handleWebhook(payload, gateway.config);
+    if (!strategy) {
+      this.logger.error(`No strategy found for gateway type: ${type}`);
+      return false;
+    }
 
-    if (success) {
-      this.logger.log(`Payment approved via ${type}: ${amount} XOF (Ref: ${externalId})`);
+    const result = await strategy.handleWebhook(payload, gateway.config) as any;
+
+    if (result.success) {
+      const { externalId, amount, userId, currency } = result;
+      this.logger.log(`Payment approved via ${type}: ${amount} (Ref: ${externalId})`);
       
       const command = new RecordTransactionCommand();
-      // Note: Le userId doit être extrait du payload ou du metadata si la stratégie le permet
-      command.userId = payload.custom_metadata?.user_id || payload.userId; 
+      command.userId = userId || payload.custom_metadata?.user_id || payload.userId; 
       command.amount = amount;
       command.type = TransactionType.SAVING;
       command.gateway_ref = externalId;
 
       await this.commandBus.execute(command);
+
+      // Envoyer une notification à l'utilisateur
+      if (command.userId) {
+        await this.notificationService.notify(command.userId, {
+          title_fr: 'Dépôt réussi !',
+          title_en: 'Deposit successful!',
+          message_fr: `Votre dépôt de ${amount} ${currency || 'XOF'} a été validé. Votre tirelire a été rechargée.`,
+          message_en: `Your deposit of ${amount} ${currency || 'XOF'} has been validated. Your wallet has been topped up.`,
+          type: NotificationType.SUCCESS,
+          metadata: { transactionId: externalId, amount, currency: currency || 'XOF' }
+        });
+      }
+
       return true;
     }
 

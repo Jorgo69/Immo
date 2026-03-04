@@ -10,5 +10,5 @@ export interface PaymentStrategy {
   /**
    * Vérifier et traiter un webhook de confirmation.
    */
-  handleWebhook(payload: any, config: any): Promise<{ success: boolean, externalId: string, amount: number }>;
+  handleWebhook(payload: any, config: any): Promise<{ success: boolean, externalId: string, amount: number, userId?: string, currency?: string }>;
 }

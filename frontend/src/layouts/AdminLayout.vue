@@ -31,6 +31,7 @@ import { useAppStore } from '../stores/app'
 import AppLink from '../components/ui/AppLink.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import { LanguageSwitcher, ThemeToggle, CurrencySwitcher } from '../components/ui'
+import NotificationCenter from '../components/notifications/NotificationCenter.vue'
 
 const SIDEBAR_COLLAPSED_KEY = 'immo_sidebar_collapsed'
 
@@ -354,16 +355,8 @@ function logout() {
             <div class="w-px h-4 bg-ui-border dark:bg-white/10 mx-1" />
             <CurrencySwitcher />
           </div>
+          <NotificationCenter />
           <ThemeToggle />
-          <AppLink
-            to="/admin/profile"
-            class="flex items-center gap-2 px-3 py-2 rounded-2xl text-sm font-bold text-gray-700 dark:text-gray-200 bg-gray-100/50 dark:bg-white/5 border border-transparent hover:border-ui-border/50 dark:hover:border-white/10 transition-all"
-          >
-            <div class="h-7 w-7 rounded-full bg-primary-emerald/10 flex items-center justify-center text-primary-emerald">
-              <User class="w-4 h-4" />
-            </div>
-            <span class="hidden sm:inline">{{ userLabel || t('nav.profile') }}</span>
-          </AppLink>
           <AppButton type="button" variant="ghost" size="none" class="h-10 w-10 !rounded-2xl hover:bg-danger-red/10 hover:text-danger-red transition-all" @click="logout" v-tooltip="t('common.logout')">
             <LogOut class="w-5 h-5" />
           </AppButton>

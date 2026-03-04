@@ -7,6 +7,9 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico'],
       manifest: {
@@ -22,15 +25,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.tile\.openstreetmap\.org\/.*/i,
-            handler: 'CacheFirst',
-            options: { cacheName: 'osm-tiles', expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 } },
-          },
-        ],
       },
-      devOptions: { enabled: true },
+      devOptions: { 
+        enabled: true,
+        type: 'module'
+      },
     }),
   ],
   server: {

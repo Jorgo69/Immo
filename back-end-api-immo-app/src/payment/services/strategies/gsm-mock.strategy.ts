@@ -13,12 +13,14 @@ export class GsmMockStrategy implements PaymentStrategy {
     return { url, externalId };
   }
 
-  async handleWebhook(payload: any, config: any): Promise<{ success: boolean, externalId: string, amount: number }> {
+  async handleWebhook(payload: any, config: any): Promise<{ success: boolean, externalId: string, amount: number, userId?: string, currency?: string }> {
     // Simulation de confirmation directe
     return {
       success: true,
       externalId: payload.id,
       amount: payload.amount,
+      userId: payload.userId,
+      currency: payload.currency || 'XOF',
     };
   }
 }

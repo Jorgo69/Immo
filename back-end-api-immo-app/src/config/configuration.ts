@@ -68,5 +68,9 @@ export default () => {
       from: process.env.SMTP_FROM ?? yamlConfig.smtp?.from,
       secure: process.env.SMTP_SECURE !== undefined ? process.env.SMTP_SECURE === 'true' : yamlConfig.smtp?.secure,
     },
+    notifications: {
+      vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? yamlConfig.notifications?.vapidPublicKey,
+      vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? yamlConfig.notifications?.vapidPrivateKey,
+    },
   };
 };

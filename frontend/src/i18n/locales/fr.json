@@ -960,8 +960,25 @@
   },
   "notifications": {
     "title": "Notifications",
-    "empty": "Aucune notification.",
-    "clear": "Tout effacer"
+    "clear_all": "Tout effacer",
+    "no_notifications": "Aucune notification",
+    "view_history": "Voir tout l'historique",
+    "mark_as_read": "Marquer comme lu",
+    "push_title": "Notifications Push",
+    "push_description": "Recevez des alertes en temps réel sur vos paiements, retraits et messages importants, même lorsque vous n'utilisez pas l'application.",
+    "enable_push": "Activer les notifications",
+    "disable_push": "Désactiver",
+    "permission_denied": "Les notifications sont bloquées par votre navigateur. Veuillez les autoriser dans les paramètres du site.",
+    "secure_context_required": "Le service de notifications nécessite une connexion sécurisée (HTTPS) ou un accès via localhost.",
+    "activation_success": "Notifications activées avec succès !",
+    "activation_error": "Erreur lors de l'activation des notifications.",
+    "test_notification": "Tester la notification push",
+    "test_sent": "Notification de test envoyée !",
+    "test_error": "Échec de l'envoi de la notification de test.",
+    "mark_as_read_error": "Erreur lors du marquage comme lu",
+    "confirm_clear": "Voulez-vous supprimer toutes vos notifications ?",
+    "clear_all_success": "Historique vidé",
+    "clear_all_error": "Erreur lors du nettoyage"
   },
   "pagination": {
     "range": "{start} – {end} sur {total}",

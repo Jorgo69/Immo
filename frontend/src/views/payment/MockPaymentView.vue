@@ -9,6 +9,9 @@ import { Smartphone, CheckCircle2, XCircle, ShieldCheck, ArrowLeft } from 'lucid
 import { AppButton, AppTitle, AppCard } from '../../components/ui'
 import { toast } from 'vue-sonner'
 import { http } from '../../services/http'
+import { useAppStore } from '../../stores/app'
+
+const appStore = useAppStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -27,7 +30,9 @@ async function confirmPayment() {
       id: id.value,
       amount: Number(amount.value),
       status: 'approved',
-      reference: id.value
+      reference: id.value,
+      userId: appStore.userId,
+      currency: route.query.currency || 'XOF'
     })
     
     status.value = 'success'
@@ -50,6 +55,14 @@ function cancelPayment() {
   setTimeout(() => {
     router.push('/admin/profile')
   }, 1500)
+}
+const sendTestNotification = async () => {
+  try {
+    await http.post('/notifications/test', {})
+    toast.success('Notification de test envoyée !')
+  } catch (error) {
+    toast.error('Échec de l\'envoi de la notification de test.')
+  }
 }
 </script>
 
@@ -143,7 +156,15 @@ function cancelPayment() {
           <span class="text-[10px] uppercase tracking-widest font-bold text-gray-400">Paiement Sécurisé SSL 256-bit</span>
         </div>
       </AppCard>
-
+  
+      <AppButton 
+        variant="outline" 
+        @click="sendTestNotification" 
+        class="w-full mt-4 !rounded-2xl py-3 border-gray-200 dark:border-gray-700 font-bold hover:bg-gray-100 dark:hover:bg-gray-800"
+        :disabled="loading"
+      >
+        Tester la notification push
+      </AppButton>
     </div>
   </div>
 </template>

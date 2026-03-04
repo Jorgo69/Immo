@@ -16,13 +16,15 @@ export class FedaPayStrategy implements PaymentStrategy {
     return { url, externalId };
   }
 
-  async handleWebhook(payload: any, config: any): Promise<{ success: boolean, externalId: string, amount: number }> {
+  async handleWebhook(payload: any, config: any): Promise<{ success: boolean, externalId: string, amount: number, userId?: string, currency?: string }> {
     // Dans une vraie implé, on vérifierait la signature avec config.secretKey
     const success = payload.status === 'approved';
     return {
       success,
       externalId: payload.reference,
       amount: payload.amount,
+      userId: payload.userId,
+      currency: payload.currency || 'XOF',
     };
   }
 }
