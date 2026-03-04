@@ -114,18 +114,25 @@ export class PaymentService implements OnModuleInit {
       command.amount = amount;
       command.type = TransactionType.SAVING;
       command.gateway_ref = externalId;
+      command.currency = currency || 'XOF';
 
       await this.commandBus.execute(command);
 
       // Envoyer une notification à l'utilisateur
       if (command.userId) {
+        const displayCurrency = currency || 'XOF';
         await this.notificationService.notify(command.userId, {
           title_fr: 'Dépôt réussi !',
           title_en: 'Deposit successful!',
-          message_fr: `Votre dépôt de ${amount} ${currency || 'XOF'} a été validé. Votre tirelire a été rechargée.`,
-          message_en: `Your deposit of ${amount} ${currency || 'XOF'} has been validated. Your wallet has been topped up.`,
+          message_fr: `Votre dépôt de ${amount} ${displayCurrency} a été validé. Votre tirelire a été rechargée.`,
+          message_en: `Your deposit of ${amount} ${displayCurrency} has been validated. Your wallet has been topped up.`,
           type: NotificationType.SUCCESS,
-          metadata: { transactionId: externalId, amount, currency: currency || 'XOF' }
+          metadata: { 
+            transactionId: externalId, 
+            amount, 
+            currency: displayCurrency,
+            msgKey: 'deposit_success'
+          }
         });
       }
 

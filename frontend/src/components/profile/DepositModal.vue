@@ -7,6 +7,7 @@ import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Wallet, Smartphone, ShieldCheck, ArrowRight, CheckCircle2, X } from 'lucide-vue-next'
 import { createCheckout, getGateways, type PaymentGateway } from '../../services/payment.service'
+import { useAppStore } from '../../stores/app'
 import { AppButton, AppTitle } from '../ui'
 import { toast } from 'vue-sonner'
 
@@ -16,6 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['close'])
 
+const appStore = useAppStore()
 const { t } = useI18n()
 const amount = ref<number>(5000)
 const loading = ref(false)
@@ -107,7 +109,7 @@ async function handleDeposit() {
               class="w-full rounded-2xl border-2 border-gray-100 bg-gray-50 px-5 py-4 text-2xl font-black text-gray-900 outline-none transition-all focus:border-[var(--color-accent)] focus:bg-white dark:border-gray-800 dark:bg-gray-800 dark:text-white dark:focus:border-[var(--color-accent)]"
               :placeholder="t('wallet.amountPlaceholder')"
             />
-            <span class="absolute right-5 top-1/2 -translate-y-1/2 font-bold text-gray-400">XOF</span>
+            <span class="absolute right-5 top-1/2 -translate-y-1/2 font-bold text-gray-400">{{ appStore.currency }}</span>
           </div>
           
           <!-- Quick amounts -->

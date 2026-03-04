@@ -978,7 +978,8 @@
     "mark_as_read_error": "Erreur lors du marquage comme lu",
     "confirm_clear": "Voulez-vous supprimer toutes vos notifications ?",
     "clear_all_success": "Historique vidé",
-    "clear_all_error": "Erreur lors du nettoyage"
+    "clear_all_error": "Erreur lors du nettoyage",
+    "deposit_success_msg": "Votre dépôt de {amount} a été validé. Votre tirelire a été rechargée."
   },
   "pagination": {
     "range": "{start} – {end} sur {total}",

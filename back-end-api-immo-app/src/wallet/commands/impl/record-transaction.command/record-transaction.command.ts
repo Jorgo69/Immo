@@ -23,4 +23,9 @@ export class RecordTransactionCommand {
   @IsOptional()
   @IsString()
   gateway_ref?: string;
+
+  @ApiProperty({ required: false, description: 'Devise de la transaction', example: 'XOF' })
+  @IsOptional()
+  @IsString()
+  currency?: string;
 }

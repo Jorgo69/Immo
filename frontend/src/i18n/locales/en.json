@@ -928,7 +928,8 @@
     "mark_as_read_error": "Error marking as read",
     "confirm_clear": "Do you want to clear all notifications?",
     "clear_all_success": "History cleared",
-    "clear_all_error": "Error clearing history"
+    "clear_all_error": "Error clearing history",
+    "deposit_success_msg": "Your deposit of {amount} has been validated. Your wallet has been topped up."
   },
   "pagination": {
     "range": "{start} – {end} of {total}",

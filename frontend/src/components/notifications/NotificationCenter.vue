@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { Bell, Check, Clock, Inbox } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { Bell, Check, Clock, Inbox, ChevronRight } from 'lucide-vue-next'
 import { http } from '../../services/http'
 import { toast } from 'vue-sonner'
 import { useI18n } from 'vue-i18n'
-import { useAppStore } from '../../stores/app'
+import { useCurrency } from '../../composables/useCurrency'
 
 interface Notification {
   id: string
@@ -15,14 +16,30 @@ interface Notification {
   type: string
   isRead: boolean
   createdAt: string
+  metadata?: any
 }
 
 const { t, locale } = useI18n()
-const appStore = useAppStore()
+const router = useRouter()
+const { formatPrice, loadRates } = useCurrency()
 const showDropdown = ref(false)
 const notifications = ref<Notification[]>([])
 const unreadCount = ref(0)
 const dropdownRef = ref<HTMLElement | null>(null)
+
+const goToHistory = () => {
+  showDropdown.value = false
+  router.push('/admin/notifications')
+}
+
+const getNotificationMessage = (notif: Notification) => {
+  // Détection robuste pour les dépôts (avec ou sans msgKey)
+  if (notif.metadata?.amount && (notif.metadata?.msgKey === 'deposit_success' || notif.title_fr?.includes('Dépôt'))) {
+    const formatted = formatPrice(Number(notif.metadata.amount))
+    return t('notifications.deposit_success_msg', { amount: formatted })
+  }
+  return locale.value === 'en' ? notif.message_en : notif.message_fr
+}
 
 const fetchNotifications = async () => {
   try {
@@ -74,6 +91,7 @@ const handleClickOutside = (event: MouseEvent) => {
 }
 
 onMounted(() => {
+  loadRates()
   fetchNotifications()
   document.addEventListener('mousedown', handleClickOutside)
   setInterval(fetchNotifications, 60000)
@@ -144,7 +162,7 @@ onUnmounted(() => {
                 </span>
               </div>
               <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
-                {{ locale === 'en' ? notif.message_en : notif.message_fr }}
+                {{ getNotificationMessage(notif) }}
               </p>
             </div>
           </div>
@@ -163,8 +181,12 @@ onUnmounted(() => {
 
       <!-- Footer -->
       <div class="p-4 bg-gray-50/50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 text-center">
-        <button class="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-600 transition-colors">
+        <button 
+          @click="goToHistory"
+          class="text-[10px] font-black uppercase tracking-widest text-[var(--color-accent)] hover:text-black dark:hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
+        >
           {{ t('notifications.view_history') }}
+          <ChevronRight class="h-3 w-3" />
         </button>
       </div>
     </div>

@@ -49,6 +49,9 @@ export class TransactionEntity {
   @Column({ type: 'varchar', nullable: true, name: 'gateway_ref' })
   gateway_ref: string | null;
 
+  @Column({ type: 'varchar', length: 10, default: 'XOF' })
+  currency: string;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 

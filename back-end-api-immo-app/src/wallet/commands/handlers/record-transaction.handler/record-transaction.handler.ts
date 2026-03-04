@@ -34,6 +34,7 @@ export class RecordTransactionHandler implements ICommandHandler<RecordTransacti
         type: command.type,
         status: TransactionStatus.COMPLETED,
         gateway_ref: command.gateway_ref ?? null,
+        currency: command.currency || 'XOF',
       });
       const savedTx = await txRepo.save(transaction);
 

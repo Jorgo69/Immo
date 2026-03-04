@@ -89,7 +89,7 @@ const sendTestNotification = async () => {
             <div class="text-center">
               <p class="text-gray-500 text-sm font-medium">Montant à régler</p>
               <p class="text-5xl font-black text-gray-900 dark:text-white mt-2">
-                {{ Number(amount).toLocaleString() }} <span class="text-xl text-gray-400">XOF</span>
+                {{ Number(amount).toLocaleString() }} <span class="text-xl text-gray-400">{{ route.query.currency || 'XOF' }}</span>
               </p>
             </div>
 
