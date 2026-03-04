@@ -38,6 +38,12 @@ export class ProfileEntity {
   @Column({ type: 'text', nullable: true, name: 'profession_enc' })
   profession_enc: string | null;
 
+  @Column({ type: 'text', nullable: true, name: 'cpi_enc' })
+  cpi_enc: string | null;
+
+  @Column({ type: 'varchar', length: 64, nullable: true, unique: true, name: 'cpi_hash' })
+  cpi_hash: string | null;
+
   @Column({ type: 'text', nullable: true, name: 'company_enc' })
   company_enc: string | null;
 
@@ -80,6 +86,14 @@ export class ProfileEntity {
 
   @Column({ type: 'text', nullable: true, name: 'kyc_rejection_reason' })
   kyc_rejection_reason: string | null;
+
+  /** Score de réputation (0 à 5) basé sur l'historique de paiement et de comportement. */
+  @Column({ type: 'float', default: 5.0, name: 'reputation_score' })
+  reputation_score: number;
+
+  /** Badge "Locataire de Confiance" pour les profils exemplaires. */
+  @Column({ type: 'boolean', default: false, name: 'trust_badge' })
+  trust_badge: boolean;
 
   @DeleteDateColumn({ name: 'deleted_at' })
   deleted_at: Date | null;

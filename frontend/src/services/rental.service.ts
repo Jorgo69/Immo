@@ -19,7 +19,16 @@ export interface RentalRequestDto {
   responded_at: string | null
   responded_by: string | null
   unit?: UnitDto & { property?: { id: string; name: string } | null }
-  tenant?: { id: string; email?: string; avatar_url?: string | null }
+  tenant?: { 
+    id: string; 
+    email?: string; 
+    avatar_url?: string | null;
+    profile?: {
+      reputation_score: number;
+      trust_badge: boolean;
+      kyc_status: string;
+    } | null;
+  }
 }
 
 export interface CreateRentalRequestPayload {

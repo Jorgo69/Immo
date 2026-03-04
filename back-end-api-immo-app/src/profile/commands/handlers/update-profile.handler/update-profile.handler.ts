@@ -64,7 +64,7 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
           if (ifuHash && ifuHash !== profile.ifu_hash) {
             const existing = await pRepo.findOne({ where: { ifu_hash: ifuHash } });
             if (existing && existing.user_id !== profile.user_id) {
-              throw new ForbiddenException('Cet IFU est déjà enregistré sur un autre compte.');
+              throw new ForbiddenException('IFU_ALREADY_EXISTS');
             }
           }
           profile.ifu_hash = ifuHash;
@@ -77,12 +77,25 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
           if (rccmHash && rccmHash !== profile.rccm_hash) {
             const existing = await pRepo.findOne({ where: { rccm_hash: rccmHash } });
             if (existing && existing.user_id !== profile.user_id) {
-              throw new ForbiddenException('Ce RCCM est déjà enregistré sur un autre compte.');
+              throw new ForbiddenException('RCCM_ALREADY_EXISTS');
             }
           }
           profile.rccm_hash = rccmHash;
           profile.rccm_enc = command.rccm
             ? this.encryption.encrypt(command.rccm, user.encryption_salt)
+            : null;
+        }
+        if (command.cpi !== undefined) {
+          const cpiHash = command.cpi ? this.encryption.hash(command.cpi) : null;
+          if (cpiHash && cpiHash !== profile.cpi_hash) {
+            const existing = await pRepo.findOne({ where: { cpi_hash: cpiHash } });
+            if (existing && existing.user_id !== profile.user_id) {
+              throw new ForbiddenException('CPI_ALREADY_EXISTS');
+            }
+          }
+          profile.cpi_hash = cpiHash;
+          profile.cpi_enc = command.cpi
+            ? this.encryption.encrypt(command.cpi, user.encryption_salt)
             : null;
         }
         if (command.emergency_contact !== undefined) {
@@ -121,6 +134,7 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
           company_masked: profile.company_enc ? '********' : null,
           ifu_masked: profile.ifu_enc ? '********' : null,
           rccm_masked: profile.rccm_enc ? '********' : null,
+          cpi_masked: profile.cpi_enc ? '********' : null,
           emergency_contact_masked: profile.emergency_contact_enc ? '********' : null,
           preferred_zone: profile.preferred_zone,
           preferred_zones: profile.preferred_zones ?? (profile.preferred_zone ? [profile.preferred_zone] : null),

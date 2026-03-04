@@ -5,6 +5,7 @@ import { Body, Controller, Get, Param, Patch, Post, Query, Request, UseGuards } 
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
+import { VerifiedUserGuard } from '../common/guards/verified-user.guard';
 import { CreateRentalRequestDto } from './dto/create-rental-request.dto';
 import { CreateRentalRequestCommand } from './commands/impl/create-rental-request.command/create-rental-request.command';
 import { GetRentalRequestsForLandlordQuery } from './queries/impl/get-rental-requests-for-landlord.query/get-rental-requests-for-landlord.query';
@@ -21,7 +22,7 @@ export class RentalController {
   ) {}
 
   @Post('requests')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOperation({ summary: 'Créer une demande de location (locataire)' })
   async createRequest(
     @Request() req: { user?: { id: string } },

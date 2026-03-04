@@ -58,9 +58,9 @@
 - ✅ `phone_number` — UNIQUE en base
 - ✅ `ifu_hash` — UNIQUE en base (agents/propriétaires)
 - ✅ `rccm_hash` — UNIQUE en base (agents)
-- 🔜 `email` — ajouter contrainte UNIQUE en base + validation
-- 🔜 `cpi_hash` — hash du numéro CPI (Carte d'Identité Personnelle) pour unicité locataire
-- 🔜 Validation format CPI béninois (regex strict)
+- ✅ `email` — UNIQUE en base (validation décorateur)
+- ✅ `cpi_hash` — UNIQUE en base (numéro d'identité personnelle)
+- ✅ Validation format CPI béninois (regex strict)
 
 ---
 
@@ -111,10 +111,10 @@
 - ✅ Actions Approuver / Rejeter avec motif obligatoire
 - ✅ Avatar utilisateur + initiales si pas de photo
 - ✅ Traductions i18n complètes (`kyc.*`)
-- 🔜 Aperçu de la pièce d'identité directement dans la liste
+- ✅ Aperçu de la pièce d'identité directement dans la liste
 
 ### Règles métier KYC
-- Locataire : pièce d'identité (partiel) + hash CPI pour unicité 🔜
+- Locataire : pièce d'identité (partiel) + hash CPI pour unicité ✅
 - Propriétaire : pièce d'identité + IFU (optionnel si particulier) ✅
 - Agent : pièce d'identité + IFU + RCCM ✅
 
@@ -172,8 +172,8 @@
 - ✅ Titre foncier chiffré
 - ✅ Recherche et filtres (zone, prix, type...)
 - ✅ Taux d'occupation calculé
-- 📋 Règle : impossible de publier si `is_verified = false`
-- 📋 Validation : caution max 2 mois (loi béninoise)
+- ✅ Règle : impossible de publier si `is_verified = false` (`VerifiedUserGuard`)
+- ✅ Validation : caution et avance max 3 mois (conformité 2021)
 - 📋 Géolocalisation GPS des biens
 
 ---
@@ -182,7 +182,7 @@
 
 - ✅ Entité `rental_requests`
 - ✅ Statuts : `pending | accepted | rejected`
-- 📋 Règle : impossible de postuler si `is_verified = false` (locataire)
+- ✅ Règle : impossible de postuler si `is_verified = false` (`VerifiedUserGuard`)
 - 📋 Dossier de candidature complet (revenus, garanties)
 - 📋 Score de réputation locataire affiché au propriétaire
 
@@ -245,11 +245,10 @@
 
 > À faire lors de la prochaine session de travail
 
-1. **🔜 Unicité email** — ajouter contrainte UNIQUE sur `users.email` en base
-2. **🔜 Champ CPI locataire** — `profiles.cpi_enc` + `profiles.cpi_hash` (UNIQUE) + validation format béninois
-3. **🔜 Guard publication biens** — bloquer `is_verified = false` sur `POST /property`
-4. **🔜 Guard candidature location** — bloquer `is_verified = false` sur `POST /rental/request`
-5. **🔜 Aperçu pièce d'identité** — afficher l'image id_card_url dans la page `/admin/kyc`
+1. **🔜 Score de Confiance (Réputation)** — Système de notation basé sur l'historique (Rigueur)
+2. **🔜 Mobile Money** — Intégration technique (MTN/Moov Bénin)
+3. **🔜 OCR KYC** — test de reconnaissance optique sur les pièces d'identité
+4. **🔜 Notifications Push** — alertes loyer et validation KYC
 
 ---
 
@@ -259,6 +258,7 @@
 |---|---|---|
 | 26/02/2026 | `initial` | Init projet, auth OTP, profil, biens, wallet |
 | 27/02/2026 | `91fd469` | Epic 0→5 : Redis, Audit, Settings, Lifecycle, RBAC, Dashboard KYC, Documentation complète |
+| 03/03/2026 | `epic-6-7`| Epics 6 & 7 : Unicité Email/CPI, VerifiedUserGuard, Conformité Légale (3 mois), Bannière KYC Transparency |
 
 ---
 

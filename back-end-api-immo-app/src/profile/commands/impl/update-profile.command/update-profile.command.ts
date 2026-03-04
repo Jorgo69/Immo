@@ -19,4 +19,5 @@ export class UpdateProfileCommand {
   preferred_zones?: string[];
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(50) budget_min?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(50) budget_max?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(20) @Matches(/^\d{12,15}$/, { message: "Le numéro CPI doit être composé de 12 à 15 chiffres" }) cpi?: string;
 }

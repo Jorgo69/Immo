@@ -1,4 +1,18 @@
 {
+  "validation": {
+    "CAUTION_TOO_HIGH": "Security deposit cannot exceed 3 months (2021 Law).",
+    "AVANCE_TOO_HIGH": "Advance rent cannot exceed 3 months (2021 Law)."
+  },
+  "error": {
+    "KYC_REQUIRED": "Your account is not yet verified. Please complete your KYC to perform this action."
+  },
+  "kycBanner": {
+    "pendingTitle": "Verification in progress",
+    "pendingDesc": "Our services are reviewing your documents. Some actions are restricted until validation.",
+    "rejectedTitle": "Application rejected",
+    "rejectedDesc": "Your application was refused for the following reason: {reason}. Click here to fix.",
+    "completeCta": "Complete my KYC"
+  },
   "common": {
     "prev": "Previous",
     "next": "Next",
@@ -386,6 +400,7 @@
     "editProfile": "Edit profile",
     "verified": "Verified",
     "tirelire": "Piggy Bank",
+    "depositCta": "Recharge my Wallet",
     "balance": "Balance",
     "roleTenant": "I'm a Tenant",
     "roleLandlord": "I'm a Owner",
@@ -447,7 +462,9 @@
     "supportWhatsApp": "WhatsApp Support",
     "help": "Help",
     "securityLevel": "Security level",
-    "twoFA": "Two-factor authentication"
+    "twoFA": "Two-factor authentication",
+    "reputationLabel": "Trust",
+    "trustBadge": "Trusted Tenant"
   },
   "onboarding": {
     "title": "Complete my profile",
@@ -909,5 +926,20 @@
     "cta": "View property",
     "prev": "Previous",
     "next": "Next"
+  },
+  "wallet": {
+    "depositModalTitle": "Recharge my Wallet",
+    "depositStatus": "Simple, fast and secure in Benin",
+    "amountLabel": "Deposit amount (FCFA)",
+    "amountPlaceholder": "Ex: 5000",
+    "quickAmount": "+{amount}",
+    "gatewaySecure": "Secure Gateway",
+    "securityHint": "Your funds will be directly credited to your Wallet account once the transaction is validated by the operator.",
+    "continue": "Continue to payment",
+    "cancel": "Cancel",
+    "minAmountError": "Minimum amount: 100 FCFA",
+    "depositDescription": "Wallet Deposit Immo Benin",
+    "selectGatewayError": "Please select a payment method",
+    "gatewayLabel": "Payment method"
   }
 }

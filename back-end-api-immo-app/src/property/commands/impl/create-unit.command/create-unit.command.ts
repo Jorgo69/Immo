@@ -131,7 +131,7 @@ export class CreateUnitCommand {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  @Max(24)
+  @Max(3, { message: 'validation.CAUTION_TOO_HIGH' })
   caution_months?: number;
 
   @ApiPropertyOptional({ description: 'Nombre de mois d\'avance' })
@@ -139,7 +139,7 @@ export class CreateUnitCommand {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  @Max(24)
+  @Max(3, { message: 'validation.AVANCE_TOO_HIGH' })
   avance_months?: number;
 
   @ApiPropertyOptional({ description: 'Frais de dossier (FCFA)' })

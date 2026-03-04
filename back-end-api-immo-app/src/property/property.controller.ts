@@ -20,6 +20,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
+import { VerifiedUserGuard } from '../common/guards/verified-user.guard';
 import { UploadPropertyImageService } from './services/upload-property-image.service';
 
 interface MulterFile {
@@ -52,7 +53,7 @@ export class PropertyController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOperation({ summary: 'Créer un bien (owner_id = utilisateur connecté uniquement)' })
   async create(@Request() req: { user?: { id: string } }, @Body() body: CreatePropertyCommand) {
     const ownerId = req.user?.id;
@@ -75,7 +76,7 @@ export class PropertyController {
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOperation({ summary: 'Mettre à jour un bien (réservé au propriétaire)' })
   async update(
     @Request() req: { user?: { id: string } },
@@ -142,7 +143,7 @@ export class PropertyController {
   }
 
   @Post('units')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOperation({ summary: 'Créer une unité (rattachée ou indépendante). Body : property_id? (null = unité autonome), owner_id si autonome, ref_type_id, …' })
   async createUnitStandalone(
     @Request() req: { user?: { id: string } },
@@ -157,7 +158,7 @@ export class PropertyController {
   }
 
   @Post(':propertyId/units')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOperation({ summary: 'Ajouter une unité à un bien existant (property_id injecté depuis l’URL)' })
   async createUnit(
     @Param('propertyId') propertyId: string,
@@ -170,7 +171,7 @@ export class PropertyController {
   }
 
   @Put(':propertyId/units/:unitId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOperation({ summary: 'Modifier une unité (réservé au propriétaire)' })
   async updateUnit(
     @Request() req: { user?: { id: string } },

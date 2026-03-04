@@ -27,6 +27,20 @@ http.interceptors.request.use((config) => {
   }
   return config
 })
+http.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      try {
+        const store = useAppStore()
+        store.logout()
+      } catch {
+        // Ignorer si le store n'est pas accessible
+      }
+    }
+    return Promise.reject(error)
+  },
+)
 
 /** Extraire un message lisible depuis une réponse d'erreur API (ex. 400 validation NestJS). Toujours retourne une chaîne non vide. */
 export function getApiErrorMessage(error: unknown): string {

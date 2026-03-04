@@ -4,7 +4,7 @@
  * Design Frijo/MallOS : sidebar fine, icônes minimalistes, thème sémantique Tailwind.
  */
 import { useI18n } from 'vue-i18n'
-import { RouterView, useRoute, useRouter } from 'vue-router'
+import { RouterView, useRoute } from 'vue-router'
 import { computed, onMounted, ref } from 'vue'
 import {
   Home,
@@ -36,7 +36,6 @@ const SIDEBAR_COLLAPSED_KEY = 'immo_sidebar_collapsed'
 
 const { t } = useI18n()
 const route = useRoute()
-const router = useRouter()
 const appStore = useAppStore()
 const sidebarOpen = ref(true)
 const sidebarCollapsed = ref(false)
@@ -123,6 +122,7 @@ const navItems = computed(() => {
         { path: '/admin/users', label: t('admin.navUsers'), icon: Users },
         { path: '/admin/kyc', label: 'Validation KYC', icon: ShieldCheck },
         { path: '/admin/roles', label: 'Rôles & Permissions', icon: Key },
+        { path: '/admin/settings/payment', label: 'Gestion des Paiements', icon: Banknote },
         { path: '/admin/activity-logs', label: "Trace d'Audit", icon: History },
       ],
     }] : []),
@@ -157,8 +157,7 @@ onMounted(() => {
 })
 
 function logout() {
-  appStore.setToken(null)
-  router.push('/')
+  appStore.logout()
 }
 </script>
 

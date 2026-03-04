@@ -1,4 +1,18 @@
 {
+  "validation": {
+    "CAUTION_TOO_HIGH": "La caution ne peut excéder 3 mois (Loi 2021).",
+    "AVANCE_TOO_HIGH": "L'avance ne peut excéder 3 mois (Loi 2021)."
+  },
+  "error": {
+    "KYC_REQUIRED": "Votre compte n'est pas encore vérifié. Veuillez compléter votre KYC pour effectuer cette action."
+  },
+  "kycBanner": {
+    "pendingTitle": "Vérification en cours",
+    "pendingDesc": "Nos services examinent vos pièces. Certaines actions sont restreintes jusqu'à validation.",
+    "rejectedTitle": "Dossier rejeté",
+    "rejectedDesc": "Votre dossier a été refusé pour le motif suivant : {reason}. Cliquez ici pour corriger.",
+    "completeCta": "Compléter mon KYC"
+  },
   "app": {
     "name": "Immo Bénin",
     "tagline": "Location sereine, paiement en toute confiance",
@@ -424,6 +438,7 @@
     "editProfile": "Éditer le profil",
     "verified": "Vérifié",
     "tirelire": "Tirelire",
+    "depositCta": "Recharger ma Tirelire",
     "balance": "Solde",
     "roleTenant": "Je suis un Locataire",
     "roleLandlord": "Je suis un Propriétaire",
@@ -485,7 +500,9 @@
     "supportWhatsApp": "Support WhatsApp",
     "help": "Aide",
     "securityLevel": "Niveau de sécurité",
-    "twoFA": "Authentification 2 facteurs"
+    "twoFA": "Authentification 2 facteurs",
+    "reputationLabel": "Confiance",
+    "trustBadge": "Locataire de Confiance"
   },
   "onboarding": {
     "title": "Compléter mon profil",
@@ -514,7 +531,9 @@
     "ifuPlaceholder": "Ex. 320150... ",
     "rccm": "Numéro RCCM (Optionnel)",
     "rccmPlaceholder": "Ex. RB/COT/15 B...",
-    "legalDesc": "Ces informations facultatives consolident votre sérieux et renforcent la confiance des locataires sur la plateforme.",
+    "cpi": "Numéro Personnel (CPI)",
+    "cpiPlaceholder": "12 à 15 chiffres",
+    "legalDesc": "Ces informations consolident votre sérieux et renforcent la confiance sur la plateforme. Le CPI est obligatoire pour les locataires.",
     "roleDefaultHint": "« Je cherche un logement » est sélectionné par défaut.",
     "zoneLabel": "Zone recherchée",
     "zoneLabelTenant": "Où souhaitez-vous habiter ?",
@@ -957,5 +976,20 @@
     "cta": "Voir la fiche du bien",
     "prev": "Précédent",
     "next": "Suivant"
+  },
+  "wallet": {
+    "depositModalTitle": "Recharger ma Tirelire",
+    "depositStatus": "Simple, rapide et sécurisé au Bénin",
+    "amountLabel": "Montant du dépôt (FCFA)",
+    "amountPlaceholder": "Ex: 5000",
+    "quickAmount": "+{amount}",
+    "gatewaySecure": "Passerelle Sécurisée",
+    "securityHint": "Vos fonds seront directement crédités sur votre compte Tirelire une fois la transaction validée par l'opérateur.",
+    "continue": "Continuer vers le paiement",
+    "cancel": "Annuler",
+    "minAmountError": "Montant minimum : 100 FCFA",
+    "depositDescription": "Dépôt Tirelire Immo Bénin",
+    "selectGatewayError": "Veuillez choisir une méthode de paiement",
+    "gatewayLabel": "Méthode de paiement"
   }
 }

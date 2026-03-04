@@ -9,9 +9,11 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   ManyToOne,
-  JoinColumn
+  JoinColumn,
+  OneToOne
 } from 'typeorm';
 import { RoleEntity } from '../../../rbac/entities/role.entity';
+import { ProfileEntity } from '../../../profile/entities/profile.entity';
 
 export enum UserRole {
   TENANT = 'tenant',
@@ -89,6 +91,9 @@ export class UserModel {
   @ManyToOne(() => RoleEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'rbac_role_id' })
   rbac_role: RoleEntity;
+
+  @OneToOne(() => ProfileEntity, (profile) => profile.user)
+  profile: ProfileEntity;
 
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;

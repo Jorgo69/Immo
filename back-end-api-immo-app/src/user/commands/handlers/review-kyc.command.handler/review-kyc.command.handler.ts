@@ -6,6 +6,8 @@ import { Logger, NotFoundException } from '@nestjs/common';
 import { ProfileEntity, KycStatus } from '../../../../profile/entities/profile.entity';
 import { UserModel } from '../../../../auth/models/user.model/user.model';
 
+import { ReputationService } from '../../../../profile/services/reputation.service';
+
 @CommandHandler(ReviewKycCommand)
 export class ReviewKycCommandHandler implements ICommandHandler<ReviewKycCommand> {
   private readonly logger = new Logger(ReviewKycCommandHandler.name);
@@ -15,6 +17,7 @@ export class ReviewKycCommandHandler implements ICommandHandler<ReviewKycCommand
     private readonly profileRepository: Repository<ProfileEntity>,
     @InjectRepository(UserModel)
     private readonly userRepository: Repository<UserModel>,
+    private readonly reputationService: ReputationService,
   ) {}
 
   async execute(command: ReviewKycCommand): Promise<{ success: boolean; status: string }> {
@@ -40,6 +43,10 @@ export class ReviewKycCommandHandler implements ICommandHandler<ReviewKycCommand
     }
 
     await this.profileRepository.save(profile);
+    
+    // Recalcul de la réputation suite au changement de statut KYC
+    await this.reputationService.updateReputationScore(user.id);
+
     this.logger.log(`KYC status for user ${user.id} updated to ${profile.kyc_status}`);
 
     return {

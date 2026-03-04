@@ -20,6 +20,7 @@ export class GetRentalRequestsForLandlordHandler implements IQueryHandler<GetRen
       .leftJoinAndSelect('unit.ref_type', 'unit_ref_type')
       .leftJoinAndSelect('unit.property', 'unit_property')
       .leftJoinAndSelect('r.tenant', 'tenant')
+      .leftJoinAndSelect('tenant.profile', 'profile')
       .where(
         `(unit.property_id IS NOT NULL AND unit_property.owner_id = :landlord_id) OR (unit.property_id IS NULL AND unit.owner_id = :landlord_id)`,
         { landlord_id: query.landlord_id },

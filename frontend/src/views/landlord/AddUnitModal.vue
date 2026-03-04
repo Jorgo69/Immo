@@ -163,7 +163,9 @@ const step3Valid = computed(() => {
   const f = form.value
   const hasPrice = typeof f.price === 'number' && f.price >= 0
   const noticeOk = f.unit_status !== 'notice_given' || (f.available_from && f.available_from.trim().length > 0)
-  return hasPrice && noticeOk
+  const cautionOk = (f.caution_months || 0) <= 3
+  const avanceOk = (f.avance_months || 0) <= 3
+  return hasPrice && noticeOk && cautionOk && avanceOk
 })
 
 const canNext = computed(() => {
@@ -513,8 +515,8 @@ watch(
                </div>
 
                <div class="grid grid-cols-2 gap-6">
-                 <AppInput :model-value="form.caution_months || ''" type="number" :label="t('landlord.cautionMonths')" :min="0" :max="24" @update:model-value="(v) => (form.caution_months = v === '' ? null : Number(v))" />
-                 <AppInput :model-value="form.avance_months || ''" type="number" :label="t('landlord.avanceMonths')" :min="0" :max="24" @update:model-value="(v) => (form.avance_months = v === '' ? null : Number(v))" />
+                 <AppInput :model-value="form.caution_months || ''" type="number" :label="t('landlord.cautionMonths')" :min="0" :max="3" @update:model-value="(v) => (form.caution_months = v === '' ? null : Number(v))" />
+                 <AppInput :model-value="form.avance_months || ''" type="number" :label="t('landlord.avanceMonths')" :min="0" :max="3" @update:model-value="(v) => (form.avance_months = v === '' ? null : Number(v))" />
                </div>
 
                <AppInput :model-value="form.frais_dossier || ''" type="number" :label="t('landlord.fraisDossier')" :min="0" @update:model-value="(v) => (form.frais_dossier = v === '' ? null : Number(v))" />

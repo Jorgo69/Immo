@@ -10,6 +10,8 @@ import { AddPaymentMethodHandler } from './commands/handlers/add-payment-method.
 import { GetProfileByUserHandler } from './queries/handlers/get-profile-by-user.handler/get-profile-by-user.handler';
 import { GetPaymentMethodsHandler } from './queries/handlers/get-payment-methods.handler/get-payment-methods.handler';
 
+import { ReputationService } from './services/reputation.service';
+
 @Module({
   imports: [CqrsModule, TypeOrmModule.forFeature([ProfileEntity, PaymentMethodEntity, UserModel])],
   controllers: [ProfileController],
@@ -18,6 +20,8 @@ import { GetPaymentMethodsHandler } from './queries/handlers/get-payment-methods
     AddPaymentMethodHandler,
     GetProfileByUserHandler,
     GetPaymentMethodsHandler,
+    ReputationService,
   ],
+  exports: [ReputationService],
 })
 export class ProfileModule {}

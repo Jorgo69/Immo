@@ -19,6 +19,7 @@ import { getMyWallet, getMyTransactions, recordSaving } from '../services/wallet
 import { getApiErrorMessage } from '../services/http'
 import { toast } from 'vue-sonner'
 import { AppCardPremium, AppButton, StatCardPremium, AppSkeleton } from '../components/ui'
+import KycStatusBanner from '../components/KycStatusBanner.vue'
 import { useAppStore } from '../stores/app'
 import type { WalletTransactionDto } from '../services/wallet.service'
 
@@ -208,6 +209,9 @@ onMounted(() => {
         </h1>
         <p class="mt-2 text-ui-muted font-medium">{{ t('dashboard.subtitle', 'Gérez vos biens et revenus en toute simplicité.') }}</p>
       </header>
+
+      <!-- KYC Status Banner -->
+      <KycStatusBanner />
 
       <template v-if="loading">
         <!-- 4 Stat Skeletons -->

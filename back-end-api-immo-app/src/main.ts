@@ -31,7 +31,7 @@ async function bootstrap() {
 
   // Swagger avec JWT Authentication
   const config = new DocumentBuilder()
-    .setTitle('API - Standard 41DEVS')
+    .setTitle('Immo Bénin API - Standard 41DEVS')
     .setDescription('NestJS CQRS API Documentation')
     .setVersion('1.0')
     .addBearerAuth(

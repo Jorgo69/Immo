@@ -5,7 +5,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UpdateUserCommand } from '../../impl/update-user.command/update-user.command';
-import { Logger, NotFoundException } from '@nestjs/common';
+import { Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { UserModel } from '../../../../auth/models/user.model/user.model';
 
 @CommandHandler(UpdateUserCommand)
@@ -29,7 +29,13 @@ export class UpdateUserCommandHandler implements ICommandHandler<UpdateUserComma
 
       if (command.first_name !== undefined) user.first_name = command.first_name;
       if (command.last_name !== undefined) user.last_name = command.last_name;
-      if (command.email !== undefined) user.email = command.email;
+      if (command.email !== undefined && command.email !== user.email) {
+        const existing = await this.userRepository.findOne({ where: { email: command.email } });
+        if (existing) {
+          throw new ForbiddenException('EMAIL_ALREADY_EXISTS');
+        }
+        user.email = command.email;
+      }
       if (command.avatar_url !== undefined) user.avatar_url = command.avatar_url;
       if (command.preferred_lang !== undefined) user.preferred_lang = command.preferred_lang;
       if (command.preferred_currency !== undefined) user.preferred_currency = command.preferred_currency;

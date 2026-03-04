@@ -12,6 +12,7 @@ export interface UpdateOnboardingDraftDto {
   preferred_zones?: string[]
   budget_min?: string
   budget_max?: string
+  cpi?: string
 }
 
 export async function getOnboardingDraft() {
@@ -20,7 +21,7 @@ export async function getOnboardingDraft() {
 }
 
 export async function updateOnboardingDraft(payload: UpdateOnboardingDraftDto) {
-  const { data } = await http.put('/onboarding/draft', payload)
+  const { data } = await http.post('/onboarding/draft', payload)
   return data
 }
 

@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ShieldCheck, CheckCircle2, XCircle, Clock, ExternalLink } from 'lucide-vue-next'
+import { ShieldCheck, CheckCircle2, XCircle, Clock, ExternalLink, Eye } from 'lucide-vue-next'
 import { AppTitle, AppButton, AppCard } from '../../components/ui'
 import { getUsers, reviewKyc, type AdminUserDto } from '../../services/user.service'
 import { getApiErrorMessage } from '../../services/http'
@@ -115,6 +115,10 @@ function avatarInitials(user: AdminUserDto): string {
   return user.phone_number.slice(-2)
 }
 
+function openIdCard(url: string | null) {
+  if (url) window.open(url, '_blank')
+}
+
 onMounted(() => fetchKycUsers())
 </script>
 
@@ -205,16 +209,26 @@ onMounted(() => fetchKycUsers())
               </div>
             </div>
 
-            <!-- Badge KYC + lien -->
-            <div class="flex shrink-0 items-center gap-2">
+            <!-- Badge KYC + lien profile + aperçu ID -->
+            <div class="flex shrink-0 items-center gap-1.5">
               <span
                 class="rounded-full px-2.5 py-0.5 text-[10px] font-bold"
                 :class="kycBadgeClass(user.profile?.kyc_status)"
               >
                 {{ kycStatusLabel(user.profile?.kyc_status) }}
               </span>
+              
               <button
-                class="rounded-lg p-1.5 text-ui-muted transition-colors hover:bg-ui-background dark:hover:bg-brand-dark"
+                v-if="user.id_card_url"
+                class="rounded-lg p-1 text-ui-muted transition-colors hover:bg-ui-background hover:text-primary-emerald dark:hover:bg-brand-dark"
+                title="Aperçu pièce d'identité"
+                @click="openIdCard(user.id_card_url)"
+              >
+                <Eye class="h-3.5 w-3.5" />
+              </button>
+
+              <button
+                class="rounded-lg p-1 text-ui-muted transition-colors hover:bg-ui-background hover:text-primary-emerald dark:hover:bg-brand-dark"
                 :title="t('kyc.viewProfile')"
                 @click="router.push('/admin/users/' + user.id)"
               >

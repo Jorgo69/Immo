@@ -25,8 +25,10 @@ import { UploadIdCardService } from './upload-id-card.service';
 import { UserCronService } from './services/user-cron.service';
 import { RoleEntity } from '../rbac/entities/role.entity';
 
+import { ProfileModule } from '../profile/profile.module';
+
 @Module({
-  imports: [CqrsModule, TypeOrmModule.forFeature([UserModel, ProfileEntity, RoleEntity])],
+  imports: [CqrsModule, ProfileModule, TypeOrmModule.forFeature([UserModel, ProfileEntity, RoleEntity])],
   controllers: [UserController],
   providers: [
     UploadAvatarService,

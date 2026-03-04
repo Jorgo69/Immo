@@ -13,4 +13,5 @@ export class UpdateOnboardingDraftDto {
   @ApiProperty({ required: false, type: [String] }) @IsOptional() @IsArray() preferred_zones?: string[];
   @ApiProperty({ required: false }) @IsOptional() @IsString() budget_min?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() budget_max?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() cpi?: string;
 }

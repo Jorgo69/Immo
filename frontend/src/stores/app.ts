@@ -138,6 +138,32 @@ export const useAppStore = defineStore('app', () => {
     else localStorage.removeItem('immo_user_role')
   }
 
+  function logout() {
+    clearStorage()
+    token.value = null
+    userId.value = null
+    userRole.value = null
+    userFirstName.value = null
+    userLastName.value = null
+    userEmail.value = null
+    isProfileComplete.value = false
+    currentUser.value = null
+    window.location.href = '/auth'
+  }
+
+  function clearStorage() {
+    const keys = [
+      'immo_token',
+      'immo_user_id',
+      'immo_user_role',
+      'immo_user_first_name',
+      'immo_user_last_name',
+      'immo_user_email',
+      'immo_is_profile_complete',
+    ]
+    keys.forEach((k) => localStorage.removeItem(k))
+  }
+
   return {
     token,
     locale,
@@ -158,5 +184,6 @@ export const useAppStore = defineStore('app', () => {
     setUser,
     setCurrentUser,
     refreshMe,
+    logout,
   }
 })

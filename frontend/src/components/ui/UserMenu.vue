@@ -4,7 +4,6 @@
  * Si non connecté : bouton unique « Connexion ».
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { User, LayoutDashboard, LogOut, LogIn, ChevronDown, FileText } from 'lucide-vue-next'
 import { useAppStore } from '../../stores/app'
@@ -12,7 +11,6 @@ import { useAppStore } from '../../stores/app'
 import AppLink from './AppLink.vue'
 
 const { t } = useI18n()
-const router = useRouter()
 const appStore = useAppStore()
 
 const isOpen = ref(false)
@@ -29,9 +27,8 @@ function close() {
 }
 
 function logout() {
-  appStore.setToken(null)
+  appStore.logout()
   close()
-  router.push('/')
 }
 
 function handleGlobalClick(event: MouseEvent) {

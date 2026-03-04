@@ -18,12 +18,15 @@ import {
   MessageCircle,
   HelpCircle,
   Plus,
+  Star,
+  Award,
 } from 'lucide-vue-next'
 import gsap from 'gsap'
 import { getMyWallet, getMyTransactions } from '../services/wallet.service'
 import { getMyPaymentMethods } from '../services/profile.service'
 import { useAppStore } from '../stores/app'
 import { AppCard, AppImage, LanguageSwitcher, ThemeToggle } from '../components/ui'
+import DepositModal from '../components/profile/DepositModal.vue'
 import type { AuthUserDto } from '../services/auth.service'
 import type { WalletDto } from '../services/wallet.service'
 import type { WalletTransactionDto } from '../services/wallet.service'
@@ -40,6 +43,7 @@ const paymentMethods = ref<PaymentMethodDto[]>([])
 const loading = ref(true)
 const profileViewRole = ref<'tenant' | 'landlord'>('tenant')
 const gridRef = ref<HTMLElement | null>(null)
+const showDepositModal = ref(false)
 
 /** Nom + Prénom, sinon Email, sinon téléphone ; pas de placeholder générique si une donnée existe. */
 const displayName = computed(() => {
@@ -59,6 +63,9 @@ const kycBadgeClass = computed(() => {
   if (s === 'rejected') return 'bg-kyc-rejected/15 text-kyc-rejected dark:bg-kyc-rejected/25'
   return 'bg-kyc-pending/15 text-kyc-pending dark:bg-kyc-pending/25'
 })
+
+const reputationScore = computed(() => user.value?.profile?.reputation_score ?? 5.0)
+const hasTrustBadge = computed(() => user.value?.profile?.trust_badge ?? false)
 
 const tenantActions = [
   { key: 'favorites', icon: Heart, to: '/property' },
@@ -120,8 +127,7 @@ function goTo(to: string | { name: string }) {
 }
 
 function logout() {
-  appStore.setToken(null)
-  router.push({ name: 'auth' })
+  appStore.logout()
 }
 
 function onAddPaymentMethod() {
@@ -212,12 +218,30 @@ watch(
                   <Pencil class="h-4 w-4" />
                   {{ t('profile.editProfile') }}
                 </RouterLink>
-                <div class="mt-4 w-full">
-                  <span
-                    :class="['inline-flex rounded-full px-3 py-1 text-xs font-medium', kycBadgeClass]"
+                <div class="mt-4 flex flex-col items-center gap-2 w-full">
+                  <div class="flex items-center gap-2">
+                    <span
+                      :class="['inline-flex rounded-full px-3 py-1 text-xs font-medium', kycBadgeClass]"
+                    >
+                      {{ t('profile.kycStatus') }} : {{ kycStatus }}
+                    </span>
+                    <div
+                      v-if="hasTrustBadge"
+                      class="flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-600 shadow-sm border border-amber-200/50 dark:bg-amber-900/30 dark:text-amber-500"
+                    >
+                      <Award class="h-3 w-3" />
+                      {{ t('profile.trustBadge') }}
+                    </div>
+                  </div>
+
+                  <!-- Score de Réputation -->
+                  <div
+                    class="mt-1 flex items-center gap-1.5 rounded-xl border border-gray-100 bg-gray-50 px-3 py-1.5 dark:border-gray-700 dark:bg-gray-700/30"
                   >
-                    {{ t('profile.kycStatus') }} : {{ kycStatus }}
-                  </span>
+                    <Star class="h-4 w-4 fill-amber-400 text-amber-400" />
+                    <span class="text-sm font-black text-gray-700 dark:text-gray-200">{{ reputationScore.toFixed(1) }} / 5.0</span>
+                    <span class="ml-1 font-bold uppercase tracking-tighter text-gray-400 text-[10px]">{{ t('profile.reputationLabel') }}</span>
+                  </div>
                 </div>
                 <div class="mt-4 w-full border-t border-gray-100 pt-4 dark:border-gray-700">
                   <p class="text-xs font-medium uppercase tracking-wider text-[var(--color-muted)]">
@@ -303,13 +327,27 @@ watch(
                   </p>
                 </div>
               </div>
-              <RouterLink
-                :to="{ name: 'admin' }"
-                class="mt-5 block text-center text-sm font-medium text-emerald-400 hover:text-emerald-300"
-              >
-                {{ t('profile.viewDashboard') }} →
-              </RouterLink>
+              <div class="mt-6 flex flex-col gap-3">
+                <AppButton
+                  variant="primary"
+                  class="w-full !bg-emerald-500 !text-white hover:!bg-emerald-600 border-none shadow-lg shadow-emerald-500/20"
+                  @click="showDepositModal = true"
+                >
+                  <Plus class="mr-2 h-4 w-4" />
+                  {{ t('profile.depositCta') }}
+                </AppButton>
+                
+                <RouterLink
+                  :to="{ name: 'admin' }"
+                  class="block text-center text-xs font-semibold uppercase tracking-widest text-gray-400 hover:text-emerald-400 transition-colors"
+                >
+                  {{ t('profile.viewDashboard') }} →
+                </RouterLink>
+              </div>
             </div>
+
+            <!-- Modal de dépôt -->
+            <DepositModal :show="showDepositModal" @close="showDepositModal = false" />
 
             <!-- Historique des transactions -->
             <AppCard data-profile-card>

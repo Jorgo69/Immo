@@ -18,7 +18,14 @@ export interface AuthUserDto {
   is_active: boolean
   created_at: string
   updated_at: string
-  profile?: { id: string; user_id: string; kyc_status: string } | null
+  profile?: { 
+    id: string; 
+    user_id: string; 
+    kyc_status: string; 
+    kyc_rejection_reason?: string | null;
+    reputation_score: number;
+    trust_badge: boolean;
+  } | null
 }
 
 export interface VerifyOtpResponse {

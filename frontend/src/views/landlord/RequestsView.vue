@@ -5,7 +5,7 @@
  */
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { FileText, User, Home, Check, X } from 'lucide-vue-next'
+import { FileText, User, Home, Check, X, Star, Award } from 'lucide-vue-next'
 import { getRentalRequestsForLandlord, acceptRentalRequest, rejectRentalRequest, type RentalRequestDto } from '../../services/rental.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
@@ -117,9 +117,31 @@ onMounted(fetchRequests)
                 {{ statusLabel(r.status) }}
               </span>
             </div>
-            <div class="flex items-center gap-2 text-sm text-[var(--color-text)]">
-              <User class="w-4 h-4 text-[var(--color-muted)] shrink-0" />
-              <span>{{ tenantDisplay(r) }}</span>
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
+                <User class="w-4 h-4 text-[var(--color-muted)] shrink-0" />
+                <span>{{ tenantDisplay(r) }}</span>
+                
+                <!-- Badge de Confiance (Award) -->
+                <div v-if="r.tenant?.profile?.trust_badge" class="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:bg-amber-900/30 dark:text-amber-500 border border-amber-200/50">
+                  <Award class="h-3 w-3" />
+                  PRO
+                </div>
+
+                <!-- Score de Réputation (Star) -->
+                <div v-if="r.tenant?.profile" class="flex items-center gap-1 rounded-lg bg-gray-50 dark:bg-gray-700/50 px-2 py-0.5 border border-gray-100 dark:border-gray-700 ml-1">
+                  <Star class="h-3 w-3 fill-amber-400 text-amber-400" />
+                  <span class="text-[11px] font-bold text-gray-700 dark:text-gray-200">{{ r.tenant.profile.reputation_score.toFixed(1) }}</span>
+                </div>
+              </div>
+              <div v-if="r.tenant?.profile" class="text-[10px] text-[var(--color-muted)] flex items-center gap-1.5 ml-6">
+                <span class="uppercase tracking-wide font-bold">{{ t('profile.kycStatus') }}:</span>
+                <span :class="{
+                  'text-green-600 dark:text-green-400': r.tenant.profile.kyc_status === 'verified',
+                  'text-amber-600 dark:text-amber-400': r.tenant.profile.kyc_status === 'pending',
+                  'text-red-600 dark:text-red-400': r.tenant.profile.kyc_status === 'rejected'
+                }">{{ r.tenant.profile.kyc_status }}</span>
+              </div>
             </div>
             <div class="flex items-center gap-2 text-sm text-[var(--color-text)]">
               <Home class="w-4 h-4 text-[var(--color-muted)] shrink-0" />

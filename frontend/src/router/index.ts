@@ -51,6 +51,12 @@ export const router = createRouter({
           meta: { title: 'Détail du bien' },
         },
         {
+          path: 'payment/mock',
+          name: 'payment-mock',
+          component: () => import('../views/payment/MockPaymentView.vue'),
+          meta: { title: 'Paiement Sécurisé' },
+        },
+        {
           path: 'my-requests',
           name: 'my-requests',
           component: () => import('../views/tenant/MyRequestsView.vue'),
@@ -197,6 +203,12 @@ export const router = createRouter({
           meta: { title: 'Rôles & Permissions', requiresRole: ['admin'] },
         },
         {
+          path: 'settings/payment',
+          name: 'admin-payment-settings',
+          component: () => import('../views/admin/AdminPaymentSettings.vue'),
+          meta: { title: 'Gestion des Paiements', requiresRole: ['admin'] },
+        },
+        {
           path: 'settings',
           name: 'admin-settings',
           component: () => import('../views/admin/AdminSettingsView.vue'),
@@ -229,6 +241,7 @@ router.beforeEach((to) => {
   if (
     appStore.token &&
     appStore.isProfileComplete === false &&
+    appStore.userRole !== 'admin' &&
     to.name !== 'onboarding' &&
     to.name !== 'auth'
   ) {

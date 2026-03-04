@@ -1,34 +1,37 @@
-import { Body, Controller, Get, Post, Put, Request, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
-import { OnboardingService } from './onboarding.service';
 import { UpdateOnboardingDraftDto } from './dto/onboarding-draft.dto';
+import { GetOnboardingDraftQuery } from './queries/impl/get-onboarding-draft.query';
+import { UpdateOnboardingDraftCommand } from './commands/impl/update-onboarding-draft.command';
+import { FinalizeOnboardingCommand } from './commands/impl/finalize-onboarding.command';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Onboarding')
-@Controller('onboarding')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@ApiBearerAuth('JWT-auth')
+@Controller('onboarding')
 export class OnboardingController {
-  constructor(private readonly onboardingService: OnboardingService) {}
+  constructor(
+    private readonly queryBus: QueryBus,
+    private readonly commandBus: CommandBus,
+  ) {}
 
   @Get('draft')
-  @ApiOperation({ summary: 'Récupérer le brouillon de l\'onboarding (Redis)' })
-  async getDraft(@Request() req: { user: { id: string } }) {
-    return this.onboardingService.getDraft(req.user.id);
+  @ApiOperation({ summary: 'Récupérer le brouillon onboarding actuel (Redis ou DB)' })
+  async getDraft(@Req() req) {
+    return this.queryBus.execute(new GetOnboardingDraftQuery(req.user.id));
   }
 
-  @Put('draft')
-  @ApiOperation({ summary: 'Mettre à jour le brouillon de l\'onboarding (Redis)' })
-  async updateDraft(
-    @Request() req: { user: { id: string } },
-    @Body() dto: UpdateOnboardingDraftDto,
-  ) {
-    return this.onboardingService.updateDraft(req.user.id, dto);
+  @Post('draft')
+  @ApiOperation({ summary: 'Mettre à jour le brouillon onboarding (Redis)' })
+  async updateDraft(@Req() req, @Body() dto: UpdateOnboardingDraftDto) {
+    return this.commandBus.execute(new UpdateOnboardingDraftCommand(req.user.id, dto));
   }
 
   @Post('finalize')
-  @ApiOperation({ summary: 'Finaliser l\'onboarding et sauvegarder dans PostgreSQL' })
-  async finalize(@Request() req: { user: { id: string } }) {
-    return this.onboardingService.finalizeOnboarding(req.user.id);
+  @ApiOperation({ summary: 'Finaliser l’onboarding (Transfert Redis -> DB)' })
+  async finalize(@Req() req) {
+    return this.commandBus.execute(new FinalizeOnboardingCommand(req.user.id));
   }
 }

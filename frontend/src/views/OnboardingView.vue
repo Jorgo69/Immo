@@ -10,12 +10,9 @@ import { getApiErrorMessage } from '../services/http'
 import { AppTitle, AppButton, AppInput } from '../components/ui'
 import { toast, Toaster } from 'vue-sonner'
 
-const TOTAL_STEPS = computed(() => selectedRole.value === 'tenant' ? 3 : 4)
+const TOTAL_STEPS = 4
 
 const getStepKey = (index: number) => {
-  if (selectedRole.value === 'tenant') {
-    return ['stepProfile', 'stepRole', 'stepPreferences'][index - 1]
-  }
   return ['stepProfile', 'stepRole', 'stepLegal', 'stepPreferences'][index - 1]
 }
 const ZONE_IDS = ['abomey', 'calavi', 'fidjrosse', 'akpakpa', 'cotonou', 'godomey'] as const
@@ -49,6 +46,7 @@ const budgetMax = ref<string | number>('')
 const company = ref('')
 const ifu = ref('')
 const rccm = ref('')
+const cpi = ref('')
 
 const canGoNext = computed(() => {
   if (step.value === 1) return firstName.value.trim() && lastName.value.trim()
@@ -71,6 +69,7 @@ onMounted(async () => {
       if (draft.company) company.value = draft.company
       if (draft.ifu) ifu.value = draft.ifu
       if (draft.rccm) rccm.value = draft.rccm
+      if (draft.cpi) cpi.value = draft.cpi
       if (draft.preferred_zones) preferredZones.value = draft.preferred_zones
       if (draft.budget_min) budgetMin.value = draft.budget_min
       if (draft.budget_max) budgetMax.value = draft.budget_max
@@ -200,13 +199,21 @@ async function saveStep2() {
 }
 
 async function saveStepLegal() {
-  if (ifu.value && !/^\d{13}$/.test(ifu.value)) {
-    toast.error("L'IFU doit comporter exactement 13 chiffres.")
-    return
-  }
-  if (rccm.value && !/^RB\/[a-zA-Z]+\/\d{2}\s*[a-zA-Z]\s*\d+$/.test(rccm.value)) {
-    toast.error("Le RCCM doit respecter le format béninois (ex: RB/COT/25 A 1234).")
-    return
+  if (selectedRole.value === 'tenant') {
+    if (!cpi.value || !/^\d{12,15}$/.test(cpi.value)) {
+      toast.error("Le numéro CPI est obligatoire pour les locataires et doit comporter entre 12 et 15 chiffres.")
+      return
+    }
+  } else {
+    // Landlord & Agent
+    if (ifu.value && !/^\d{13}$/.test(ifu.value)) {
+      toast.error("L'IFU doit comporter exactement 13 chiffres.")
+      return
+    }
+    if (rccm.value && !/^RB\/[a-zA-Z]+\/\d{2}\s*[a-zA-Z]\s*\d+$/.test(rccm.value)) {
+      toast.error("Le RCCM doit respecter le format béninois (ex: RB/COT/25 A 1234).")
+      return
+    }
   }
 
   loading.value = true
@@ -215,6 +222,7 @@ async function saveStepLegal() {
       company: company.value || undefined,
       ifu: ifu.value || undefined,
       rccm: rccm.value || undefined,
+      cpi: cpi.value || undefined,
     })
   } catch (e) {
     const msg = getApiErrorMessage(e)
@@ -267,21 +275,15 @@ async function next() {
       await saveStep1()
     } else if (step.value === 2) {
       await saveStep2()
-    } else if (step.value === 3 && selectedRole.value !== 'tenant') {
+    } else if (step.value === 3) {
       await saveStepLegal()
-    } else if (step.value === TOTAL_STEPS.value) {
+    } else if (step.value === TOTAL_STEPS) {
       await saveStepFinal()
       await finishSetup()
       return
     }
     
-    if (step.value === 2 && selectedRole.value === 'tenant') {
-      // Le tenant passe directement à l'étape finale (préférences) => index 3
-      // mais chez lui, l'étape 3 EST la finale
-      step.value++
-    } else {
-      step.value++
-    }
+    step.value++
   } catch (e) {
     toast.error(getApiErrorMessage(e))
   }
@@ -544,8 +546,8 @@ async function onAvatarFileChange(e: Event) {
             </div>
           </div>
 
-          <!-- Step 3 : Informations Pro (Landlord & Agent only) -->
-          <div v-else-if="step === 3 && selectedRole !== 'tenant'" key="stepLegal" class="flex flex-col h-full space-y-8">
+          <!-- Step 3 : Informations Pro & Identité -->
+          <div v-else-if="step === 3" key="stepLegal" class="flex flex-col h-full space-y-8">
              <div class="flex items-center gap-3 border-b border-gray-100 pb-4 dark:border-gray-800">
               <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-500 dark:bg-amber-500/10 dark:text-amber-400">
                 <ShieldCheck class="h-5 w-5" />
@@ -567,13 +569,22 @@ async function onAvatarFileChange(e: Event) {
                   :placeholder="t('onboarding.companyPlaceholder')"
                   class="bg-white focus-within:bg-white dark:bg-gray-900 dark:focus-within:bg-gray-900 transition-colors rounded-xl"
                 />
-                <div :class="selectedRole === 'agent' ? 'grid gap-5 sm:grid-cols-2' : ''">
+                <div :class="selectedRole !== 'tenant' ? 'grid gap-5 sm:grid-cols-2' : ''">
                   <AppInput
+                    v-if="selectedRole !== 'tenant'"
                     v-model="ifu"
                     :label="t('onboarding.ifu')"
                     :placeholder="t('onboarding.ifuPlaceholder')"
                     class="bg-white focus-within:bg-white dark:bg-gray-900 dark:focus-within:bg-gray-900 transition-colors rounded-xl"
                     :maxlength="13"
+                    @keypress="allowOnlyNumbers"
+                  />
+                  <AppInput
+                    v-model="cpi"
+                    :label="t('onboarding.cpi')"
+                    :placeholder="t('onboarding.cpiPlaceholder')"
+                    class="bg-white focus-within:bg-white dark:bg-gray-900 dark:focus-within:bg-gray-900 transition-colors rounded-xl font-mono"
+                    :maxlength="15"
                     @keypress="allowOnlyNumbers"
                   />
                   <AppInput

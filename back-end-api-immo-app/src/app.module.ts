@@ -23,6 +23,7 @@ import { LocationModule } from './location/location.module';
 import { ReferencesModule } from './references/references.module';
 import { RentalModule } from './rental/rental.module';
 import { CurrencyModule } from './currency/currency.module';
+import { PaymentModule } from './payment/payment.module';
 
 // Entités TypeORM
 import { UserModel } from './auth/models/user.model/user.model';
@@ -55,6 +56,7 @@ import { NotificationPreferenceEntity } from './settings/entities/notification-p
 import { RoleEntity } from './rbac/entities/role.entity';
 import { PermissionEntity } from './rbac/entities/permission.entity';
 import { RbacModule } from './rbac/rbac.module';
+import { PaymentGatewayEntity } from './payment/entities/payment-gateway.entity';
 
 @Module({
   imports: [
@@ -75,7 +77,7 @@ import { RbacModule } from './rbac/rbac.module';
         username: configService.get('database.username'),
         password: configService.get('database.password'),
         database: configService.get('database.database'),
-        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, UnitEntity, CountryEntity, CityEntity, NeighborhoodEntity, ProfileEntity, PaymentMethodEntity, PropertyTypeEntity, PropertyStatusEntity, UnitTypeEntity, UnitFeatureEntity, RefCategoryEntity, RefTypeEntity, RefFeatureEntity, RentalRequestEntity, CurrencyRateEntity, ActivityLogEntity, SystemConfigEntity, NotificationPreferenceEntity, RoleEntity, PermissionEntity],
+        entities: [UserModel, WalletEntity, TransactionEntity, PropertyEntity, MediaEntity, UnitEntity, CountryEntity, CityEntity, NeighborhoodEntity, ProfileEntity, PaymentMethodEntity, PropertyTypeEntity, PropertyStatusEntity, UnitTypeEntity, UnitFeatureEntity, RefCategoryEntity, RefTypeEntity, RefFeatureEntity, RentalRequestEntity, CurrencyRateEntity, ActivityLogEntity, SystemConfigEntity, NotificationPreferenceEntity, RoleEntity, PermissionEntity, PaymentGatewayEntity],
         synchronize: configService.get('database.synchronize'),
         logging: configService.get('database.logging'),
       }),
@@ -99,6 +101,7 @@ import { RbacModule } from './rbac/rbac.module';
     AuditModule,
     SettingsModule,
     RbacModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [

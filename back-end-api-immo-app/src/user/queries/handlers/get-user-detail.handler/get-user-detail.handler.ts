@@ -24,7 +24,7 @@ export interface UserDetailStatsDto {
 }
 
 export interface UserDetailResultDto {
-  user: Partial<UserModel> & {
+  user: Omit<Partial<UserModel>, 'profile'> & {
     profile?: {
       id: string;
       kyc_status: string;
