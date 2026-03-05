@@ -949,9 +949,11 @@
       "active": "Active",
       "terminated": "Terminated"
     },
+    "invoices_title": "Invoices & Receipts",
     "actions": {
       "sign": "Sign Agreement",
-      "view_details": "Details"
+      "view_details": "Details",
+      "download_invoice": "Download receipt"
     }
   },
   "pagination": {

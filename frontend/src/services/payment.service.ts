@@ -30,3 +30,14 @@ export async function createCheckout(payload: CheckoutPayload): Promise<Checkout
   const { data } = await http.post<CheckoutResponse>('/payment/checkout', payload)
   return data
 }
+
+export interface VerifyReturnResponse {
+  verified: boolean
+  amount: number
+  alreadyCredited: boolean
+}
+
+export async function verifyPaymentReturn(transactionId: string, gatewayType: string): Promise<VerifyReturnResponse> {
+  const { data } = await http.post<VerifyReturnResponse>('/payment/verify-return', { transactionId, gatewayType })
+  return data
+}

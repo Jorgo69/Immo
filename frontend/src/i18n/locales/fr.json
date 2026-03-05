@@ -999,9 +999,11 @@
       "active": "Actif",
       "terminated": "Terminé"
     },
+    "invoices_title": "Factures & Quittances",
     "actions": {
       "sign": "Signer le contrat",
-      "view_details": "Détails"
+      "view_details": "Détails",
+      "download_invoice": "Télécharger la quittance"
     }
   },
   "pagination": {

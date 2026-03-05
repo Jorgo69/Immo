@@ -21,8 +21,10 @@ import { getRentalRequestsForLandlord } from '../services/rental.service'
 import type { RentalRequestDto } from '../services/rental.service'
 import { getMyWallet } from '../services/wallet.service'
 import { getAdminDashboardStats, type AdminDashboardStats } from '../services/admin-stats.service'
+import { getMyProfile, type ProfileDto } from '../services/profile.service'
 import { getApiErrorMessage } from '../services/http'
 import { toast } from 'vue-sonner'
+import { UserPlus, Sparkles } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -41,6 +43,27 @@ const loading = ref(true)
 const properties = ref<PropertyListItemDto[]>([])
 const requests = ref<RentalRequestDto[]>([])
 const walletBalance = ref<string>('0')
+const profile = ref<ProfileDto | null>(null)
+
+const profileCompletion = computed(() => {
+  let score = 0
+  const fields = [
+    appStore.currentUser?.first_name,
+    profile.value?.full_name_masked,
+    profile.value?.id_card_masked,
+    profile.value?.profession_masked,
+    appStore.currentUser?.avatar_url
+  ]
+  fields.forEach(f => { if (f) score++ })
+  return Math.round((score / fields.length) * 100)
+})
+
+const missingImportantFields = computed(() => {
+  const missing = []
+  if (!profile.value?.full_name_masked) missing.push("Nom légal")
+  if (!profile.value?.id_card_masked) missing.push("Pièce d'identité")
+  return missing
+})
 
 // Admin
 const adminStats = ref<AdminDashboardStats | null>(null)
@@ -97,15 +120,17 @@ async function load() {
     if (isAdmin.value) {
       // Dashboard admin : stats globales
       adminStats.value = await getAdminDashboardStats()
-    } else if (isLandlordOrPro.value) {
-      const [propsRes, reqs, wallet] = await Promise.all([
+    } else if (isLandlordOrPro.value || isTenant.value) {
+      const [propsRes, reqs, wallet, profileData] = await Promise.all([
         getMyProperties({ limit: 100 }).catch(() => ({ data: [], total: 0 })),
         getRentalRequestsForLandlord().catch(() => []),
         getMyWallet().catch(() => ({ balance_total: '0', balance_savings: '0' })),
+        getMyProfile().catch(() => null),
       ])
       properties.value = propsRes.data ?? []
       requests.value = Array.isArray(reqs) ? reqs : []
       walletBalance.value = (wallet as { balance_total?: string })?.balance_total ?? '0'
+      profile.value = profileData
     }
   } catch (e) {
     toast.error(getApiErrorMessage(e))
@@ -141,6 +166,52 @@ onMounted(() => load())
           </div>
         </div>
       </header>
+
+      <!-- === BANNER: Profile Completion (Non-admin) === -->
+      <section v-if="!isAdmin && profileCompletion < 100" class="mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
+        <div class="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-primary-emerald to-emerald-600 p-8 shadow-2xl shadow-emerald-500/20 text-white">
+          <!-- Background Decoration -->
+          <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+          <div class="absolute -bottom-10 left-1/2 h-32 w-32 rounded-full bg-emerald-400/20 blur-2xl" />
+
+          <div class="relative flex flex-col md:flex-row items-center gap-8">
+            <div class="relative flex-shrink-0">
+               <div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 shadow-inner">
+                 <Sparkles class="h-10 w-10 text-white" />
+               </div>
+               <div class="absolute -bottom-2 -right-2 bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-black shadow-lg">
+                 {{ profileCompletion }}%
+               </div>
+            </div>
+
+            <div class="flex-1 text-center md:text-left">
+              <h2 class="text-2xl font-black tracking-tight mb-2">Finalisez votre profil !</h2>
+              <p class="text-emerald-50/90 font-medium text-sm max-w-lg">
+                Il vous manque <span class="font-bold underline decoration-2">{{ missingImportantFields.join(' et ') }}</span> pour pouvoir signer des baux légalement sur la plateforme.
+              </p>
+              
+              <!-- Simple Progress Bar -->
+              <div class="mt-6 h-2 w-full max-w-md bg-white/20 rounded-full overflow-hidden">
+                <div 
+                  class="h-full bg-white transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(255,255,255,0.8)]" 
+                  :style="{ width: profileCompletion + '%' }" 
+                />
+              </div>
+            </div>
+
+            <div class="flex-shrink-0">
+              <AppButton 
+                variant="primary" 
+                class="!bg-white !text-emerald-700 hover:!bg-emerald-50 font-bold px-8 h-12 rounded-2xl shadow-xl shadow-emerald-900/20"
+                @click="router.push('/portal/profile/edit')"
+              >
+                <UserPlus class="mr-2 h-5 w-5" />
+                Compléter maintenant
+              </AppButton>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <!-- === LOCATAIRE === -->
       <section v-if="isTenant" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl">

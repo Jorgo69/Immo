@@ -24,6 +24,14 @@ export class PaymentController {
     return { url };
   }
 
+  @Post('verify-return')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Vérifier et réconcilier un paiement après retour utilisateur' })
+  async verifyReturn(@Req() req, @Body() body: { transactionId: string, gatewayType: string }) {
+    return this.paymentService.verifyAndReconcile(req.user.id, body.gatewayType, body.transactionId);
+  }
+
   @Post('webhook/:type')
   @ApiOperation({ summary: 'Webhook universel pour les passerelles de paiement' })
   async webhook(@Param('type') type: PaymentGatewayType, @Body() payload: any) {

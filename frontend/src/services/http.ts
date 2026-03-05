@@ -48,27 +48,38 @@ export function getApiErrorMessage(error: unknown): string {
     const res = (error as { response?: { data?: unknown; status?: number } }).response
     const data = res?.data
     const status = res?.status
+
     if (data && typeof data === 'object') {
+      // Cas NestJS ValidationPipe (Array de messages)
       if (Array.isArray((data as { message?: unknown }).message)) {
         const msg = ((data as { message: string[] }).message).join(', ')
-        if (msg) return msg
+        if (msg && !msg.startsWith('http')) return msg
       }
+      // Cas erreur unique
       if (typeof (data as { message?: string }).message === 'string') {
         const msg = (data as { message: string }).message
-        if (msg) return msg
+        if (msg && !msg.startsWith('http')) return msg
       }
+      // Cas champ error
       if (typeof (data as { error?: string }).error === 'string') {
         const msg = (data as { error: string }).error
-        if (msg) return msg
+        if (msg && !msg.startsWith('http')) return msg
       }
     }
-    if (status === 400) return 'Requête invalide. Vérifiez les champs.'
-    if (status === 401) return 'Session expirée. Reconnectez-vous.'
+
+    // Fallbacks par status HTTP
+    if (status === 400) return 'Requête invalide. Vérifiez vos informations.'
+    if (status === 401) return 'Session expirée. Veuillez vous reconnecter.'
     if (status === 403) return 'Accès refusé.'
+    if (status === 404) return 'Ressource introuvable.'
     if (status && status >= 500) return 'Erreur serveur. Réessayez plus tard.'
-    if (status) return `Erreur (${status})`
+    if (status) return `Une erreur est survenue (${status})`
   }
-  if (error instanceof Error && error.message) return error.message
-  return 'Une erreur est survenue'
+
+  if (error instanceof Error && error.message && !error.message.startsWith('http')) {
+    return error.message
+  }
+  
+  return 'Une erreur inattendue est survenue'
 }
 

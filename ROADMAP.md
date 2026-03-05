@@ -1,6 +1,6 @@
 # 🗺️ ROADMAP — Immo Bénin Platform
 
-> Dernière mise à jour : 27/02/2026  
+> Dernière mise à jour : 05/03/2026  
 > Pour reprendre le travail : lire ce fichier puis mentionner `@ROADMAP.md` en conversation.
 
 ---
@@ -183,8 +183,8 @@
 - ✅ Entité `rental_requests`
 - ✅ Statuts : `pending | accepted | rejected`
 - ✅ Règle : impossible de postuler si `is_verified = false` (`VerifiedUserGuard`)
+- ✅ Score de réputation locataire affiché au propriétaire
 - 📋 Dossier de candidature complet (revenus, garanties)
-- 📋 Score de réputation locataire affiché au propriétaire
 
 ---
 
@@ -194,9 +194,33 @@
 - ✅ Wallet principal + Tirelire (épargne loyer)
 - ✅ Historique transactions pour admins
 - ✅ Simulateur Mobile Money (MTN, Moov Bénin) avec Webhook
-- 🔧 Intégration réelle FedaPay / KKiapya
+- ✅ Intégration réelle FedaPay (SDK `fedapay`, Sandbox OK)
+- ✅ Intégration réelle KKiapya (SDK `@kkiapay-org/nodejs-sdk` + widget JS client `kkiapay`)
+- ✅ Pattern Strategy multi-passerelle (FedaPay, KKiapya, GSM Mock)
+- ✅ Admin : gestion dynamique des passerelles (CRUD, Active/Pause)
+- ✅ Réconciliation serveur-à-serveur (vérification directe auprès de l'agrégateur)
+- ✅ Anti-doublon via `gateway_ref` (impossible de créditer 2 fois)
+- ✅ Pré-remplissage des infos utilisateur (email, nom) sur les formulaires de paiement
+- ✅ UX optimiste style WhatsApp (toast loading → confirmation/rollback)
+- ✅ Configuration `.env` Laravel-style (clés API sécurisées)
 - 📋 Calcul automatique commissions agents
-- 📋 Reçus PDF téléchargeables
+- 📋 Reçus PDF téléchargeables pour les dépôts
+
+---
+
+## 📄 LOCATIONS & FACTURATION
+
+- ✅ Entité `Lease` (Contrat de location conforme Bénin)
+- ✅ Entité `Invoice` (Facturation et Quittance mensuelle)
+- ✅ Validation légale : dépôt ≤ 3 mois, IFU requis
+- ✅ Signature électronique (bailleur + locataire)
+- ✅ Cron rappel de loyer (J-3, J-0)
+- ✅ Génération PDF quittances avec IFU
+- ✅ Certificat d'impayé pour Huissier (via logs Invoice)
+- ✅ Réduction automatique du Score de Confiance (-0.5/mois impayé)
+- ✅ Frontend : `LeasesView.vue` (Signature & Liste)
+- 📋 Intégration paiement loyer > Wallet → Propriétaire
+- 📋 Renouvellement automatique de bail
 
 ---
 
@@ -215,10 +239,11 @@
 
 > Système de notation basé sur l'historique réel
 
-- 📋 Champ `reputation_score` sur `users` (float, 0-5)
-- 📋 Critères : ponctualité paiements, no-shows, signalements
-- 📋 Affiché aux propriétaires lors d'une candidature
-- 📋 Badge "Locataire de confiance" si score > 4.5
+- ✅ Champ `reputation_score` sur `users` (float, 0-5)
+- ✅ Critères : ponctualité paiements (-0.5 par mois de retard)
+- 📋 Critères supplémentaires : no-shows, signalements
+- ✅ Affiché aux propriétaires lors d'une candidature
+- ✅ Badge "Locataire de confiance" si score > 4.8
 
 ---
 
@@ -238,7 +263,7 @@
 - ✅ Configuration PWA (Service Worker, manifest)
 - ✅ Mode hors-ligne partiel
 - ✅ Centre de notifications (In-app + Historique)
-- 🔧 Notifications push natives (Infrastructure OK, alertes de base OK)
+- ✅ Notifications push natives (Web Push VAPID + Service Worker)
 - 📋 App React Native ou Capacitor.js (phase 2)
 
 ---
@@ -247,10 +272,15 @@
 
 > À faire lors de la prochaine session de travail
 
-1. **🔜 Score de Confiance (Réputation)** — Système de notation basé sur l'historique (Rigueur)
-2. **🔜 Automatisation Système** — Intégrer Notifications/Audits sur KYC, Loyers et Rôles
-3. **🔜 Mobile Money** — Intégration réelle des clés API (FedaPay/KKiapya)
-4. **🔜 OCR KYC** — test de reconnaissance optique sur les pièces d'identité
+1. ✅ **Score de Confiance (Réputation)** — Système de notation basé sur l'historique
+2. ✅ **Quittances & Preuves** — Génération PDF et certificat d'impayé
+3. ✅ **Automatisation Système** — Notifications/Audits KYC + Cron loyers
+4. ✅ **Mobile Money** — Intégration réelle FedaPay & KKiapya (SDK + Réconciliation)
+5. 🔜 **Intégration Huissiers** — Module pour solliciter un huissier de justice en cas d'impayés persistants
+6. 🔜 **Paiement Loyer via Wallet** — Flux automatique de prélèvement loyer depuis la tirelire
+7. 🔜 **Recherche Avancée** — Filtres géographiques, type de bien, budget
+8. 📋 **IA & Recommandations** — Embeddings pour la recherche sémantique
+9. 📋 **App Mobile Native** — React Native ou Capacitor.js
 
 ---
 
@@ -260,7 +290,10 @@
 |---|---|---|
 | 26/02/2026 | `initial` | Init projet, auth OTP, profil, biens, wallet |
 | 27/02/2026 | `91fd469` | Epic 0→5 : Redis, Audit, Settings, Lifecycle, RBAC, Dashboard KYC, Documentation complète |
-| 03/03/2026 | `epic-6-7`| Epics 6 & 7 : Unicité Email/CPI, VerifiedUserGuard, Conformité Légale (3 mois), Bannière KYC Transparency |
+| 03/03/2026 | `epic-6-7`| Epics 6 & 7 : Unicité Email/CPI, VerifiedUserGuard, Conformité Légale |
+| 03/03/2026 | `epic-8-17`| Epics 8→17 : Réputation, Paiement multi-passerelle, Notifications Push, Conversions devises |
+| 04/03/2026 | `epic-18-19`| Epics 18 & 19 : Locations (Lease/Invoice), Quittances PDF, Certificat d'impayé |
+| 05/03/2026 | `epic-20-23`| Epics 20→23 : FedaPay/KKiapya réels, .env Laravel-style, Réconciliation serveur-à-serveur, UX optimiste |
 
 ---
 

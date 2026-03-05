@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { ArrowLeft, User, Upload, CreditCard, Pencil } from 'lucide-vue-next'
+import { ArrowLeft, User, Upload, CreditCard, Pencil, ShieldCheck } from 'lucide-vue-next'
 import { getMyProfile, updateMyProfile, getMyPaymentMethods } from '../services/profile.service'
 import { getMyNotificationPreferences, updateMyNotificationPreference } from '../services/settings.service'
 import { updateUser, uploadAvatar, uploadIdCard } from '../services/auth.service'
@@ -294,10 +294,24 @@ onMounted(fetchData)
 
         <!-- Colonne 2 (span 6) : Informations du compte + Profil pro + Documents -->
         <section class="space-y-6 lg:col-span-6">
-          <AppCard class="bg-white shadow-sm">
-            <h3 class="mb-4 text-lg font-semibold text-[var(--color-text)]">
-              {{ t('profile.sectionIdentity') }}
-            </h3>
+        <!-- Colonne 2 (span 6) : Informations du compte + Profil pro + Documents -->
+        <section class="space-y-6 lg:col-span-6">
+          <!-- SECTION 1 : Identité Publique -->
+          <AppCard class="bg-white shadow-sm border-l-4 border-l-primary-emerald">
+            <template #title>
+              <div class="flex items-center justify-between w-full">
+                <h3 class="text-lg font-bold text-[var(--color-text)] flex items-center gap-2">
+                  <User class="w-5 h-5 text-primary-emerald" />
+                  Identité Publique
+                </h3>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-primary-emerald bg-primary-emerald/10 px-2 py-1 rounded-md">
+                  Visible dans l'App
+                </span>
+              </div>
+            </template>
+            <p class="text-xs text-ui-muted mb-6">
+              Ces informations sont utilisées pour votre profil public, vos échanges et vos notifications.
+            </p>
             <div class="grid gap-4 sm:grid-cols-2">
               <AppInput
                 v-model="firstName"
@@ -311,25 +325,6 @@ onMounted(fetchData)
               />
             </div>
             <div class="mt-4">
-              <div v-if="profile?.full_name_masked && !fullNameUnlocked" class="flex items-center gap-2">
-                <AppInput
-                  :model-value="'********'"
-                  :label="t('profile.fullName')"
-                  disabled
-                />
-                <AppButton type="button" variant="ghost" size="sm" class="shrink-0" @click="fullNameUnlocked = true">
-                  <Pencil class="h-4 w-4" />
-                  {{ t('profile.modify') }}
-                </AppButton>
-              </div>
-              <AppInput
-                v-else
-                v-model="fullName"
-                :label="t('profile.fullName')"
-                :placeholder="fullNamePlaceholder"
-              />
-            </div>
-            <div class="mt-4">
               <AppInput
                 :model-value="displayEmail"
                 :label="t('profile.email')"
@@ -339,68 +334,109 @@ onMounted(fetchData)
             </div>
           </AppCard>
 
-          <AppCard class="bg-white shadow-sm">
-            <h3 class="mb-4 text-lg font-semibold text-[var(--color-text)]">
-              {{ t('profile.sectionProfessionalProfile') }}
-            </h3>
-            <div class="space-y-4">
-              <AppInput
-                v-model="profession"
-                :label="t('profile.profession')"
-                :placeholder="professionPlaceholder"
-              />
-              <AppInput
-                v-model="company"
-                :label="t('profile.company')"
-                :placeholder="companyPlaceholder"
-              />
+          <!-- SECTION 2 : Identité Légale & KYC -->
+          <AppCard class="bg-white shadow-sm border-l-4 border-l-amber-500">
+            <template #title>
+               <div class="flex items-center justify-between w-full">
+                <h3 class="text-lg font-bold text-[var(--color-text)] flex items-center gap-2">
+                  <ShieldCheck class="w-5 h-5 text-amber-500" />
+                  Identité Légale & KYC
+                </h3>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-amber-600 bg-amber-50 px-2 py-1 rounded-md">
+                  Chiffré & Sécurisé
+                </span>
+              </div>
+            </template>
+            <div class="rounded-xl bg-amber-50/50 p-4 border border-amber-100 mb-6">
+              <p class="text-xs text-amber-700 font-medium leading-relaxed">
+                <span class="font-bold">Important :</span> Ces informations sont strictement confidentielles. Elles ne sont utilisées que pour la génération automatique de vos baux et documents officiels conformément à la loi béninoise.
+              </p>
             </div>
-          </AppCard>
 
-          <AppCard class="bg-white shadow-sm">
-            <h3 class="mb-4 text-lg font-semibold text-[var(--color-text)]">
-              {{ t('profile.sectionDocuments') }}
-            </h3>
-            <div class="space-y-4">
-              <div v-if="profile?.id_card_masked && !idCardUnlocked" class="flex items-center gap-2">
+            <div class="space-y-6">
+              <div>
+                <div v-if="profile?.full_name_masked && !fullNameUnlocked" class="flex items-center gap-2 group">
+                  <div class="flex-1">
+                    <AppInput
+                      :model-value="'********'"
+                      :label="t('profile.fullName') + ' (Nom légal complet)'"
+                      disabled
+                    />
+                  </div>
+                  <AppButton type="button" variant="ghost" size="sm" class="shrink-0 mt-6" @click="fullNameUnlocked = true">
+                    <Pencil class="h-4 w-4" />
+                    {{ t('profile.modify') }}
+                  </AppButton>
+                </div>
                 <AppInput
-                  :model-value="'********'"
+                  v-else
+                  v-model="fullName"
+                  :label="t('profile.fullName') + ' (Nom légal complet)'"
+                  :placeholder="fullNamePlaceholder"
+                  hint="Entrez votre nom tel qu'il apparaît sur votre pièce d'identité."
+                />
+              </div>
+
+              <div class="grid gap-4 sm:grid-cols-2">
+                <AppInput
+                  v-model="profession"
+                  :label="t('profile.profession')"
+                  :placeholder="professionPlaceholder"
+                />
+                <AppInput
+                  v-model="company"
+                  :label="t('profile.company')"
+                  :placeholder="companyPlaceholder"
+                />
+              </div>
+
+              <div class="space-y-4 pt-4 border-t border-gray-50">
+                <div v-if="profile?.id_card_masked && !idCardUnlocked" class="flex items-center gap-2 group">
+                  <div class="flex-1">
+                    <AppInput
+                      :model-value="'********'"
+                      :label="t('profile.idCard')"
+                      disabled
+                    />
+                  </div>
+                  <AppButton type="button" variant="ghost" size="sm" class="shrink-0 mt-6" @click="idCardUnlocked = true">
+                    <Pencil class="h-4 w-4" />
+                    {{ t('profile.modify') }}
+                  </AppButton>
+                </div>
+                <AppInput
+                  v-else
+                  v-model="idCard"
                   :label="t('profile.idCard')"
-                  disabled
+                  :placeholder="idCardPlaceholder"
                 />
-                <AppButton type="button" variant="ghost" size="sm" class="shrink-0" @click="idCardUnlocked = true">
-                  <Pencil class="h-4 w-4" />
-                  {{ t('profile.modify') }}
-                </AppButton>
-              </div>
-              <AppInput
-                v-else
-                v-model="idCard"
-                :label="t('profile.idCard')"
-                :placeholder="idCardPlaceholder"
-              />
-              <div v-if="profile?.emergency_contact_masked && !emergencyContactUnlocked" class="flex items-center gap-2">
+
+                <div v-if="profile?.emergency_contact_masked && !emergencyContactUnlocked" class="flex items-center gap-2 group">
+                  <div class="flex-1">
+                    <AppInput
+                      :model-value="'********'"
+                      :label="t('profile.emergencyContact')"
+                      disabled
+                    />
+                  </div>
+                  <AppButton type="button" variant="ghost" size="sm" class="shrink-0 mt-6" @click="emergencyContactUnlocked = true">
+                    <Pencil class="h-4 w-4" />
+                    {{ t('profile.modify') }}
+                  </AppButton>
+                </div>
                 <AppInput
-                  :model-value="'********'"
+                  v-else
+                  v-model="emergencyContact"
                   :label="t('profile.emergencyContact')"
-                  disabled
+                  :placeholder="emergencyContactPlaceholder"
                 />
-                <AppButton type="button" variant="ghost" size="sm" class="shrink-0" @click="emergencyContactUnlocked = true">
-                  <Pencil class="h-4 w-4" />
-                  {{ t('profile.modify') }}
-                </AppButton>
               </div>
-              <AppInput
-                v-else
-                v-model="emergencyContact"
-                :label="t('profile.emergencyContact')"
-                :placeholder="emergencyContactPlaceholder"
-              />
+
               <div class="flex items-center justify-between pt-2">
-                <span class="text-sm text-[var(--color-muted)]">{{ t('profile.kycStatus') }}</span>
+                <span class="text-sm text-[var(--color-muted)] font-medium">{{ t('profile.kycStatus') }}</span>
                 <span
                   v-if="profile"
-                  :class="['inline-flex rounded-full px-3 py-1 text-xs font-medium', kycStatusClass]"
+                  :class="['inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider', kycStatusClass]"
                 >
                   {{ profile.kyc_status }}
                 </span>

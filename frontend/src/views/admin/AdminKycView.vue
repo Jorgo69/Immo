@@ -42,8 +42,12 @@ async function fetchKycUsers() {
     }
 
     const res = await getUsers(filters)
-    // Afficher uniquement agents et propriétaires (KYC obligatoire pour eux)
-    users.value = res.data.filter(u => u.role === 'agent' || u.role === 'landlord')
+    // Afficher agents, propriétaires ET locataires ayant complété l'onboarding
+    users.value = res.data.filter(u => 
+      u.role === 'agent' || 
+      u.role === 'landlord' || 
+      (u.role === 'tenant' && u.is_profile_complete)
+    )
     total.value = users.value.length
   } catch (err) {
     toast.error(getApiErrorMessage(err))
@@ -117,6 +121,24 @@ function avatarInitials(user: AdminUserDto): string {
 
 function openIdCard(url: string | null) {
   if (url) window.open(url, '_blank')
+}
+
+function getCompletionStats(user: AdminUserDto) {
+  const fields = [
+    { label: 'Identité standard (Nom/Prénom)', value: !!(user.first_name && user.last_name) },
+    { label: "Pièce d'identité (Upload)", value: !!user.id_card_url },
+    { label: 'E-mail vérifié', value: !!user.email },
+    { label: 'Avatar / Photo', value: !!user.avatar_url },
+    { label: 'Onboarding terminé', value: user.is_profile_complete },
+  ]
+  const filledCount = fields.filter(f => f.value).length
+  const percent = Math.round((filledCount / fields.length) * 100)
+  
+  return {
+    fields,
+    percent,
+    isFullyComplete: percent === 100
+  }
 }
 
 onMounted(() => fetchKycUsers())
@@ -239,20 +261,38 @@ onMounted(() => fetchKycUsers())
         </template>
 
         <!-- Rôle + dates -->
-        <div class="flex-grow space-y-2 text-xs text-ui-muted">
+        <div class="flex-grow space-y-4 text-xs text-ui-muted">
           <div>
             <span class="font-bold uppercase tracking-widest text-[10px] text-primary-emerald">
               {{ roleLabel(user.role) }}
             </span>
           </div>
-          <div class="flex justify-between">
-            <span>{{ t('kyc.registeredOn') }}</span>
-            <span class="font-medium text-[var(--color-text)]">{{ formatDate(user.created_at) }}</span>
+
+          <!-- Checklist de complétude -->
+          <div class="space-y-1.5 rounded-xl bg-gray-50/50 p-3 border border-gray-100 dark:bg-white/5 dark:border-white/5">
+             <div class="flex items-center justify-between mb-2">
+               <span class="font-bold text-[10px] uppercase text-[var(--color-text)]">Checklist Dossier</span>
+               <span class="font-black text-primary-emerald">{{ getCompletionStats(user).percent }}%</span>
+             </div>
+             <div v-for="(f, i) in getCompletionStats(user).fields" :key="i" class="flex items-center gap-2">
+               <div class="h-1.5 w-1.5 rounded-full" :class="f.value ? 'bg-primary-emerald' : 'bg-gray-300 dark:bg-gray-700'"></div>
+               <span :class="f.value ? 'text-gray-900 dark:text-gray-100' : 'text-ui-muted italic line-through decoration-1 opacity-50'">
+                 {{ f.label }}
+               </span>
+             </div>
           </div>
-          <div v-if="user.profile?.kyc_submitted_at" class="flex justify-between">
-            <span>{{ t('kyc.submittedOn') }}</span>
-            <span class="font-medium text-[var(--color-text)]">{{ formatDate(user.profile.kyc_submitted_at) }}</span>
+
+          <div class="space-y-1 pt-1">
+            <div class="flex justify-between">
+              <span>{{ t('kyc.registeredOn') }}</span>
+              <span class="font-medium text-[var(--color-text)]">{{ formatDate(user.created_at) }}</span>
+            </div>
+            <div v-if="user.profile?.kyc_submitted_at" class="flex justify-between">
+              <span>{{ t('kyc.submittedOn') }}</span>
+              <span class="font-medium text-[var(--color-text)]">{{ formatDate(user.profile.kyc_submitted_at) }}</span>
+            </div>
           </div>
+          
           <div v-if="user.profile?.kyc_rejection_reason" class="rounded-lg bg-red-50 p-2 text-danger-red dark:bg-red-900/10">
             <span class="font-semibold">{{ t('kyc.rejectionReason') }} :</span>
             {{ user.profile.kyc_rejection_reason }}

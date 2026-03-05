@@ -57,7 +57,33 @@ La Loi N° 2022-30 sécurise fortement le locataire (Preneur) :
 - **Interdiction de Discrimination :** Sexe, ethnie, religion.
 - **Avis de Congé (Expulsion) :** Très encadré. Un locataire payant son loyer ne peut être mis dehors sur simple décision arbitraire du jour au lendemain. Droit quasi absolu à la jouissance paisible.
 
-## 4. Validation Technique des Identifiants (IFU / RCCM)
+## 4. Gestion des Impayés et Expulsion (Loi 2022-30)
+
+En cas de défaut de paiement, la procédure doit suivre des étapes strictes sous peine de nullité :
+
+### A. La Résiliation de Plein Droit
+- **Clause Contractuelle** : Les contrats générés par la plateforme doivent inclure une "clause de résiliation de plein droit" pour inexécution des obligations financières.
+- **Délai d'Impayé** : La loi ne fixe pas un nombre strict de mois, mais dès le premier terme échu et non payé, le bailleur peut agir. Cependant, l'usage veut qu'on attende la fin de la période couverte par la caution (3 mois) si on souhaite être conciliant.
+
+### B. Procédure d'Expulsion
+1. **Mise en Demeure** : Envoi d'une mise en demeure par lettre recommandée avec AR ou par exploit d'Huissier de Justice.
+2. **Constat par Huissier** : Si le locataire ne régularise pas, un Huissier doit constater le manquement.
+3. **Saisine du Juge** : Le Président du tribunal compétent (référé) peut alors ordonner l'expulsion. 
+4. **Délai d'Ordonnance** : La loi prévoit que le juge statue dans les **30 jours** suivant la saisine.
+5. **Execution** : Seul l'Huissier de Justice peut procéder à l'expulsion physique, assisté le cas échéant par la force publique.
+
+> **Impact Plateforme** : 
+> L'application doit permettre au bailleur d'exporter un "Historique certifié des paiements" (Logs de la Tirelire) pour servir de preuve matérielle devant l'huissier et le juge.
+
+### C. L'Huissier de Justice et la Plateforme (Vision Digitale)
+Un Huissier de Justice au Bénin est un **Officier Ministériel** exerçant une profession libérale. Il peut travailler seul ou au sein d'une **SCP (Société Civile Professionnelle)**, qui s'apparente à une entreprise d'experts juridiques.
+
+**Vision pour Immo Bénin :**
+1. **Rôle "Partenaire Juridique"** : À maturité, la plateforme pourra accueillir des comptes de type `HUISSIER` (vérifiés par l'Ordre des Huissiers).
+2. **Transmission Digitale du Dossier** : En un clic, le bailleur peut transmettre son dossier (Bail signé via OTP + Historique des impayés certifié) au partenaire pour lancer la mise en demeure.
+3. **Bras de Fer Légal** : La plateforme ne fait pas de justice privée, elle **facilite et accélère** l'action de l'Huissier en lui fournissant des preuves numériques irréfutables (Blockchain/Audit Logs).
+
+## 5. Validation Technique des Identifiants (IFU / RCCM)
 
 Pour éviter que les utilisateurs saisissent de fausses informations sur la plateforme, il est possible et tout à fait **légal** d'implémenter des vérifications automatiques.
 

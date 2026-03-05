@@ -4,7 +4,7 @@ import { FinalizeOnboardingCommand } from '../impl/finalize-onboarding.command';
 import { RedisService } from '../../../infrastructure/redis/redis.service';
 import { UserModel, UserRole } from '../../../auth/models/user.model/user.model';
 import { UpdateProfileCommand } from '../../../profile/commands/impl/update-profile.command/update-profile.command';
-import { Logger } from '@nestjs/common';
+import { Logger, BadRequestException } from '@nestjs/common';
 
 @CommandHandler(FinalizeOnboardingCommand)
 export class FinalizeOnboardingHandler implements ICommandHandler<FinalizeOnboardingCommand> {
@@ -26,7 +26,7 @@ export class FinalizeOnboardingHandler implements ICommandHandler<FinalizeOnboar
     const draft = await this.redisService.get(key);
     
     if (!draft || Object.keys(draft).length === 0) {
-      throw new Error("Aucun brouillon d'onboarding trouvé.");
+      throw new BadRequestException("Aucun brouillon d'onboarding trouvé.");
     }
 
     await this.dataSource.manager.transaction(async (manager) => {
@@ -38,6 +38,7 @@ export class FinalizeOnboardingHandler implements ICommandHandler<FinalizeOnboar
         if (draft.email) user.email = draft.email;
         if (draft.avatar_url) user.avatar_url = draft.avatar_url;
         if (draft.role) user.role = draft.role as UserRole;
+        user.is_profile_complete = true;
         await userRepo.save(user);
       }
 

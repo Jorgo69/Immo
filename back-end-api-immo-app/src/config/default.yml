@@ -1,17 +1,17 @@
 # ============================================================
 # Configuration - Standard 41DEVS
 # ============================================================
-# Modifier ces valeurs selon votre environnement
-# Base de donnees: back_end_api_immo_app
+# Les valeurs sensibles doivent être définies dans le fichier .env
+# Ce fichier sert uniquement de fallback pour les valeurs par défaut non sensibles.
 
 database:
   type: postgres
   host: localhost
   port: 5432
-  username: root
-  password: root
+  username: ""
+  password: ""
   database: back_end_api_immo_app
-  synchronize: true    # Mettre a false en production!
+  synchronize: false
   logging: true
 
 ssl:
@@ -22,17 +22,13 @@ server:
   port: 3000
 
 jwt:
-  secret: "CHANGE-ME-IN-PRODUCTION-USE-STRONG-SECRET-KEY"
+  secret: ""
   expireIn: "7d"
 
-# Canaux d'envoi OTP : email, whatsapp, sms (sms = Twilio, désactivé par défaut)
-# Override possible via AUTH_CHANNELS=email,whatsapp
 auth:
   channels: "email,whatsapp"
   otpTtlMinutes: 10
 
-# SMTP pour envoi du code par email (style Laravel)
-# Override via SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
 smtp:
   host: localhost
   port: 587
@@ -41,19 +37,14 @@ smtp:
   from: "Immo Bénin <noreply@immo-benin.local>"
   secure: false
 
-# Clé de chiffrement AES-256 (32 octets en base64, ou 32 caractères). En prod: variable d'environnement.
 encryption:
-  key: "CHANGE-ME-32-BYTES-KEY-FOR-AES256!!"
+  key: ""
 
 app:
-  name: "NestJS CQRS API"
+  name: "Immo Benin"
   version: "1.0.0"
-  # URL du microservice Python d'embeddings sémantiques (optionnel).
-  # Exemple en local : http://localhost:8001
   semanticUrl: ""
 
-# Configuration des Notifications Web Push (VAPID)
-# Généré via `npx web-push generate-vapid-keys`
 notifications:
-  vapidPublicKey: "BP0XZcMRUEpC4ACfsb14-zwICYGVCbb7WnB2QWrfEOITDqLGtQi364RhOxGRXlwDEoOzOzrXzmMiZoJ8D1JuAyU"
-  vapidPrivateKey: "HNhv9pTqJLH7Wp8uVBZwBjJflG40uvXiKG8wZ7s3SGc"
+  vapidPublicKey: ""
+  vapidPrivateKey: ""

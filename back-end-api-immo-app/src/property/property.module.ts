@@ -12,8 +12,10 @@ import { MediaEntity } from './entities/media.entity';
 import { UnitEntity } from './entities/unit.entity';
 import { LeaseEntity } from './entities/lease.entity';
 import { InvoiceEntity } from '../wallet/entities/invoice.entity';
+import { WalletEntity } from '../wallet/entities/wallet.entity';
 import { NotificationModule } from '../notification/notification.module';
 import { ProfileModule } from '../profile/profile.module';
+import { WalletModule } from '../wallet/wallet.module';
 import { UserModel } from '../auth/models/user.model/user.model';
 import { CreatePropertyHandler } from './commands/handlers/create-property.handler/create-property.handler';
 import { CreateUnitHandler } from './commands/handlers/create-unit.handler/create-unit.handler';
@@ -38,10 +40,11 @@ import { LeaseCronService } from './services/lease-cron.service';
 @Module({
   imports: [
     CqrsModule,
-    TypeOrmModule.forFeature([PropertyEntity, MediaEntity, UnitEntity, LeaseEntity, InvoiceEntity, UserModel]),
+    TypeOrmModule.forFeature([PropertyEntity, MediaEntity, UnitEntity, LeaseEntity, InvoiceEntity, UserModel, WalletEntity]),
     LocationModule,
     NotificationModule,
     ProfileModule,
+    WalletModule,
   ],
   controllers: [PropertyController, LeaseController],
   providers: [

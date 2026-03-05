@@ -65,13 +65,13 @@ export const router = createRouter({
       ],
     },
     {
-      path: '/admin',
+      path: '/portal',
       component: AdminLayout,
       meta: { requiresAuth: true, requiresRole: ['admin', 'agent', 'landlord', 'tenant'] },
       children: [
         {
           path: '',
-          name: 'admin',
+          name: 'admin', // On garde le nom interne 'admin' pour le moment pour éviter de casser les router.push('admin')
           component: () => import('../views/AdminDashboardView.vue'),
           meta: { title: 'Accueil' },
         },
@@ -240,6 +240,11 @@ export const router = createRouter({
         },
       ],
     },
+    // Compatibilité héritée : Rediriger /admin vers /portal
+    {
+       path: '/admin/:pathMatch(.*)*',
+       redirect: (to) => ({ path: to.path.replace('/admin', '/portal'), query: to.query })
+    },
   ],
 })
 
@@ -261,7 +266,8 @@ router.beforeEach((to) => {
   }
   const requiredRoles = to.meta.requiresRole as string[] | undefined
   if (requiredRoles && appStore.userRole && !requiredRoles.includes(appStore.userRole)) {
-    return { name: 'home' }
+    // Si locataire essaie d'aller sur un truc pro, ou inversement, redirection dashboard
+    return { name: 'admin' }
   }
   return true
 })

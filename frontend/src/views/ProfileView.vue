@@ -24,8 +24,10 @@ import {
 import gsap from 'gsap'
 import { getMyWallet, getMyTransactions } from '../services/wallet.service'
 import { getMyPaymentMethods } from '../services/profile.service'
+import { verifyPaymentReturn } from '../services/payment.service'
 import { useAppStore } from '../stores/app'
 import { useCurrency } from '../composables/useCurrency'
+import { toast } from 'vue-sonner'
 import { AppCard, AppImage, LanguageSwitcher, ThemeToggle } from '../components/ui'
 import DepositModal from '../components/profile/DepositModal.vue'
 import PushNotificationManager from '../components/notifications/PushNotificationManager.vue'
@@ -154,7 +156,66 @@ function runCardsStagger() {
   })
 }
 
-onMounted(() => {
+onMounted(async () => {
+  const paymentStatus = router.currentRoute.value.query.payment_status as string
+  const fedapayStatus = router.currentRoute.value.query.status as string
+  const transactionId = router.currentRoute.value.query.id as string
+  const closeFlag = router.currentRoute.value.query.close as string
+  
+  // FedaPay : l'utilisateur a fermé le popup sans payer
+  if (closeFlag === 'true' && fedapayStatus === 'pending') {
+    toast.info('Paiement annulé. Aucun montant n\'a été débité.')
+    router.replace({ query: {} })
+  }
+  // FedaPay : retour avec status=approved + id → Réconciliation serveur
+  else if (fedapayStatus === 'approved' && transactionId) {
+    const toastId = toast.loading('⏳ Vérification de votre paiement en cours...')
+    try {
+      const result = await verifyPaymentReturn(transactionId, 'FEDAPAY')
+      if (result.verified) {
+        toast.success(
+          result.alreadyCredited 
+            ? 'Ce paiement a déjà été crédité sur votre tirelire.' 
+            : `Paiement confirmé ! +${result.amount} XOF crédités sur votre tirelire.`,
+          { id: toastId }
+        )
+      } else {
+        toast.error('Le paiement n\'a pas pu être confirmé. Si vous avez été débité, contactez le support.', { id: toastId })
+      }
+    } catch {
+      toast.error('Erreur de vérification. Votre paiement sera traité automatiquement.', { id: toastId })
+    }
+    router.replace({ query: {} })
+  }
+  // FedaPay : retour avec status=pending sans close (en attente de confirmation)
+  else if (fedapayStatus === 'pending' && transactionId) {
+    const toastId = toast.loading('⏳ Vérification de votre paiement en cours...')
+    try {
+      const result = await verifyPaymentReturn(transactionId, 'FEDAPAY')
+      if (result.verified) {
+        toast.success(`Paiement confirmé ! +${result.amount} XOF crédités.`, { id: toastId })
+      } else {
+        toast.info('Paiement en attente de confirmation. Votre tirelire sera alimentée dès validation.', { id: toastId })
+      }
+    } catch {
+      toast.info('Paiement en attente. Il sera traité automatiquement.', { id: toastId })
+    }
+    router.replace({ query: {} })
+  }
+  // FedaPay : décliné ou annulé
+  else if (fedapayStatus === 'declined' || fedapayStatus === 'cancelled') {
+    toast.error(t('wallet.paymentError') || 'Le paiement a échoué ou a été annulé.')
+    router.replace({ query: {} })
+  }
+  // Retour Kkiapay (via payment_status=success posé par le frontend)
+  else if (paymentStatus === 'success') {
+    toast.success(t('wallet.paymentSuccess') || 'Paiement validé ! Votre tirelire a été rechargée.')
+    router.replace({ query: {} })
+  } else if (paymentStatus === 'error' || paymentStatus === 'canceled') {
+    toast.error(t('wallet.paymentError') || 'Le paiement a échoué ou a été annulé.')
+    router.replace({ query: {} })
+  }
+
   load()
 })
 

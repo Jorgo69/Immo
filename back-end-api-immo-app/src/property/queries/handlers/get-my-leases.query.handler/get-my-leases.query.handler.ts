@@ -19,7 +19,7 @@ export class GetMyLeasesQueryHandler implements IQueryHandler<GetMyLeasesQuery> 
         { tenant_id: userId },
         { landlord_id: userId },
       ],
-      relations: ['property', 'unit', 'tenant', 'landlord'],
+      relations: ['property', 'unit', 'tenant', 'landlord', 'invoices'],
       order: { created_at: 'DESC' },
     });
   }

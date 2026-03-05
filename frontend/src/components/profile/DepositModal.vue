@@ -1,15 +1,17 @@
 <script setup lang="ts">
 /**
  * Modal de dépôt Mobile Money — Permet de recharger la Tirelire (Wallet).
- * Intégration FedaPay (MTN / Moov Bénin).
+ * Intégration FedaPay (redirection) et Kkiapay (widget JS natif).
  */
 import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { Wallet, Smartphone, ShieldCheck, ArrowRight, CheckCircle2, X } from 'lucide-vue-next'
-import { createCheckout, getGateways, type PaymentGateway } from '../../services/payment.service'
+import { createCheckout, getGateways, type PaymentGateway, verifyPaymentReturn } from '../../services/payment.service'
 import { useAppStore } from '../../stores/app'
 import { AppButton, AppTitle } from '../ui'
 import { toast } from 'vue-sonner'
+import { openKkiapayWidget, addKkiapayListener, removeKkiapayListener } from 'kkiapay'
 
 const props = defineProps<{
   show: boolean
@@ -18,6 +20,7 @@ const props = defineProps<{
 const emit = defineEmits(['close'])
 
 const appStore = useAppStore()
+const router = useRouter()
 const { t } = useI18n()
 const amount = ref<number>(5000)
 const loading = ref(false)
@@ -37,7 +40,38 @@ watch(() => props.show, (show) => {
 
 onUnmounted(() => {
   document.body.style.overflow = ''
+  removeKkiapayListener('success')
 })
+
+async function onKkiapaySuccess(response: any) {
+  console.log('Kkiapay payment success callback:', response)
+  const transactionId = response?.transactionId || response?.transaction_id
+  
+  if (transactionId) {
+    // Réconciliation : vérifier et créditer côté serveur
+    const toastId = toast.loading('⏳ Vérification du paiement Kkiapay...')
+    try {
+      const result = await verifyPaymentReturn(transactionId, 'KKIAPYA')
+      if (result.verified) {
+        toast.success(
+          result.alreadyCredited 
+            ? 'Ce paiement a déjà été crédité.' 
+            : `Paiement confirmé ! +${result.amount} XOF crédités sur votre tirelire.`,
+          { id: toastId }
+        )
+      } else {
+        toast.error('Le paiement n\'a pas pu être confirmé. Contactez le support.', { id: toastId })
+      }
+    } catch {
+      toast.error('Erreur de vérification. Votre paiement sera traité automatiquement.', { id: toastId })
+    }
+  } else {
+    toast.success(t('wallet.paymentSuccess') || 'Paiement validé !')
+  }
+  
+  emit('close')
+  router.push({ path: '/admin/profile', query: { payment_status: 'success' } })
+}
 
 onMounted(async () => {
   try {
@@ -48,6 +82,9 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to load gateways', error)
   }
+
+  // Écouter les succès Kkiapay
+  addKkiapayListener('success', onKkiapaySuccess)
 })
 
 async function handleDeposit() {
@@ -68,10 +105,20 @@ async function handleDeposit() {
       description: t('wallet.depositDescription')
     })
     
-    // Redimensionner vers FedaPay ou simulateur
-    window.location.href = url
-  } catch (error) {
-    toast.error(t('error.GENERIC'))
+    // Si c'est Kkiapay (protocole spécial kkiapay://), ouvrir le widget JS natif
+    if (url.startsWith('kkiapay://')) {
+      const paramsStr = new URL(url.replace('kkiapay://', 'https://')).searchParams.get('params')
+      if (paramsStr) {
+        const widgetParams = JSON.parse(decodeURIComponent(paramsStr))
+        openKkiapayWidget(widgetParams)
+      }
+    } else {
+      // FedaPay et autres : redirection classique
+      window.location.href = url
+    }
+  } catch (error: any) {
+    const errorMsg = error.response?.data?.message || error.message || t('error.GENERIC')
+    toast.error(errorMsg)
   } finally {
     loading.value = false
   }

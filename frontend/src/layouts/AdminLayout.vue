@@ -62,41 +62,51 @@ function toggleSidebarCollapsed() {
 onMounted(loadSidebarCollapsed)
 
 const pageTitle = computed(() => (route.meta.title as string) ?? t('admin.title'))
-const userLabel = computed(() => appStore.displayName() || t('nav.profile'))
 const isLandlord = computed(() => appStore.userRole === 'landlord')
 const isAgent = computed(() => appStore.userRole === 'agent')
 const isAdmin = computed(() => appStore.userRole === 'admin')
+const isTenant = computed(() => appStore.userRole === 'tenant')
+
+const portalTitle = computed(() => {
+  if (isAdmin.value) return "Administration"
+  if (isLandlord.value) return "Portail Bailleur"
+  if (isAgent.value) return "Portail Agent"
+  if (isTenant.value) return "Portail Locataire"
+  return "Mon Portail"
+})
+
 const canAddOrManageProperties = computed(() => isLandlord.value || isAgent.value || isAdmin.value)
 
 const navItems = computed(() => {
   if (appStore.userRole === 'tenant') {
     return [
-      { path: '/admin', label: t('admin.navHome'), icon: Home },
+      { path: '/portal', label: t('admin.navHome'), icon: Home },
       { path: '/my-requests', label: t('admin.proMyRequests'), icon: FileText },
-      { path: '/admin/profile/edit', label: t('nav.profile'), icon: User },
+      { path: '/portal/leases', label: 'Mes Locations', icon: Key },
+      { path: '/portal/profile/edit', label: t('nav.profile'), icon: User },
     ]
   }
   return [
-    { path: '/admin', label: t('admin.navHome'), icon: Home },
+    { path: '/portal', label: t('admin.navHome'), icon: Home },
     ...(canAddOrManageProperties.value ? [{
       key: 'biens',
       label: t('admin.navMyAssets'),
       icon: Building2,
       children: [
-        { path: '/admin/landlord/properties', label: t('landlord.myProperties') },
-        { path: '/admin/landlord/properties?openAdd=property', label: t('landlord.addProperty') },
-        { path: '/admin/landlord/requests', label: t('rental.requestsTitle') },
-        ...(isAdmin.value ? [{ path: '/admin/properties', label: t('admin.navPropertiesList') }] : []),
+        { path: '/portal/landlord/properties', label: t('landlord.myProperties') },
+        { path: '/portal/landlord/properties?openAdd=property', label: t('landlord.addProperty') },
+        { path: '/portal/landlord/requests', label: t('rental.requestsTitle') },
+        ...(isAdmin.value ? [{ path: '/portal/properties', label: t('admin.navPropertiesList') }] : []),
       ],
     }] : []),
-    ...(canAddOrManageProperties.value ? [{ path: '/admin/landlord/units', label: t('admin.navUnits'), icon: Key }] : []),
+    ...(canAddOrManageProperties.value ? [{ path: '/portal/landlord/units', label: t('admin.navUnits'), icon: Key }] : []),
     ...(canAddOrManageProperties.value ? [{
       key: 'patrimoine',
-      label: 'Patrimoine (Nouveau)',
+      label: 'Patrimoine',
       icon: Home,
       children: [
-        { path: '/admin/assets/properties', label: 'Biens immobiliers' },
-        { path: '/admin/assets/units', label: 'Unités' },
+        { path: '/portal/assets/properties', label: 'Biens immobiliers' },
+        { path: '/portal/assets/units', label: 'Unités' },
       ],
     }] : []),
 
@@ -105,8 +115,8 @@ const navItems = computed(() => {
       label: t('admin.navFinances'),
       icon: Wallet,
       children: [
-        { path: '/admin/wallets', label: t('admin.navWallets') },
-        { path: '/admin/transactions', label: t('admin.navTransactions') },
+        { path: '/portal/wallets', label: t('admin.navWallets') },
+        { path: '/portal/transactions', label: t('admin.navTransactions') },
       ],
     },
 
@@ -116,26 +126,26 @@ const navItems = computed(() => {
       label: t('admin.navSettings'),
       icon: Settings2,
       children: [
-        { path: '/admin/settings', label: 'Paramètres globaux', icon: Settings2 },
-        { path: '/admin/location', label: t('admin.navLocation'), icon: MapPin },
-        { path: '/admin/references', label: t('admin.navReferences'), icon: BookOpen },
-        { path: '/admin/currencies', label: 'Devises', icon: Banknote },
-        { path: '/admin/users', label: t('admin.navUsers'), icon: Users },
-        { path: '/admin/kyc', label: 'Validation KYC', icon: ShieldCheck },
-        { path: '/admin/roles', label: 'Rôles & Permissions', icon: Key },
-        { path: '/admin/settings/payment', label: 'Gestion des Paiements', icon: Banknote },
-        { path: '/admin/activity-logs', label: "Trace d'Audit", icon: History },
+        { path: '/portal/settings', label: 'Paramètres globaux', icon: Settings2 },
+        { path: '/portal/location', label: t('admin.navLocation'), icon: MapPin },
+        { path: '/portal/references', label: t('admin.navReferences'), icon: BookOpen },
+        { path: '/portal/currencies', label: 'Devises', icon: Banknote },
+        { path: '/portal/users', label: t('admin.navUsers'), icon: Users },
+        { path: '/portal/kyc', label: 'Validation KYC', icon: ShieldCheck },
+        { path: '/portal/roles', label: 'Rôles & Permissions', icon: Key },
+        { path: '/portal/settings/payment', label: 'Gestion des Paiements', icon: Banknote },
+        { path: '/portal/activity-logs', label: "Trace d'Audit", icon: History },
       ],
     }] : []),
 
     // ── Profil utilisateur (visible par tous en bas) ───────────────
-    { path: '/admin/profile/edit', label: t('nav.profile'), icon: User },
+    { path: '/portal/profile/edit', label: t('nav.profile'), icon: User },
   ]
 })
 
 function isActive(path: string) {
   const pathBase = path.split('?')[0]
-  if (pathBase === '/admin') return route.path === '/admin'
+  if (pathBase === '/portal') return route.path === '/portal'
   return route.path.startsWith(pathBase)
 }
 
@@ -191,9 +201,9 @@ function logout() {
           </span>
           <span
             v-show="!sidebarCollapsed"
-            class="truncate text-sm"
+            class="truncate text-sm font-bold uppercase tracking-wider"
           >
-            {{ t('app.name') }}
+            {{ portalTitle }}
           </span>
         </AppLink>
         <div class="flex items-center gap-0.5 shrink-0">

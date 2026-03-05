@@ -2,6 +2,15 @@ import { http } from './http'
 
 export type LeaseStatus = 'draft' | 'pending_signature' | 'active' | 'terminated'
 export type ContractType = 'standard' | 'custom'
+export type InvoiceStatus = 'pending' | 'paid' | 'overdue' | 'cancelled'
+
+export interface InvoiceDto {
+  id: string
+  title: string
+  amount: number
+  status: InvoiceStatus
+  due_date: string
+}
 
 export interface LeaseDto {
   id: string
@@ -21,6 +30,7 @@ export interface LeaseDto {
   start_date: string
   end_date: string | null
   property?: { name: string; main_image?: string }
+  invoices?: InvoiceDto[]
 }
 
 export interface CreateLeasePayload {
@@ -46,7 +56,23 @@ export async function signLease(leaseId: string): Promise<LeaseDto> {
 }
 
 export async function getMyLeases(): Promise<LeaseDto[]> {
-  // TODO: Implement GET /leases in backend if needed, for now let's assume it exists or will be added
   const { data } = await http.get<LeaseDto[]>('/leases/my')
+  return data
+}
+
+export async function downloadInvoicePdf(invoiceId: string): Promise<Blob> {
+  const { data } = await http.get(`/leases/invoice/${invoiceId}/pdf`, {
+    responseType: 'blob'
+  })
+  return data
+}
+
+export async function payInvoice(invoiceId: string, leaseId: string): Promise<{ success: boolean; transactionId: string }> {
+  const { data } = await http.post<{ success: boolean; transactionId: string }>('/wallet/pay-rent', { invoiceId, leaseId })
+  return data
+}
+
+export async function toggleAutoDebit(leaseId: string, enabled: boolean): Promise<LeaseDto> {
+  const { data } = await http.put<LeaseDto>(`/leases/${leaseId}/auto-debit`, { enabled })
   return data
 }

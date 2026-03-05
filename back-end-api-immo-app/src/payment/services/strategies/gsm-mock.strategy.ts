@@ -23,4 +23,9 @@ export class GsmMockStrategy implements PaymentStrategy {
       currency: payload.currency || 'XOF',
     };
   }
+
+  async verifyTransaction(transactionId: string, config: any): Promise<{ success: boolean, externalId: string, amount: number, userId?: string, currency?: string }> {
+    // Mock : pas de vérification réelle pour les passerelles GSM directes
+    return { success: false, externalId: transactionId, amount: 0 };
+  }
 }

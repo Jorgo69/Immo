@@ -259,13 +259,27 @@ async function finishSetup() {
     appStore.setUser(appStore.userId, appStore.userRole, true)
     await appStore.refreshMe().catch(() => {})
     toast.success(t('profile.updateSuccess'))
-    await new Promise((r) => setTimeout(r, 1800))
-    const redirect = (router.currentRoute.value.query.redirect as string) || '/admin'
+    await new Promise((r) => setTimeout(r, 1000))
+    const redirect = (router.currentRoute.value.query.redirect as string) || '/portal'
     router.push(redirect)
   } catch (err) {
+    console.error('[Onboarding] Error finalize:', err)
     toast.error(getApiErrorMessage(err))
     preparing.value = false
   }
+}
+
+async function handleSkip() {
+  // On tente de sauvegarder ce qui est déjà rempli pour l'étape actuelle avant de skip
+  try {
+    if (step.value === 1) await saveStep1()
+    else if (step.value === 2) await saveStep2()
+    else if (step.value === 3) await saveStepLegal()
+    else if (step.value === 4) await saveStepFinal()
+  } catch {
+    // On ignore les erreurs de validation si on skip
+  }
+  await finishSetup()
 }
 
 async function next() {
@@ -385,7 +399,14 @@ async function onAvatarFileChange(e: Event) {
               <h3 class="text-xl font-bold text-[var(--color-text)]">
                 {{ t('onboarding.stepProfile') }}
               </h3>
+              <div class="ml-auto text-[10px] font-bold uppercase tracking-widest text-primary-emerald bg-primary-emerald/10 px-2 py-1 rounded-md">
+                Identité Publique
+              </div>
             </div>
+            
+            <p class="text-xs text-ui-muted -mt-4 italic">
+              Ces informations sont utilisées pour personnaliser votre interface. Votre identité légale vous sera demandée plus tard pour les contrats.
+            </p>
             
             <div class="flex flex-col items-center gap-8 sm:flex-row sm:items-start flex-1">
               <input
@@ -698,17 +719,34 @@ async function onAvatarFileChange(e: Event) {
             <!-- {{ t('onboarding.back') }} -->
             Retour
           </AppButton>
-          <div v-else />
-          
           <AppButton
+            v-else
             type="button"
-            variant="primary"
-            class="shadow-lg shadow-[var(--color-accent)]/20 px-8 py-2.5 rounded-full font-bold tracking-wide transition-transform hover:scale-105 active:scale-95"
-            :loading="loading"
-            :disabled="step === 1 && !canGoNext"
-            @click="next"
+            variant="ghost"
+            class="font-semibold text-ui-muted hover:text-primary-emerald transition-colors"
+            @click="handleSkip"
           >
-            {{ step === TOTAL_STEPS ? t('onboarding.submit') || 'Terminer' : t('onboarding.next') || 'Suivant' }}
+            Passer l'introduction
+          </AppButton>
+          
+          <div class="flex items-center gap-3">
+            <AppButton
+              v-if="step > 1"
+              type="button"
+              variant="ghost"
+              size="sm"
+              class="text-xs font-bold text-ui-muted hover:text-primary-emerald"
+              @click="handleSkip"
+            >
+            <AppButton
+              type="button"
+              variant="primary"
+              class="shadow-lg shadow-[var(--color-accent)]/20 px-8 py-2.5 rounded-full font-bold tracking-wide transition-transform hover:scale-105 active:scale-95"
+              :loading="loading"
+              :disabled="step === 1 && !canGoNext"
+              @click="next"
+            >
+              {{ step === TOTAL_STEPS ? t('onboarding.submit') || 'Terminer' : t('onboarding.next') || 'Suivant' }}
             <ChevronRight v-if="step < TOTAL_STEPS" class="ml-2 h-4 w-4" />
             <Check v-else class="ml-2 h-4 w-4" />
           </AppButton>
