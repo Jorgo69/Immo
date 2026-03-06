@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ShieldCheck, CheckCircle2, XCircle, Clock, ExternalLink, Eye } from 'lucide-vue-next'
+import { ShieldCheck, CheckCircle2, XCircle, Clock, ExternalLink, Eye, ArrowUpDown, Search, Filter, Users } from 'lucide-vue-next'
 import { AppTitle, AppButton, AppCard } from '../../components/ui'
 import { getUsers, reviewKyc, type AdminUserDto } from '../../services/user.service'
 import { getApiErrorMessage } from '../../services/http'
@@ -16,29 +16,43 @@ const total = ref(0)
 const loading = ref(true)
 const filterStatus = ref<'pending' | 'verified' | 'rejected'>('pending')
 
+// Filtres avancés
+const sortBy = ref<'created_at' | 'completion_score'>('created_at')
+const sortOrder = ref<'DESC' | 'ASC'>('DESC')
+const roleFilter = ref<string>('all') // 'all', 'tenant', 'landlord', 'agent'
+const searchQuery = ref('')
+
 const reviewingId = ref<string | null>(null)
 const showRejectModal = ref(false)
 const rejectTargetId = ref<string | null>(null)
 const rejectReason = ref('')
 const rejectLoading = ref(false)
 
-/** Filtre côté serveur :
- * - "pending"  → is_verified = false  : TOUS les non-validés (avec ou sans profil)
- * - "verified" → is_verified = true   : Validés par l'admin
- * - "rejected" → kycStatus = rejected : Dossiers explicitement refusés
- */
 async function fetchKycUsers() {
   loading.value = true
   try {
-    let filters: Record<string, unknown> = { limit: 100 }
+    const filters: Record<string, unknown> = { limit: 100 }
 
     if (filterStatus.value === 'pending') {
       filters.isVerified = false
     } else if (filterStatus.value === 'verified') {
       filters.isVerified = true
     } else {
-      // rejected : basé sur le statut kyc du profil
       filters.kycStatus = 'rejected'
+    }
+
+    // Tri
+    filters.sortBy = sortBy.value
+    filters.sortOrder = sortOrder.value
+
+    // Recherche
+    if (searchQuery.value.trim()) {
+      filters.search = searchQuery.value.trim()
+    }
+
+    // Filtre par rôle
+    if (roleFilter.value !== 'all') {
+      filters.role = roleFilter.value
     }
 
     const res = await getUsers(filters)
@@ -125,11 +139,11 @@ function openIdCard(url: string | null) {
 
 function getCompletionStats(user: AdminUserDto) {
   const fields = [
-    { label: 'Identité standard (Nom/Prénom)', value: !!(user.first_name && user.last_name) },
-    { label: "Pièce d'identité (Upload)", value: !!user.id_card_url },
-    { label: 'E-mail vérifié', value: !!user.email },
-    { label: 'Avatar / Photo', value: !!user.avatar_url },
-    { label: 'Onboarding terminé', value: user.is_profile_complete },
+    { label: t('kyc.checkIdentity'), value: !!(user.first_name && user.last_name) },
+    { label: t('kyc.checkIdCard'), value: !!user.id_card_url },
+    { label: t('kyc.checkEmail'), value: !!user.email },
+    { label: t('kyc.checkAvatar'), value: !!user.avatar_url },
+    { label: t('kyc.checkOnboarding'), value: user.is_profile_complete },
   ]
   const filledCount = fields.filter(f => f.value).length
   const percent = Math.round((filledCount / fields.length) * 100)
@@ -140,6 +154,13 @@ function getCompletionStats(user: AdminUserDto) {
     isFullyComplete: percent === 100
   }
 }
+
+// Debounce de recherche
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+watch(searchQuery, () => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => fetchKycUsers(), 400)
+})
 
 onMounted(() => fetchKycUsers())
 </script>
@@ -154,7 +175,7 @@ onMounted(() => fetchKycUsers())
         </template>
       </AppTitle>
 
-      <!-- Filtres statut -->
+      <!-- Filtres statut KYC -->
       <div class="flex overflow-hidden rounded-xl border border-ui-border text-sm dark:border-ui-border-dark">
         <button
           v-for="filter in [
@@ -173,6 +194,57 @@ onMounted(() => fetchKycUsers())
           {{ filter.label }}
         </button>
       </div>
+    </div>
+
+    <!-- Barre de filtres avancés -->
+    <div class="flex flex-wrap items-center gap-3 rounded-2xl bg-ui-background/50 p-3 border border-ui-border/50 dark:bg-brand-dark/50 dark:border-ui-border-dark/50">
+      <!-- Recherche -->
+      <div class="relative flex-1 min-w-[200px]">
+        <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ui-muted" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          :placeholder="t('kyc.searchPlaceholder')"
+          class="w-full rounded-xl border border-ui-border bg-white py-2 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary-emerald focus:ring-2 focus:ring-primary-emerald/20 dark:bg-brand-dark dark:border-ui-border-dark dark:text-white"
+        />
+      </div>
+
+      <!-- Filtre par rôle -->
+      <div class="flex items-center gap-1.5">
+        <Users class="h-4 w-4 text-ui-muted shrink-0" />
+        <select
+          v-model="roleFilter"
+          class="rounded-xl border border-ui-border bg-white px-3 py-2 text-sm outline-none transition-all focus:border-primary-emerald cursor-pointer dark:bg-brand-dark dark:border-ui-border-dark dark:text-white"
+          @change="fetchKycUsers()"
+        >
+          <option value="all">{{ t('kyc.roleAll') }}</option>
+          <option value="tenant">{{ t('kyc.role.tenant') }}</option>
+          <option value="landlord">{{ t('kyc.role.landlord') }}</option>
+          <option value="agent">{{ t('kyc.role.agent') }}</option>
+        </select>
+      </div>
+
+      <!-- Tri -->
+      <div class="flex items-center gap-1.5">
+        <ArrowUpDown class="h-4 w-4 text-ui-muted shrink-0" />
+        <select
+          v-model="sortBy"
+          class="rounded-xl border border-ui-border bg-white px-3 py-2 text-sm outline-none transition-all focus:border-primary-emerald cursor-pointer dark:bg-brand-dark dark:border-ui-border-dark dark:text-white"
+          @change="fetchKycUsers()"
+        >
+          <option value="created_at">{{ t('kyc.sortDate') }}</option>
+          <option value="completion_score">{{ t('kyc.sortCompletion') }}</option>
+        </select>
+      </div>
+
+      <!-- Ordre -->
+      <button
+        class="flex items-center gap-1 rounded-xl border border-ui-border bg-white px-3 py-2 text-sm font-medium transition-all hover:bg-ui-background dark:bg-brand-dark dark:border-ui-border-dark dark:text-white"
+        @click="sortOrder = sortOrder === 'DESC' ? 'ASC' : 'DESC'; fetchKycUsers()"
+      >
+        <Filter class="h-3.5 w-3.5" />
+        {{ sortOrder === 'DESC' ? t('kyc.sortDesc') : t('kyc.sortAsc') }}
+      </button>
     </div>
 
     <!-- Compteur -->
@@ -243,7 +315,7 @@ onMounted(() => fetchKycUsers())
               <button
                 v-if="user.id_card_url"
                 class="rounded-lg p-1 text-ui-muted transition-colors hover:bg-ui-background hover:text-primary-emerald dark:hover:bg-brand-dark"
-                title="Aperçu pièce d'identité"
+                :title="t('kyc.viewIdCard')"
                 @click="openIdCard(user.id_card_url)"
               >
                 <Eye class="h-3.5 w-3.5" />
@@ -252,7 +324,7 @@ onMounted(() => fetchKycUsers())
               <button
                 class="rounded-lg p-1 text-ui-muted transition-colors hover:bg-ui-background hover:text-primary-emerald dark:hover:bg-brand-dark"
                 :title="t('kyc.viewProfile')"
-                @click="router.push('/admin/users/' + user.id)"
+                @click="router.push('/portal/users/' + user.id)"
               >
                 <ExternalLink class="h-3.5 w-3.5" />
               </button>
@@ -271,7 +343,7 @@ onMounted(() => fetchKycUsers())
           <!-- Checklist de complétude -->
           <div class="space-y-1.5 rounded-xl bg-gray-50/50 p-3 border border-gray-100 dark:bg-white/5 dark:border-white/5">
              <div class="flex items-center justify-between mb-2">
-               <span class="font-bold text-[10px] uppercase text-[var(--color-text)]">Checklist Dossier</span>
+               <span class="font-bold text-[10px] uppercase text-[var(--color-text)]">{{ t('kyc.checklistTitle') }}</span>
                <span class="font-black text-primary-emerald">{{ getCompletionStats(user).percent }}%</span>
              </div>
              <div v-for="(f, i) in getCompletionStats(user).fields" :key="i" class="flex items-center gap-2">

@@ -8,6 +8,7 @@ export enum KycReviewAction {
 
 export class ReviewKycCommand {
   user_id: string; // Renseigné depuis les params du contrôleur
+  admin_id?: string; // Injecté par le contrôleur depuis le JWT
 
   @ApiProperty({ description: 'Action (approve, reject)', enum: KycReviewAction })
   @IsEnum(KycReviewAction)

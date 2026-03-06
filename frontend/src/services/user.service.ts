@@ -45,10 +45,13 @@ export interface GetUsersFilters {
   page?: number
   limit?: number
   role?: UserRole
+  roles?: string
   status?: string
   search?: string
   kycStatus?: 'pending' | 'verified' | 'rejected'
   isVerified?: boolean
+  sortBy?: 'created_at' | 'completion_score'
+  sortOrder?: 'ASC' | 'DESC'
 }
 
 export async function getUsers(filters: GetUsersFilters = {}): Promise<PaginatedUsersResult> {
@@ -56,10 +59,13 @@ export async function getUsers(filters: GetUsersFilters = {}): Promise<Paginated
   if (filters.page != null) params.set('page', String(filters.page))
   if (filters.limit != null) params.set('limit', String(filters.limit))
   if (filters.role) params.set('role', filters.role)
+  if (filters.roles) params.set('roles', filters.roles)
   if (filters.status && filters.status !== 'all') params.set('status', filters.status)
   if (filters.search != null && filters.search.trim() !== '') params.set('search', filters.search.trim())
   if (filters.kycStatus) params.set('kycStatus', filters.kycStatus)
   if (filters.isVerified != null) params.set('isVerified', String(filters.isVerified))
+  if (filters.sortBy) params.set('sortBy', filters.sortBy)
+  if (filters.sortOrder) params.set('sortOrder', filters.sortOrder)
   const { data } = await http.get<PaginatedUsersResult>(`/user/all?${params.toString()}`)
   return data
 }

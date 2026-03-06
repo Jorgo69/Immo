@@ -124,8 +124,9 @@ export class UserController {
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Valider ou rejeter les documents KYC (admin)' })
-  async reviewKyc(@Param('id') userId: string, @Body() command: ReviewKycCommand) {
+  async reviewKyc(@Param('id') userId: string, @Body() command: ReviewKycCommand, @Request() req) {
     command.user_id = userId;
+    command.admin_id = req.user.id;
     return this.commandBus.execute(command);
   }
 

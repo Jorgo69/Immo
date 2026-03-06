@@ -7,6 +7,8 @@ export enum ActivityAction {
   LOGIN = 'LOGIN',
   BAN = 'BAN',
   RESTRICT = 'RESTRICT',
+  VERIFY_KYC = 'VERIFY_KYC',
+  REJECT_KYC = 'REJECT_KYC',
   CUSTOM = 'CUSTOM',
 }
 

@@ -9,6 +9,8 @@ import { UserModel } from '../../../../auth/models/user.model/user.model';
 import { ReputationService } from '../../../../profile/services/reputation.service';
 import { NotificationService } from '../../../../notification/services/notification.service';
 import { NotificationType } from '../../../../notification/entities/notification.entity';
+import { AuditService } from '../../../../audit/audit.service';
+import { ActivityAction } from '../../../../audit/entities/activity-log.entity';
 
 @CommandHandler(ReviewKycCommand)
 export class ReviewKycCommandHandler implements ICommandHandler<ReviewKycCommand> {
@@ -21,6 +23,7 @@ export class ReviewKycCommandHandler implements ICommandHandler<ReviewKycCommand
     private readonly userRepository: Repository<UserModel>,
     private readonly reputationService: ReputationService,
     private readonly notificationService: NotificationService,
+    private readonly auditService: AuditService,
   ) {}
 
   async execute(command: ReviewKycCommand): Promise<{ success: boolean; status: string }> {
@@ -48,6 +51,15 @@ export class ReviewKycCommandHandler implements ICommandHandler<ReviewKycCommand
         type: NotificationType.SUCCESS,
         metadata: { msgKey: 'kyc_approved' }
       });
+
+      // Audit Log
+      await this.auditService.logActivity({
+        userId: command.admin_id,
+        action: ActivityAction.VERIFY_KYC,
+        entityType: 'User',
+        entityId: user.id,
+        description: `L'administrateur a validé le KYC de l'utilisateur ${user.phone_number}`
+      });
     } else {
       profile.kyc_status = KycStatus.REJECTED;
       profile.kyc_rejection_reason = command.rejection_reason ?? null;
@@ -64,6 +76,16 @@ export class ReviewKycCommandHandler implements ICommandHandler<ReviewKycCommand
           msgKey: 'kyc_rejected',
           reason: profile.kyc_rejection_reason 
         }
+      });
+
+      // Audit Log
+      await this.auditService.logActivity({
+        userId: command.admin_id,
+        action: ActivityAction.REJECT_KYC,
+        entityType: 'User',
+        entityId: user.id,
+        description: `L'administrateur a rejeté le KYC de l'utilisateur ${user.phone_number}. Raison: ${profile.kyc_rejection_reason}`,
+        newValues: { reason: profile.kyc_rejection_reason }
       });
     }
 

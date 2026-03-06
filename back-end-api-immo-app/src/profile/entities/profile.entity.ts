@@ -95,6 +95,10 @@ export class ProfileEntity {
   @Column({ type: 'boolean', default: false, name: 'trust_badge' })
   trust_badge: boolean;
 
+  /** Score de complétude du profil (0 à 100). Calculé côté serveur. */
+  @Column({ type: 'int', default: 0, name: 'completion_score' })
+  completion_score: number;
+
   @DeleteDateColumn({ name: 'deleted_at' })
   deleted_at: Date | null;
 }

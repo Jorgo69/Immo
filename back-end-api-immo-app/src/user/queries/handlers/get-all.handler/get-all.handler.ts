@@ -1,5 +1,5 @@
 /**
- * Get All Users Handler — liste paginée.
+ * Get All Users Handler — liste paginée avec tri avancé et filtrage multi-rôles.
  */
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetAllQuery } from '../../impl/get-all.query/get-all.query';
@@ -39,17 +39,28 @@ export class GetAllHandler implements IQueryHandler<GetAllQuery> {
         'p.kyc_status',
         'p.kyc_submitted_at',
         'p.kyc_reviewed_at',
+        'p.completion_score',
       ])
-      .orderBy('u.created_at', 'DESC')
       .skip(skip)
       .take(limit);
+
+    // --- Filtres ---
     if (query.role != null) qb.andWhere('u.role = :role', { role: query.role });
+
+    // Filtrage multi-rôles (ex: "tenant,landlord")
+    if (query.roles != null && query.roles.trim() !== '') {
+      const roleList = query.roles.split(',').map(r => r.trim()).filter(Boolean);
+      if (roleList.length > 0) {
+        qb.andWhere('u.role IN (:...roleList)', { roleList });
+      }
+    }
+
     if (query.status != null) qb.andWhere('u.status = :status', { status: query.status });
     if (query.search != null && query.search.trim() !== '') {
-      qb.andWhere('u.phone_number ILIKE :search', { search: `%${query.search.trim()}%` });
+      qb.andWhere('(u.phone_number ILIKE :search OR u.first_name ILIKE :search OR u.last_name ILIKE :search OR u.email ILIKE :search)',
+        { search: `%${query.search.trim()}%` });
     }
     if (query.kycStatus != null) {
-      // Pour 'pending' : inclure aussi les profils inexistants (NULL = pending par défaut)
       if (query.kycStatus === 'pending') {
         qb.andWhere('(p.kyc_status = :kycStatus OR p.kyc_status IS NULL)', { kycStatus: query.kycStatus });
       } else {
@@ -59,6 +70,18 @@ export class GetAllHandler implements IQueryHandler<GetAllQuery> {
     if (query.isVerified != null) {
       qb.andWhere('u.is_verified = :isVerified', { isVerified: query.isVerified });
     }
+
+    // --- Tri ---
+    const sortField = query.sortBy ?? 'created_at';
+    const sortOrder = query.sortOrder ?? 'DESC';
+
+    if (sortField === 'completion_score') {
+      qb.orderBy('p.completion_score', sortOrder);
+      qb.addOrderBy('u.created_at', 'DESC'); // Tri secondaire
+    } else {
+      qb.orderBy('u.created_at', sortOrder);
+    }
+
     const [data, total] = await qb.getManyAndCount();
     return buildPaginatedResult(data, total, page, limit);
   }
