@@ -294,8 +294,6 @@ onMounted(fetchData)
 
         <!-- Colonne 2 (span 6) : Informations du compte + Profil pro + Documents -->
         <section class="space-y-6 lg:col-span-6">
-        <!-- Colonne 2 (span 6) : Informations du compte + Profil pro + Documents -->
-        <section class="space-y-6 lg:col-span-6">
           <!-- SECTION 1 : Identité Publique -->
           <AppCard class="bg-white shadow-sm border-l-4 border-l-primary-emerald">
             <template #title>

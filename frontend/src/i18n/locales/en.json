@@ -1000,6 +1000,11 @@
       "download_invoice": "Download receipt"
     }
   },
+  "dataView": {
+    "totalResults": "{count} result(s)",
+    "empty": "No items to display.",
+    "loading": "Loading…"
+  },
   "pagination": {
     "range": "{start} – {end} of {total}",
     "pageOf": "Page {current} / {total}"

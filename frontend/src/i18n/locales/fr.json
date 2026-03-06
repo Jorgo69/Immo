@@ -1019,6 +1019,11 @@
       "download_invoice": "Télécharger la quittance"
     }
   },
+  "dataView": {
+    "totalResults": "{count} résultat(s)",
+    "empty": "Aucun élément à afficher.",
+    "loading": "Chargement…"
+  },
   "pagination": {
     "range": "{start} – {end} sur {total}",
     "pageOf": "Page {current} / {total}"

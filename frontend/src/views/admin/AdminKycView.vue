@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ShieldCheck, CheckCircle2, XCircle, Clock, ExternalLink, Eye, ArrowUpDown, Search, Filter, Users } from 'lucide-vue-next'
-import { AppTitle, AppButton, AppCard } from '../../components/ui'
+import { AppTitle, AppButton, AppCard, AppDataView, AppDataFilters, AppDataGrid } from '../../components/ui'
+import type { FilterDef } from '../../components/ui/AppDataFilters.vue'
 import { getUsers, reviewKyc, type AdminUserDto } from '../../services/user.service'
 import { getApiErrorMessage } from '../../services/http'
 import { toast } from 'vue-sonner'
@@ -16,11 +17,37 @@ const total = ref(0)
 const loading = ref(true)
 const filterStatus = ref<'pending' | 'verified' | 'rejected'>('pending')
 
-// Filtres avancés
-const sortBy = ref<'created_at' | 'completion_score'>('created_at')
-const sortOrder = ref<'DESC' | 'ASC'>('DESC')
-const roleFilter = ref<string>('all') // 'all', 'tenant', 'landlord', 'agent'
-const searchQuery = ref('')
+// Filtres avancés via AppDataFilters
+const advancedFilters = ref({
+  search: '',
+  role: 'all',
+  sortBy: 'created_at',
+  sortOrder: 'DESC',
+})
+
+const filterDefs = computed<FilterDef[]>(() => [
+  { type: 'search', key: 'search', placeholder: t('kyc.searchPlaceholder'), icon: Search },
+  {
+    type: 'select', key: 'role', icon: Users,
+    options: [
+      { value: 'all', label: t('kyc.roleAll') },
+      { value: 'tenant', label: t('kyc.role.tenant') },
+      { value: 'landlord', label: t('kyc.role.landlord') },
+      { value: 'agent', label: t('kyc.role.agent') },
+    ]
+  },
+  {
+    type: 'sort', key: 'sortBy', icon: ArrowUpDown,
+    options: [
+      { value: 'created_at', label: t('kyc.sortDate') },
+      { value: 'completion_score', label: t('kyc.sortCompletion') },
+    ]
+  },
+  {
+    type: 'toggle', key: 'sortOrder', icon: Filter,
+    labelOn: t('kyc.sortDesc'), labelOff: t('kyc.sortAsc')
+  },
+])
 
 const reviewingId = ref<string | null>(null)
 const showRejectModal = ref(false)
@@ -41,22 +68,18 @@ async function fetchKycUsers() {
       filters.kycStatus = 'rejected'
     }
 
-    // Tri
-    filters.sortBy = sortBy.value
-    filters.sortOrder = sortOrder.value
+    filters.sortBy = advancedFilters.value.sortBy
+    filters.sortOrder = advancedFilters.value.sortOrder
 
-    // Recherche
-    if (searchQuery.value.trim()) {
-      filters.search = searchQuery.value.trim()
+    if (advancedFilters.value.search.trim()) {
+      filters.search = advancedFilters.value.search.trim()
     }
 
-    // Filtre par rôle
-    if (roleFilter.value !== 'all') {
-      filters.role = roleFilter.value
+    if (advancedFilters.value.role !== 'all') {
+      filters.role = advancedFilters.value.role
     }
 
     const res = await getUsers(filters)
-    // Afficher agents, propriétaires ET locataires ayant complété l'onboarding
     users.value = res.data.filter(u => 
       u.role === 'agent' || 
       u.role === 'landlord' || 
@@ -68,6 +91,10 @@ async function fetchKycUsers() {
   } finally {
     loading.value = false
   }
+}
+
+function onFiltersChange() {
+  fetchKycUsers()
 }
 
 async function handleApprove(userId: string) {
@@ -147,20 +174,8 @@ function getCompletionStats(user: AdminUserDto) {
   ]
   const filledCount = fields.filter(f => f.value).length
   const percent = Math.round((filledCount / fields.length) * 100)
-  
-  return {
-    fields,
-    percent,
-    isFullyComplete: percent === 100
-  }
+  return { fields, percent, isFullyComplete: percent === 100 }
 }
-
-// Debounce de recherche
-let searchTimer: ReturnType<typeof setTimeout> | null = null
-watch(searchQuery, () => {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => fetchKycUsers(), 400)
-})
 
 onMounted(() => fetchKycUsers())
 </script>
@@ -196,208 +211,159 @@ onMounted(() => fetchKycUsers())
       </div>
     </div>
 
-    <!-- Barre de filtres avancés -->
-    <div class="flex flex-wrap items-center gap-3 rounded-2xl bg-ui-background/50 p-3 border border-ui-border/50 dark:bg-brand-dark/50 dark:border-ui-border-dark/50">
-      <!-- Recherche -->
-      <div class="relative flex-1 min-w-[200px]">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ui-muted" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          :placeholder="t('kyc.searchPlaceholder')"
-          class="w-full rounded-xl border border-ui-border bg-white py-2 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary-emerald focus:ring-2 focus:ring-primary-emerald/20 dark:bg-brand-dark dark:border-ui-border-dark dark:text-white"
+    <!-- AppDataView : loading, empty, compteur, contenu -->
+    <AppDataView
+      :loading="loading"
+      :empty="users.length === 0"
+      :empty-label="t('kyc.empty')"
+      :empty-icon="CheckCircle2"
+      :total="total"
+      :modes="['grid']"
+      view-mode="grid"
+    >
+      <!-- Barre de filtres avancés via AppDataFilters -->
+      <template #toolbar>
+        <AppDataFilters
+          :filters="filterDefs"
+          v-model="advancedFilters"
+          @change="onFiltersChange"
         />
-      </div>
+      </template>
 
-      <!-- Filtre par rôle -->
-      <div class="flex items-center gap-1.5">
-        <Users class="h-4 w-4 text-ui-muted shrink-0" />
-        <select
-          v-model="roleFilter"
-          class="rounded-xl border border-ui-border bg-white px-3 py-2 text-sm outline-none transition-all focus:border-primary-emerald cursor-pointer dark:bg-brand-dark dark:border-ui-border-dark dark:text-white"
-          @change="fetchKycUsers()"
-        >
-          <option value="all">{{ t('kyc.roleAll') }}</option>
-          <option value="tenant">{{ t('kyc.role.tenant') }}</option>
-          <option value="landlord">{{ t('kyc.role.landlord') }}</option>
-          <option value="agent">{{ t('kyc.role.agent') }}</option>
-        </select>
-      </div>
+      <!-- Grille via AppDataGrid -->
+      <template #grid>
+        <AppDataGrid :items="users" :cols="3" gap="md" item-key="id">
+          <template #item="{ item: user }">
+            <AppCard class="flex flex-col gap-4 p-5">
+              <template #title>
+                <div class="flex items-start justify-between gap-2">
+                  <!-- Avatar + identité -->
+                  <div class="flex min-w-0 items-center gap-3">
+                    <div class="relative shrink-0">
+                      <img
+                        v-if="user.avatar_url"
+                        :src="user.avatar_url"
+                        :alt="user.phone_number"
+                        class="h-10 w-10 rounded-full object-cover ring-2 ring-primary-emerald/30"
+                      />
+                      <div
+                        v-else
+                        class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-emerald-light text-sm font-bold text-primary-emerald"
+                      >
+                        {{ avatarInitials(user) }}
+                      </div>
+                      <span
+                        v-if="user.is_verified"
+                        class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary-emerald text-white"
+                        :title="t('kyc.statusVerified')"
+                      >
+                        <CheckCircle2 class="h-2.5 w-2.5" />
+                      </span>
+                    </div>
+                    <div class="min-w-0">
+                      <p class="truncate font-bold text-[var(--color-text)]">
+                        {{ (user.first_name && user.last_name) ? `${user.first_name} ${user.last_name}` : user.phone_number }}
+                      </p>
+                      <p class="text-xs text-ui-muted">{{ user.phone_number }}</p>
+                    </div>
+                  </div>
 
-      <!-- Tri -->
-      <div class="flex items-center gap-1.5">
-        <ArrowUpDown class="h-4 w-4 text-ui-muted shrink-0" />
-        <select
-          v-model="sortBy"
-          class="rounded-xl border border-ui-border bg-white px-3 py-2 text-sm outline-none transition-all focus:border-primary-emerald cursor-pointer dark:bg-brand-dark dark:border-ui-border-dark dark:text-white"
-          @change="fetchKycUsers()"
-        >
-          <option value="created_at">{{ t('kyc.sortDate') }}</option>
-          <option value="completion_score">{{ t('kyc.sortCompletion') }}</option>
-        </select>
-      </div>
-
-      <!-- Ordre -->
-      <button
-        class="flex items-center gap-1 rounded-xl border border-ui-border bg-white px-3 py-2 text-sm font-medium transition-all hover:bg-ui-background dark:bg-brand-dark dark:border-ui-border-dark dark:text-white"
-        @click="sortOrder = sortOrder === 'DESC' ? 'ASC' : 'DESC'; fetchKycUsers()"
-      >
-        <Filter class="h-3.5 w-3.5" />
-        {{ sortOrder === 'DESC' ? t('kyc.sortDesc') : t('kyc.sortAsc') }}
-      </button>
-    </div>
-
-    <!-- Compteur -->
-    <p v-if="!loading" class="text-sm text-ui-muted">
-      {{ t('kyc.totalResults', { count: total }) }}
-    </p>
-
-    <!-- Chargement -->
-    <div v-if="loading" class="flex h-64 items-center justify-center">
-      <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary-emerald border-t-transparent" />
-    </div>
-
-    <!-- Vide -->
-    <div v-else-if="users.length === 0" class="rounded-2xl border border-dashed border-ui-border py-16 text-center dark:border-ui-border-dark">
-      <CheckCircle2 class="mx-auto mb-3 h-12 w-12 text-primary-emerald" />
-      <p class="text-ui-muted">{{ t('kyc.empty') }}</p>
-    </div>
-
-    <!-- Grille des dossiers -->
-    <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      <AppCard
-        v-for="user in users"
-        :key="user.id"
-        class="flex flex-col gap-4 p-5"
-      >
-        <template #title>
-          <div class="flex items-start justify-between gap-2">
-            <!-- Avatar + identité -->
-            <div class="flex min-w-0 items-center gap-3">
-              <div class="relative shrink-0">
-                <img
-                  v-if="user.avatar_url"
-                  :src="user.avatar_url"
-                  :alt="user.phone_number"
-                  class="h-10 w-10 rounded-full object-cover ring-2 ring-primary-emerald/30"
-                />
-                <div
-                  v-else
-                  class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-emerald-light text-sm font-bold text-primary-emerald"
-                >
-                  {{ avatarInitials(user) }}
+                  <!-- Badge KYC + actions -->
+                  <div class="flex shrink-0 items-center gap-1.5">
+                    <span
+                      class="rounded-full px-2.5 py-0.5 text-[10px] font-bold"
+                      :class="kycBadgeClass(user.profile?.kyc_status)"
+                    >
+                      {{ kycStatusLabel(user.profile?.kyc_status) }}
+                    </span>
+                    <button
+                      v-if="user.id_card_url"
+                      class="rounded-lg p-1 text-ui-muted transition-colors hover:bg-ui-background hover:text-primary-emerald dark:hover:bg-brand-dark"
+                      :title="t('kyc.viewIdCard')"
+                      @click="openIdCard(user.id_card_url)"
+                    >
+                      <Eye class="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      class="rounded-lg p-1 text-ui-muted transition-colors hover:bg-ui-background hover:text-primary-emerald dark:hover:bg-brand-dark"
+                      :title="t('kyc.viewProfile')"
+                      @click="router.push('/portal/users/' + user.id)"
+                    >
+                      <ExternalLink class="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <span
-                  v-if="user.is_verified"
-                  class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary-emerald text-white"
-                  :title="t('kyc.statusVerified')"
+              </template>
+
+              <!-- Rôle + checklist + dates -->
+              <div class="flex-grow space-y-4 text-xs text-ui-muted">
+                <div>
+                  <span class="font-bold uppercase tracking-widest text-[10px] text-primary-emerald">
+                    {{ roleLabel(user.role) }}
+                  </span>
+                </div>
+
+                <!-- Checklist de complétude -->
+                <div class="space-y-1.5 rounded-xl bg-gray-50/50 p-3 border border-gray-100 dark:bg-white/5 dark:border-white/5">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="font-bold text-[10px] uppercase text-[var(--color-text)]">{{ t('kyc.checklistTitle') }}</span>
+                    <span class="font-black text-primary-emerald">{{ getCompletionStats(user).percent }}%</span>
+                  </div>
+                  <div v-for="(f, i) in getCompletionStats(user).fields" :key="i" class="flex items-center gap-2">
+                    <div class="h-1.5 w-1.5 rounded-full" :class="f.value ? 'bg-primary-emerald' : 'bg-gray-300 dark:bg-gray-700'" />
+                    <span :class="f.value ? 'text-gray-900 dark:text-gray-100' : 'text-ui-muted italic line-through decoration-1 opacity-50'">
+                      {{ f.label }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="space-y-1 pt-1">
+                  <div class="flex justify-between">
+                    <span>{{ t('kyc.registeredOn') }}</span>
+                    <span class="font-medium text-[var(--color-text)]">{{ formatDate(user.created_at) }}</span>
+                  </div>
+                  <div v-if="user.profile?.kyc_submitted_at" class="flex justify-between">
+                    <span>{{ t('kyc.submittedOn') }}</span>
+                    <span class="font-medium text-[var(--color-text)]">{{ formatDate(user.profile.kyc_submitted_at) }}</span>
+                  </div>
+                </div>
+
+                <div v-if="user.profile?.kyc_rejection_reason" class="rounded-lg bg-red-50 p-2 text-danger-red dark:bg-red-900/10">
+                  <span class="font-semibold">{{ t('kyc.rejectionReason') }} :</span>
+                  {{ user.profile.kyc_rejection_reason }}
+                </div>
+              </div>
+
+              <!-- Actions Approuver / Rejeter -->
+              <div
+                v-if="!user.profile?.kyc_status || user.profile?.kyc_status === 'pending'"
+                class="flex gap-2 border-t border-ui-border pt-3 dark:border-ui-border-dark"
+              >
+                <AppButton
+                  size="sm"
+                  class="flex-1 bg-primary-emerald hover:bg-primary-emerald/90 text-white"
+                  :loading="reviewingId === user.id"
+                  @click="handleApprove(user.id)"
                 >
-                  <CheckCircle2 class="h-2.5 w-2.5" />
-                </span>
+                  <CheckCircle2 class="mr-1 h-3.5 w-3.5" />
+                  {{ t('kyc.approve') }}
+                </AppButton>
+                <AppButton
+                  size="sm"
+                  variant="outline"
+                  class="flex-1 border-danger-red/30 text-danger-red hover:bg-red-50"
+                  :disabled="reviewingId === user.id"
+                  @click="openRejectModal(user.id)"
+                >
+                  <XCircle class="mr-1 h-3.5 w-3.5" />
+                  {{ t('kyc.reject') }}
+                </AppButton>
               </div>
-              <div class="min-w-0">
-                <p class="truncate font-bold text-[var(--color-text)]">
-                  {{ (user.first_name && user.last_name) ? `${user.first_name} ${user.last_name}` : user.phone_number }}
-                </p>
-                <p class="text-xs text-ui-muted">{{ user.phone_number }}</p>
-              </div>
-            </div>
-
-            <!-- Badge KYC + lien profile + aperçu ID -->
-            <div class="flex shrink-0 items-center gap-1.5">
-              <span
-                class="rounded-full px-2.5 py-0.5 text-[10px] font-bold"
-                :class="kycBadgeClass(user.profile?.kyc_status)"
-              >
-                {{ kycStatusLabel(user.profile?.kyc_status) }}
-              </span>
-              
-              <button
-                v-if="user.id_card_url"
-                class="rounded-lg p-1 text-ui-muted transition-colors hover:bg-ui-background hover:text-primary-emerald dark:hover:bg-brand-dark"
-                :title="t('kyc.viewIdCard')"
-                @click="openIdCard(user.id_card_url)"
-              >
-                <Eye class="h-3.5 w-3.5" />
-              </button>
-
-              <button
-                class="rounded-lg p-1 text-ui-muted transition-colors hover:bg-ui-background hover:text-primary-emerald dark:hover:bg-brand-dark"
-                :title="t('kyc.viewProfile')"
-                @click="router.push('/portal/users/' + user.id)"
-              >
-                <ExternalLink class="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        </template>
-
-        <!-- Rôle + dates -->
-        <div class="flex-grow space-y-4 text-xs text-ui-muted">
-          <div>
-            <span class="font-bold uppercase tracking-widest text-[10px] text-primary-emerald">
-              {{ roleLabel(user.role) }}
-            </span>
-          </div>
-
-          <!-- Checklist de complétude -->
-          <div class="space-y-1.5 rounded-xl bg-gray-50/50 p-3 border border-gray-100 dark:bg-white/5 dark:border-white/5">
-             <div class="flex items-center justify-between mb-2">
-               <span class="font-bold text-[10px] uppercase text-[var(--color-text)]">{{ t('kyc.checklistTitle') }}</span>
-               <span class="font-black text-primary-emerald">{{ getCompletionStats(user).percent }}%</span>
-             </div>
-             <div v-for="(f, i) in getCompletionStats(user).fields" :key="i" class="flex items-center gap-2">
-               <div class="h-1.5 w-1.5 rounded-full" :class="f.value ? 'bg-primary-emerald' : 'bg-gray-300 dark:bg-gray-700'"></div>
-               <span :class="f.value ? 'text-gray-900 dark:text-gray-100' : 'text-ui-muted italic line-through decoration-1 opacity-50'">
-                 {{ f.label }}
-               </span>
-             </div>
-          </div>
-
-          <div class="space-y-1 pt-1">
-            <div class="flex justify-between">
-              <span>{{ t('kyc.registeredOn') }}</span>
-              <span class="font-medium text-[var(--color-text)]">{{ formatDate(user.created_at) }}</span>
-            </div>
-            <div v-if="user.profile?.kyc_submitted_at" class="flex justify-between">
-              <span>{{ t('kyc.submittedOn') }}</span>
-              <span class="font-medium text-[var(--color-text)]">{{ formatDate(user.profile.kyc_submitted_at) }}</span>
-            </div>
-          </div>
-          
-          <div v-if="user.profile?.kyc_rejection_reason" class="rounded-lg bg-red-50 p-2 text-danger-red dark:bg-red-900/10">
-            <span class="font-semibold">{{ t('kyc.rejectionReason') }} :</span>
-            {{ user.profile.kyc_rejection_reason }}
-          </div>
-        </div>
-
-        <!-- Actions Approuver / Rejeter (pending uniquement) -->
-        <div
-          v-if="!user.profile?.kyc_status || user.profile?.kyc_status === 'pending'"
-          class="flex gap-2 border-t border-ui-border pt-3 dark:border-ui-border-dark"
-        >
-          <AppButton
-            size="sm"
-            class="flex-1 bg-primary-emerald hover:bg-primary-emerald/90 text-white"
-            :loading="reviewingId === user.id"
-            @click="handleApprove(user.id)"
-          >
-            <CheckCircle2 class="mr-1 h-3.5 w-3.5" />
-            {{ t('kyc.approve') }}
-          </AppButton>
-          <AppButton
-            size="sm"
-            variant="outline"
-            class="flex-1 border-danger-red/30 text-danger-red hover:bg-red-50"
-            :disabled="reviewingId === user.id"
-            @click="openRejectModal(user.id)"
-          >
-            <XCircle class="mr-1 h-3.5 w-3.5" />
-            {{ t('kyc.reject') }}
-          </AppButton>
-        </div>
-      </AppCard>
-    </div>
+            </AppCard>
+          </template>
+        </AppDataGrid>
+      </template>
+    </AppDataView>
 
     <!-- Modal Rejet -->
     <Teleport to="body">
